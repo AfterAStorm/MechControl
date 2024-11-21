@@ -6,8 +6,6 @@ An *advanced* walker/mech script that allows your creactions to come more alive.
 
 Features include:
 
-A lot of features are inherited from [advanced walker script II](https://steamcommunity.com/sharedfiles/filedetails/?id=2639931038) by Beesoldier
-
 * Leg movements w/ rotors/hinges
   * Multiple leg types:
      1. Chickenwalker
@@ -23,6 +21,8 @@ A lot of features are inherited from [advanced walker script II](https://steamco
       3. **crouch** - Toggles or sets crouching (overrides cockpit controls)
       4. **walk** - Toggles or sets walking forwards/backwards (overrides cockpit controls)
       5. **halt** - Stops walking
+
+*A lot of features are inherited from [advanced walker script II](https://steamcommunity.com/sharedfiles/filedetails/?id=2639931038) by Beesoldier*
 
 ## Usage
 
