@@ -7,7 +7,12 @@
         <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
         <Configurations>Release;Debug</Configurations>
         <Platforms>x64</Platforms>
+        <UserSecretsId>f2d43030-dde0-4647-8e3c-a27671cff760</UserSecretsId>
     </PropertyGroup>
+
+    <ItemGroup>
+      <None Remove="Instructions.readme" />
+    </ItemGroup>
 
     <ItemGroup>
       <PackageReference Include="Mal.Mdk2.PbAnalyzers" Version="2.1.10">
@@ -25,7 +30,12 @@
     </ItemGroup>
 
     <ItemGroup>
+      <AdditionalFiles Include="Instructions.readme" />
       <AdditionalFiles Include="thumb.png" />
     </ItemGroup>
+
+    <Import Project="..\MechControlShared\MechControlShared.projitems" Label="Shared" />
+
+    <Import Project="..\MechControlAPI\MechControlAPI.projitems" Label="Shared" />
 
 </Project>

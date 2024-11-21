@@ -1,0 +1,19 @@
+﻿
+|| ^ Mech Control Script ^ ||
+
+> Created by AfterAStorm
+> Source and wiki can be found at https://github.com/AfterAStorm/MechControl
+
+Quickstart:
+    TODO
+
+|| ^ Changelog ^ ||
+
+1.0.0-beta
+    * Migrated from MDK1 to MDK2
+    * Settings are now in PB Custom Data
+
+|| ^ Source ^ ||
+
+All below is the actual script contents, if you're curious about the ongoings,
+view the source at https://github.com/AfterAStorm/MechControl/MechControlScript

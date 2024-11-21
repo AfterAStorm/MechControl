@@ -1,13 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.12.35506.116 d17.12
+VisualStudioVersion = 17.12.35506.116
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MechControlScript", "MechControlScript\MechControlScript.csproj", "{62AEAB34-E7D8-47E5-8A7E-A82695FCE299}"
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "MechControlAPI", "MechControlAPI\MechControlAPI.shproj", "{8A3CDCC5-4B55-4D87-A415-698A0E1FF06F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MechControlScriptAddon", "MechControlScriptAddon\MechControlScriptAddon.csproj", "{E42847C2-222B-428F-9EF9-C624D065C7A1}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "MechControlShared", "MechControlShared\MechControlShared.shproj", "{FADD4D9A-7CFD-45A3-B4A9-046547DFE1E4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -28,6 +30,9 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		MechControlAPI\MechControlAPI.projitems*{62aeab34-e7d8-47e5-8a7e-a82695fce299}*SharedItemsImports = 5
+		MechControlShared\MechControlShared.projitems*{62aeab34-e7d8-47e5-8a7e-a82695fce299}*SharedItemsImports = 5
 		MechControlAPI\MechControlAPI.projitems*{8a3cdcc5-4b55-4d87-a415-698a0e1ff06f}*SharedItemsImports = 13
+		MechControlShared\MechControlShared.projitems*{fadd4d9a-7cfd-45a3-b4a9-046547dfe1e4}*SharedItemsImports = 13
 	EndGlobalSection
 EndGlobal
