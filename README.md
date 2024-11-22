@@ -1,6 +1,6 @@
 ![Mech Engineers](https://raw.githubusercontent.com/AfterAStorm/MechControl/refs/heads/master/Images/mech-animation-compressed.gif)
 
-An *advanced* walker/mech script that allows your creactions to come more alive.
+An *advanced* walker/mech script for Space Engineers that allows your walking creations to come more alive.
 
 ## Features
 
@@ -26,7 +26,13 @@ Features include:
 
 ## Usage
 
-Need help setting up? Goto the [wiki](https://github.com/AfterAStorm/MechControl/wiki)
+Need help setting up? Goto the [wiki](https://github.com/AfterAStorm/MechControl/wiki) for more information!
+
+## Credits
+
+Me, AfterAStorm, would not be creating this masterpiece if it weren't for the great people over at the [Mech Engineers discord](https://discord.gg/xYA3NPAhqf).
+
+If you want to meet more like-minded mech builders, it's worth a visit!
 
 ## Contributions
 
