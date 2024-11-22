@@ -61,7 +61,7 @@ namespace IngameScript
                 else if (Animation.IsWalk()) // walk
                 {
                     x += (cos) * -.5;//* leftInverse * .75;
-                    y += (cos - 1) * .3 * Configuration.StepHeight;
+                    y += (cos - 1) * .3 * Configuration.StepHeight * StandingHeight;
                 }
 
                 /* DANCE

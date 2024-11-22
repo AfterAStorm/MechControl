@@ -173,6 +173,9 @@ namespace IngameScript
                 case "stepspeed":
                     WalkCycleSpeed = HandleFloatArgument(WalkCycleSpeed, arg);
                     break;
+                case "crouchspeed":
+                    CrouchSpeed = HandleFloatArgument(CrouchSpeed, arg);
+                    break;
 
                 case "lean":
                     StandingLean = HandleDoubleArgument(StandingLean, arg);
