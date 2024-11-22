@@ -1,4 +1,4 @@
-# MechControlScript
+![Mech Engineers](https://raw.githubusercontent.com/AfterAStorm/MechControl/refs/heads/master/Images/mech-animation-compressed.gif)
 
 An *advanced* walker/mech script that allows your creactions to come more alive.
 
