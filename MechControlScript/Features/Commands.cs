@@ -135,7 +135,7 @@ namespace IngameScript
                     if ((movementOverride * Vector3.Forward).Z != 0)
                         movementOverride *= new Vector3(1, 1, 0); // halt
                     else
-                        switch (arg != null ? "" : arg.ToLower().Trim())
+                        switch (arg == null ? "" : arg.ToLower().Trim())
                         {
                             default:
                             case "for":
