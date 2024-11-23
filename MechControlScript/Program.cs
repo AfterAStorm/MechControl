@@ -32,7 +32,7 @@ namespace IngameScript
         // Diagnostics //
 
         static IMyTextPanel debugPanel = null;
-        static bool debugMode = true;
+        static bool debugMode = false;
         static bool debugModeClearOnLoop = true;
         static string debugModePanelName = "MCS_Debug";
 

@@ -71,8 +71,10 @@ namespace IngameScript
 
         public void UpdateLegs()
         {
+            crouched = crouchOverride || moveInput.Y < 0;
+
             // delta calculations
-            Vector3 moveDirection = (moveInput - movement);
+            Vector3 moveDirection = (parsedMoveInput - movement);
 
             if (controller != null || AutoHalt)
             {
@@ -89,7 +91,7 @@ namespace IngameScript
             Log($"animation step maxComponent: {maxComponent}");
 
             // detect when we should start trying to stop between 0 and .5
-            bool isStopping = movement.Length() < 0.4 && (moveDirection.Length() < .4 || moveInput.Length() == 0) && movement.LengthSquared() > 0;
+            bool isStopping = movement.Length() < 0.4 && (moveDirection.Length() < .4 || parsedMoveInput.Length() == 0) && movement.LengthSquared() > 0;
             Log($"is stopping?: {isStopping}");
 
             // calculate delta
@@ -107,8 +109,8 @@ namespace IngameScript
             double animationStepModulo = animationStepCounter.Modulo(1);
             Log($"animation step (modulo): {animationStepModulo}");
 
-            if (moveInput != Vector3.Zero)
-                lastMovementDirection = moveInput;
+            if (parsedMoveInput != Vector3.Zero)
+                lastMovementDirection = parsedMoveInput;
 
             if (isStopping)
             {
@@ -133,8 +135,11 @@ namespace IngameScript
             isWalking = (movement * new Vector3(1, 0, 1)).LengthSquared() > 0; // animationStepCounterDelta.Absolute() > 0;
             Log($"is turning: {isTurning}");
             Log($"is walking: {isWalking}");
+            Log($"is flying : {isInFlight}");
             Animation chosenAnimation;
-            if (isWalking && (!isTurning || !SteeringTakesPriority))
+            if (isInFlight)
+                chosenAnimation = Animation.Flight;
+            else if (isWalking && (!isTurning || !SteeringTakesPriority))
                 chosenAnimation = crouched ? Animation.CrouchWalk : Animation.Walk;
             else if (isTurning)
                 chosenAnimation = crouched ? Animation.CrouchTurn : Animation.Turn;

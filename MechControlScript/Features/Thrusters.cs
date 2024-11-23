@@ -25,6 +25,7 @@ namespace IngameScript
         List<IMyThrust> thrusters = new List<IMyThrust>();
 
         bool thrustersEnabled = true;
+        bool isInFlight = false;
 
         public void FetchThrusters()
         {
@@ -39,10 +40,16 @@ namespace IngameScript
 
         public void UpdateThrusters()
         {
+            Log($"thruster mode:", ThrusterBehavior);
+            Log($"moveInput.Y:", moveInput.Y);
+
+            if (moveInput.Y > 0)
+                isInFlight = true;
+
             foreach (IMyThrust thruster in thrusters)
             {
                 thruster.ThrustOverridePercentage = (moveInput.Y > 0 && ThrusterBehavior == ThrusterMode.Override) ? 1 : 0;
-                thruster.Enabled = thrustersEnabled && ThrusterBehavior == ThrusterMode.Override ? moveInput.Y > 0 : thruster.Enabled; //thrustersEnabled && (moveInput.Y > 0 || ThrusterBehavior == ThrusterMode.Hover);
+                thruster.Enabled = thrustersEnabled && (ThrusterBehavior == ThrusterMode.Override ? moveInput.Y > 0 : thruster.Enabled); //thrustersEnabled && (moveInput.Y > 0 || ThrusterBehavior == ThrusterMode.Hover);
             }
         }
     }
