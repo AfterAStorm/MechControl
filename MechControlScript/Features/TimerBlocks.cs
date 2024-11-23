@@ -156,6 +156,12 @@ namespace IngameScript
                                 break;
                         }
                         break;
+                    case "crouch":
+                        timerBlocks.Add(new TimerBlock() { Block = tb, Event = TimerBlockEvent.CROUCH });
+                        break;
+                    case "stand":
+                        timerBlocks.Add(new TimerBlock() { Block = tb, Event = TimerBlockEvent.STAND });
+                        break;
                 }
             }
         }

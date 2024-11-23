@@ -27,7 +27,7 @@ namespace IngameScript
         // Script //
 
         public static Program Singleton { get; private set; }
-        public const string Version = "1.0.0-beta"; // major.minor.patch
+        public const string Version = "1.0.1-beta"; // major.minor.patch
 
         // Diagnostics //
 
@@ -284,7 +284,6 @@ namespace IngameScript
                 Echo($"Last Instructions: {lastInstructions}");
                 Echo($"Last Complexity: {lastInstructions / Runtime.MaxInstructionCount * 100:f1}%");
                 Echo($"Max Instructions: {maxInstructions}");
-                Echo($"Max Complexity: {maxInstructions / Runtime.MaxInstructionCount * 100:f1}%");
                 Echo($"Updates/s: {1 / fakeDelta:f1} up/s\n");
             }
 
@@ -323,6 +322,8 @@ namespace IngameScript
             if (!updateSource.HasFlag(UpdateType.Update1))
             {
                 deltaOffset += Runtime.TimeSinceLastRun.TotalMilliseconds / 1000d; // add "fake" offset so it's accurate for real steps
+                lastInstructions = Runtime.CurrentInstructionCount;
+                maxInstructions = Math.Max(lastInstructions, maxInstructions);
                 return;
             }
             
@@ -346,6 +347,10 @@ namespace IngameScript
             UpdateLegs();
 
             UpdateTimerBlocks();
+
+            // profiling
+            lastInstructions = Runtime.CurrentInstructionCount;
+            maxInstructions = Math.Max(lastInstructions, maxInstructions);
         }
     }
 }

@@ -84,7 +84,7 @@ namespace IngameScript
 
         // -- Diagnostics
 
-        bool ShowStats = false;
+        bool ShowStats = true;
         string DebugLCD = "debug";
         const int AverageRuntimeSampleSize = 15;
 
@@ -162,6 +162,10 @@ namespace IngameScript
             SetSection("Blocks");
             CockpitName = GetConfig("CockpitName").ToString("auto");
             RemoteControlName = GetConfig("RemoteControlName").ToString("auto");
+
+            // - Debug
+            SetSection("Debug");
+            ShowStats = GetConfig("ShowStats").ToBoolean();
         }
 
         void SaveConfig()
@@ -207,6 +211,10 @@ namespace IngameScript
             SetSection("Blocks");
             SetConfig("CockpitName", CockpitName);
             SetConfig("RemoteControlName", RemoteControlName);
+
+            // - Debug
+            SetSection("Debug");
+            SetConfig("ShowStats", ShowStats);
 
             Me.CustomData = configIni.ToString();
         }

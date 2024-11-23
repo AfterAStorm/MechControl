@@ -14,6 +14,11 @@ Configuring:
 
 Most recent release:
 
+1.0.1-beta
+    * Fix crash on invalid argument in "walk"
+    * Possible fix for timerblock events
+    * Add ShowStats option for global
+
 1.0.0-beta
     * Migrated from MDK1 to MDK2
     * Settings are now in PB Custom Data
