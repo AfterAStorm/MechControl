@@ -17,6 +17,7 @@ using VRage.Game.ModAPI.Ingame;
 using VRage.Game.ModAPI.Ingame.Utilities;
 using VRage.Game.ObjectBuilders.Definitions;
 using VRageMath;
+using VRageRender;
 
 namespace IngameScript
 {
@@ -31,6 +32,7 @@ namespace IngameScript
         Vector3 movement = Vector3.Zero;
 
         static bool jumping = false;
+        static double jumpTime = 0;
         static bool crouched = false;
         static bool crouchOverride = false;
 
@@ -86,6 +88,18 @@ namespace IngameScript
                 movement.Z += moveDirection.Z * (moveDirection.Z > 0 ? AccelerationMultiplier : DecelerationMultiplier) * .3f * (float)delta;
             }
 
+            jumping = jumpTime > 0;
+            if (moveInput.Y > 0 && !thrustersEnabled)
+            {
+                jumping = false;
+                jumpTime = .5d;
+                crouched = true;
+            }
+            else if (jumpTime > 0)
+            {
+                jumpTime -= delta;
+            }
+
             Log($"movement: {movement}");
             Log($"animation step counter (before): {animationStepCounter}");
 
@@ -138,6 +152,7 @@ namespace IngameScript
             Log($"is turning: {isTurning}");
             Log($"is walking: {isWalking}");
             Log($"is flying : {isInFlight}");
+            Log($"is jumping: {jumping}");
             Animation chosenAnimation;
             if (isInFlight)
                 chosenAnimation = Animation.Flight;

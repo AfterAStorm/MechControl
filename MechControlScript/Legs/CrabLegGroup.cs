@@ -70,6 +70,8 @@ namespace IngameScript
                  */
 
                 y -= 1.25 * CrouchWaitTime;
+                if (jumping && !crouched)
+                    y += 1;
                 double thigh = CalculatedThighLength;//Configuration.ThighLength;//2.5; // TODO: calculate
                 double calf = CalculatedCalfLength;//Configuration.CalfLength + .25;//2.75;
                 //                                            2.5  , 2.75

@@ -36,6 +36,7 @@ namespace IngameScript
                 .Select(f => f.Value)
                 .Where(f => f.Type == BlockType.Thruster)
                 .Select(f => f.Block as IMyThrust));
+            thrustersEnabled = thrusters.Count > 0;
         }
 
         public void UpdateThrusters()
@@ -44,9 +45,14 @@ namespace IngameScript
             Log($"moveInput.Y:", moveInput.Y);
 
             if (moveInput.Y > 0)
-                isInFlight = true;
+            {
+                if (thrustersEnabled)
+                    isInFlight = true;
+            }
             else
+            {
                 isInFlight = false;
+            }
 
             foreach (IMyThrust thruster in thrusters)
             {
