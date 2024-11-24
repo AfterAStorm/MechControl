@@ -24,6 +24,8 @@ namespace IngameScript
     {
         public static Dictionary<int, LegGroup> legs = new Dictionary<int, LegGroup>();
 
+        bool legsEnabled = true;
+
         MovementInfo moveInfo = new MovementInfo();
         Vector3 lastMovementDirection = Vector3.Zero;
         Vector3 movement = Vector3.Zero;
@@ -156,11 +158,12 @@ namespace IngameScript
             moveInfo.Movement = movement;
             moveInfo.Delta = delta;
 
-            foreach (var leg in legs.Values)
-            {
-                leg.Animation = activeAnimation;
-                leg.Update(moveInfo);
-            }
+            if (legsEnabled)
+                foreach (var leg in legs.Values)
+                {
+                    leg.Animation = activeAnimation;
+                    leg.Update(moveInfo);
+                }
         }
     }
 }

@@ -79,11 +79,13 @@ namespace IngameScript
                     sin * Configuration.StepLength + lean;
                 double y = MathHelper.Clamp(
                     // value
-                    cos * (stepHeight + 1) + .5 + 2 + standingHeight + 1.5,
+                    2 + standingHeight + 2 - (cos * -(stepHeight + 1)),
+                    // old: cos * (stepHeight + 1) + .5 + 2 + standingHeight + 1.5,
 
                     // min/max
                     0,
-                    2 + stepHeight + standingHeight + 1
+                    2 + standingHeight + 1.5
+                    // old: 2 + stepHeight + standingHeight + 1
                 ) + crouchAdditive;
 
                 if (Animation == Animation.Turn) // makes math above redudant, but rarely used so it's fine!

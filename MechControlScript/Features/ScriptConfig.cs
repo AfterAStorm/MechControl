@@ -136,7 +136,7 @@ namespace IngameScript
             // - Walking
 
             SetSection("Walking");
-            WalkCycleSpeed = GetConfig("WalkCycleSpeed").ToSingle(1f);
+            WalkCycleSpeed = GetConfig("WalkSpeed").ToSingle(1f);
             CrouchSpeed = GetConfig("CrouchSpeed").ToSingle(1f);
             AutoHalt = GetConfig("AutoHalt").ToBoolean(true);
 
@@ -146,10 +146,10 @@ namespace IngameScript
             AccelerationMultiplier = GetConfig("AccelerationMultiplier").ToSingle(1f);
             DecelerationMultiplier = GetConfig("DecelerationMultiplier").ToSingle(1.5f);
 
-            MaxRPM = GetConfig("MaxRPM").ToSingle(3600);
+            MaxRPM = GetConfig("MaxRPM").ToSingle(3600f);
 
             TorsoTwistSensitivity = GetConfig("TorsoTwistSensitivity").ToSingle(1f);
-            TorsoTwistMaxSpeed = GetConfig("TorsoTwistMaxSpeed").ToSingle(60f);
+            TorsoTwistMaxSpeed = GetConfig("TorsoTwistMaxSpeed").ToSingle(3600f);
 
             // - Stablization / Steering
 
@@ -164,7 +164,7 @@ namespace IngameScript
             RemoteControlName = GetConfig("RemoteControlName").ToString("auto");
 
             // - Debug
-            SetSection("Debug");
+            SetSection("Diagnostics");
             ShowStats = GetConfig("ShowStats").ToBoolean();
         }
 
@@ -177,7 +177,7 @@ namespace IngameScript
 
             SetSection("Mech");
             SetConfig("StandingHeight", StandingHeight);
-            ThrusterBehavior = (ThrusterMode)Enum.Parse(typeof(ThrusterMode), GetConfig("ThrusterBehavior").ToString("Override"), true);
+            SetConfig("ThrusterBehavior", Enum.GetName(typeof(ThrusterMode), ThrusterBehavior));
 
             SetConfig("StandingLean", StandingLean);
             SetConfig("AccelerationLean", AccelerationLean);
@@ -185,7 +185,7 @@ namespace IngameScript
             // - Walking
 
             SetSection("Walking");
-            SetConfig("WalkCycleSpeed", WalkCycleSpeed);
+            SetConfig("WalkSpeed", WalkCycleSpeed);
             SetConfig("CrouchSpeed", CrouchSpeed);
             SetConfig("AutoHalt", AutoHalt);
 
@@ -195,10 +195,10 @@ namespace IngameScript
             SetConfig("AccelerationMultiplier", AccelerationMultiplier);
             SetConfig("DecelerationMultiplier", DecelerationMultiplier);
 
-            SetConfig("MaxRPM", MaxRPM);
+            //SetConfig("MaxRPM", MaxRPM); // OBSOLETE
 
             SetConfig("TorsoTwistSensitivity", TorsoTwistSensitivity);
-            SetConfig("TorsoTwistMaxSpeed", TorsoTwistMaxSpeed);
+            //SetConfig("TorsoTwistMaxSpeed", TorsoTwistMaxSpeed); // OBSOLETE
 
             // - Stablization / Steering
 
@@ -212,8 +212,8 @@ namespace IngameScript
             SetConfig("CockpitName", CockpitName);
             SetConfig("RemoteControlName", RemoteControlName);
 
-            // - Debug
-            SetSection("Debug");
+            // - Diagnostics
+            SetSection("Diagnostics");
             SetConfig("ShowStats", ShowStats);
 
             Me.CustomData = configIni.ToString();

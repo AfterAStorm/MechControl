@@ -214,6 +214,10 @@ namespace IngameScript
                         arm.ToZero();
                     break;
 
+                case "legcontrol":
+                    legsEnabled = HandleBoolArgument(legsEnabled, arg);
+                    break;
+
                 case "armcontrol":
                     armsEnabled = HandleBoolArgument(armsEnabled, arg);
                     break;

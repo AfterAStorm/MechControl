@@ -97,22 +97,22 @@ CalfLength=2.5
                 ini.SetComment("Leg", "LegType", "1 = Humanoid\n2 = Chicken walker\n3 = Spideroid\n4 = Crab\n5 = Digitigrade");
 
                 ini.Set("Leg", "HipOffsets", HipOffsets);
-                ini.SetComment("Leg", "HipOffsets", "The joints' offsets (in degrees)");
+                //ini.SetComment("Leg", "HipOffsets", "The joints' offsets (in degrees)");
                 ini.Set("Leg", "KneeOffsets", KneeOffsets);
                 ini.Set("Leg", "FootOffsets", FootOffsets);
                 ini.Set("Leg", "QuadOffsets", QuadOffsets);
 
                 ini.Set("Leg", "StepLength", StepLength);
-                ini.SetComment("Leg", "StepLength", "How far forwards/backwards and up/down legs step\n0.5 is half, 1 is default, 2 is double");
                 ini.Set("Leg", "StepHeight", StepHeight);
+                //ini.SetComment("Leg", "StepLength", "How far forwards/backwards and up/down legs step\n0.5 is half, 1 is default, 2 is double");
 
                 ini.Set("Leg", "WalkSpeed", AnimationSpeed);
                 ini.Set("Leg", "CrouchSpeed", CrouchSpeed);
-                ini.SetComment("Leg", "CrouchSpeed", "How fast legs walk and crouch");
+                //ini.SetComment("Leg", "WalkSpeed", "How fast legs walk and crouch");
 
                 ini.Set("Leg", "ThighLength", ThighLength);
                 ini.Set("Leg", "CalfLength", CalfLength);
-                ini.SetComment("Leg", "ThighLength", "Change theoretical apendage lengths");
+                //ini.SetComment("Leg", "ThighLength", "Change theoretical apendage lengths");
 
                 ini.SetSectionComment("Leg", $"Leg (group {Id}) settings. These change all of the joints in the same group.");
                 return ini.ToString();
