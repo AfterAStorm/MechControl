@@ -45,6 +45,8 @@ namespace IngameScript
 
             if (moveInput.Y > 0)
                 isInFlight = true;
+            else
+                isInFlight = false;
 
             foreach (IMyThrust thruster in thrusters)
             {
