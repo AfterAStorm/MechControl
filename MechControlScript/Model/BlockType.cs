@@ -29,6 +29,7 @@ namespace IngameScript
             Knee,
             Foot,
             Quad,
+            Strafe,
 
             // Arm
             Pitch,

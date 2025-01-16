@@ -49,7 +49,7 @@ namespace IngameScript
 
         // - Mech
 
-        static float StandingHeight = .95f; // a multiplier applied to some leg types
+        static float StandingHeight = 1f; // a multiplier applied to some leg types
         ThrusterMode ThrusterBehavior = ThrusterMode.Override; // set the default thruster behavior, changable with commands. valid: Override, Hover
 
         static double StandingLean = 0d; // the offset of where the foot sits when standing (idling)
@@ -76,6 +76,9 @@ namespace IngameScript
 
         static double SteeringSensitivity = 5; // x / 60th speed, specifies rotor/gyro RPM divided by 60, so 30 is half max power/rpm
         static bool SteeringTakesPriority = true; // should turning take priority over walking (animation wise)
+        static double YawThreshold = 0;
+        static double PitchThreshold = 0;
+        static double RollThreshold = 0;
 
         // - Blocks
 
@@ -85,7 +88,7 @@ namespace IngameScript
         // -- Diagnostics
 
         bool ShowStats = true;
-        string DebugLCD = "debug";
+        string DebugLCD = "MCS_Debug";
         const int AverageRuntimeSampleSize = 15;
 
         #endregion
@@ -156,6 +159,9 @@ namespace IngameScript
             SetSection("Stabilization");
             SteeringSensitivity = GetConfig("SteeringSensitivity").ToDouble(5);
             SteeringTakesPriority = GetConfig("SteeringTakesPriority").ToBoolean(false);
+            YawThreshold = GetConfig("YawThreshold").ToDouble();
+            PitchThreshold = GetConfig("PitchThreshold").ToDouble(5);
+            RollThreshold = GetConfig("RollThreshold").ToDouble(5);
 
             // - Blocks
 

@@ -76,12 +76,40 @@ namespace IngameScript
                 }
         }
 
+        void SetAngles(Gyroscope gyroBlock, float yaw, float pitch, float roll)
+        {
+            IMyGyro gyro = gyroBlock.Gyro;
+            float max = gyro.CubeGrid.GridSizeEnum == MyCubeSize.Small ? 2f * (float)Math.PI : (float)Math.PI;
+            float conversion = max / (gyro.CubeGrid.GridSizeEnum == MyCubeSize.Small ? 60f : 30f);
+            // the conversion is the same either way... but the max isn't so it still counts :p
+            yaw = MathHelper.Clamp(yaw * conversion, -max, max);
+            pitch = MathHelper.Clamp(pitch * conversion, -max, max);
+            roll = MathHelper.Clamp(roll * conversion, -max, max);
+            if ((gyro.Yaw - yaw).Absolute() > .1f || (gyro.Yaw != 0 && yaw == 0))
+            {
+                Log($"SET {gyro.CustomName} YAW {gyro.Yaw} --> {yaw}");
+                gyro.Yaw = yaw;
+            }
+            if ((gyro.Pitch - pitch).Absolute() > .1f || (gyro.Pitch != 0 && pitch == 0))
+            {
+                Log($"SET {gyro.CustomName} PITCH {gyro.Pitch} --> {pitch}");
+                gyro.Pitch = pitch;
+            }
+            if ((gyro.Roll - roll).Absolute() > .1f || (gyro.Roll != 0 && roll == 0))
+            {
+                Log($"SET {gyro.CustomName} ROLL TO {gyro.Roll} --> {roll}");
+                gyro.Roll = roll;
+            }
+        }
+
         void UpdateStabilization()
         {
+            Log("-- Stabilization --");
             //bool overrideEnabled = !GyroscopesDisableOverride || turnValue != 0;
             IMyShipController reference = cockpits.Count > 0 ? cockpits.First() : null;
             if (reference == null)
             {
+                Log("No reference for stabilization");
                 return;
             }
             Vector3D gravity = reference.GetTotalGravity();
@@ -166,12 +194,21 @@ namespace IngameScript
             bool isStabilizing = totalRotation > 3f;
             foreach (var gyro in stabilizationGyros)
             {
-                if (gyro.GyroType == BlockType.GyroscopeStabilization || gyro.GyroType == BlockType.GyroscopeRoll)
-                    gyro.Gyro.Roll = rollValue * (float)gyro.Configuration.InversedMultiplier;
-                if (gyro.GyroType == BlockType.GyroscopeStabilization || gyro.GyroType == BlockType.GyroscopeAzimuth)
-                    gyro.Gyro.Yaw = -azimuthValue * (float)gyro.Configuration.InversedMultiplier;
-                if (gyro.GyroType == BlockType.GyroscopeStabilization || gyro.GyroType == BlockType.GyroscopeElevation)
-                    gyro.Gyro.Pitch = elevationValue * (float)gyro.Configuration.InversedMultiplier;
+                if (gyro.GyroType == BlockType.GyroscopeRoll)
+                    SetAngles(gyro, 0, 0, rollValue * (float)gyro.Configuration.InversedMultiplier);
+                    //gyro.Gyro.Roll = rollValue * (float)gyro.Configuration.InversedMultiplier;
+                else if (gyro.GyroType == BlockType.GyroscopeAzimuth)
+                    SetAngles(gyro, -azimuthValue * (float)gyro.Configuration.InversedMultiplier, 0, 0);
+                //gyro.Gyro.Yaw = -azimuthValue * (float)gyro.Configuration.InversedMultiplier;
+                else if (gyro.GyroType == BlockType.GyroscopeElevation)
+                    SetAngles(gyro, 0, elevationValue * (float)gyro.Configuration.InversedMultiplier, 0);
+                //gyro.Gyro.Pitch = elevationValue * (float)gyro.Configuration.InversedMultiplier;
+
+                else if (gyro.GyroType == BlockType.GyroscopeStabilization)
+                    SetAngles(gyro,
+                        -azimuthValue * (float)gyro.Configuration.InversedMultiplier,
+                        elevationValue * (float)gyro.Configuration.InversedMultiplier,
+                        rollValue * (float)gyro.Configuration.InversedMultiplier);
 
                 if (gyro.GyroType == BlockType.GyroscopeAzimuth && !isTurning)
                     gyro.Gyro.Enabled = true;

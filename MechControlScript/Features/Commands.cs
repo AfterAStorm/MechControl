@@ -44,7 +44,7 @@ namespace IngameScript
         {
             switch (arg.Substring(0, 1))
             {
-                default:
+                default: return current;
                 case "=": return TryParseDouble(arg.Substring(1));
                 case "+": return current + TryParseDouble(arg.Substring(1));
                 case "-": return current - TryParseDouble(arg.Substring(1));
@@ -62,7 +62,7 @@ namespace IngameScript
         {
             switch (arg.Substring(0, 1))
             {
-                default:
+                default: return current;
                 case "=": return TryParseFloat(arg.Substring(1));
                 case "+": return current + TryParseFloat(arg.Substring(1));
                 case "-": return current - TryParseFloat(arg.Substring(1));
@@ -80,7 +80,7 @@ namespace IngameScript
         {
             switch (arg.Substring(0, 1))
             {
-                default:
+                default: return TryParseInt(arg);
                 case "=": return TryParseInt(arg.Substring(1));
                 case "+": return current + TryParseInt(arg.Substring(1));
                 case "-": return current - TryParseInt(arg.Substring(1));
@@ -163,10 +163,13 @@ namespace IngameScript
                     break;
 
                 case "hover":
+                    ThrusterMode lastMode = ThrusterBehavior;
                     if (arg == null)
                         ThrusterBehavior = (ThrusterMode)(((int)ThrusterBehavior + 1) % 2);
                     else
                         ThrusterBehavior = HandleBoolArgument(ThrusterBehavior == ThrusterMode.Hover, arg) ? ThrusterMode.Hover : ThrusterMode.Override;
+                    if (ThrusterBehavior == ThrusterMode.Hover && lastMode != ThrusterMode.Hover)
+                        thrustersEnabled = true;
                     break;
 
                 // Settings
@@ -225,6 +228,13 @@ namespace IngameScript
                 // Fun //
                 case "limp":
                     ToggleLimp(HandleBoolArgument(isLimp, arg));
+                    break;
+
+                // Test Leg //
+                case "ik":
+                    testLegX = TryParseFloat(arguments[1]);
+                    testLegY = TryParseFloat(arguments[2]);
+                    testLegZ = TryParseFloat(arguments[3]);
                     break;
             }
         }

@@ -22,28 +22,34 @@ namespace IngameScript
 {
     partial class Program
     {
+        /// <summary>
+        /// Structure containing leg angles
+        /// </summary>
         public struct LegAngles
         {
-            public static LegAngles Zero = new LegAngles(0, 0, 0, 0);
-            public static LegAngles One = new LegAngles(1, 1, 1, 1);
-            public static LegAngles MinusOne = new LegAngles(-1, -1, -1, -1);
+            public static LegAngles Zero = new LegAngles(0, 0, 0, 0, 0);
+            public static LegAngles One = new LegAngles(1, 1, 1, 1, 1);
+            public static LegAngles MinusOne = new LegAngles(-1, -1, -1, -1, -1);
 
             public double HipDegrees;
             public double KneeDegrees;
             public double FeetDegrees;
             public double QuadDegrees;
+            public double StrafeDegrees;
 
             public double HipRadians => HipDegrees.ToRadians();
             public double KneeRadians => KneeRadians.ToRadians();
             public double FeetRadians => FeetRadians.ToRadians();
             public double QuadRadians => QuadDegrees.ToRadians();
+            public double StrafeRadians => StrafeDegrees.ToRadians();
 
-            public LegAngles(double hip, double knee, double feet, double quad)
+            public LegAngles(double hip, double knee, double feet, double quad, double strafe = 0)
             {
                 HipDegrees = hip;
                 KneeDegrees = knee;
                 FeetDegrees = feet;
                 QuadDegrees = quad;
+                StrafeDegrees = strafe;
             }
 
             public LegAngles(double hip, double knee, double feet)
@@ -52,10 +58,11 @@ namespace IngameScript
                 KneeDegrees = knee;
                 FeetDegrees = feet;
                 QuadDegrees = 0;
+                StrafeDegrees = 0;
             }
 
-            public static LegAngles operator +(LegAngles left, LegAngles right) => new LegAngles(left.HipDegrees + right.HipDegrees, left.KneeDegrees + right.KneeDegrees, left.FeetDegrees + right.FeetDegrees, left.QuadDegrees + right.QuadDegrees);
-            public static LegAngles operator *(LegAngles left, LegAngles right) => new LegAngles(left.HipDegrees * right.HipDegrees, left.KneeDegrees * right.KneeDegrees, left.FeetDegrees * right.FeetDegrees, left.QuadDegrees * right.QuadDegrees);
+            public static LegAngles operator +(LegAngles left, LegAngles right) => new LegAngles(left.HipDegrees + right.HipDegrees, left.KneeDegrees + right.KneeDegrees, left.FeetDegrees + right.FeetDegrees, left.QuadDegrees + right.QuadDegrees, left.StrafeDegrees + right.StrafeDegrees);
+            public static LegAngles operator *(LegAngles left, LegAngles right) => new LegAngles(left.HipDegrees * right.HipDegrees, left.KneeDegrees * right.KneeDegrees, left.FeetDegrees * right.FeetDegrees, left.QuadDegrees * right.QuadDegrees, left.StrafeDegrees * right.StrafeDegrees);
         }
     }
 }

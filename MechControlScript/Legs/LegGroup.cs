@@ -41,6 +41,9 @@ namespace IngameScript
             public List<LegJoint> LeftQuadStators = new List<LegJoint>();
             public List<LegJoint> RightQuadStators = new List<LegJoint>();
 
+            public List<LegJoint> LeftStrafeStators = new List<LegJoint>();
+            public List<LegJoint> RightStrafeStators = new List<LegJoint>();
+
             public List<FetchedBlock> LeftPistons = new List<FetchedBlock>();
             public List<FetchedBlock> RightPistons = new List<FetchedBlock>();
 
@@ -140,16 +143,9 @@ namespace IngameScript
 
                 SetAnglesOf(LeftQuadStators, leftAngles.QuadDegrees, -Configuration.QuadOffsets);
                 SetAnglesOf(RightQuadStators, rightAngles.QuadDegrees, -Configuration.QuadOffsets);
-                /*SetAngles(
-                    leftAngles.HipDegrees,
-                    leftAngles.KneeDegrees,
-                    leftAngles.FeetDegrees,
-                    leftAngles.QuadDegrees,
-                    rightAngles.HipDegrees,
-                    rightAngles.KneeDegrees,
-                    rightAngles.FeetDegrees,
-                    rightAngles.QuadDegrees
-                );*/
+
+                SetAnglesOf(LeftStrafeStators, leftAngles.StrafeDegrees, -Configuration.StrafeOffsets);
+                SetAnglesOf(RightStrafeStators, rightAngles.StrafeDegrees, -Configuration.StrafeOffsets);
             }
 
             protected double FindThighLength()
@@ -198,8 +194,9 @@ namespace IngameScript
 
             public virtual void Update(MovementInfo info)
             {
+                Log($"- {GetType().Name} (group {Configuration.Id}) -");
                 // Animate crouch
-                if (!Animation.IsCrouch())
+                if (!Animation.IsCrouch() && !info.Crouched)
                     CrouchWaitTime = Math.Max(0, jumping ? 0 : CrouchWaitTime - info.Delta * 2 * Configuration.CrouchSpeed * CrouchSpeed);
                 else
                     CrouchWaitTime = Math.Min(1, CrouchWaitTime + info.Delta * 2 * Configuration.CrouchSpeed * CrouchSpeed);

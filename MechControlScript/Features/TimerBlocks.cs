@@ -49,7 +49,8 @@ namespace IngameScript
 
         void UpdateTimerBlocks()
         {
-            Log($"timerBlocks: {timerBlocks.Count}");
+            Log("-- Timers --");
+            Log($"# of timerBlocks: {timerBlocks.Count}");
             if (!activeAnimation.IsWalk() && lastAnimation.IsWalk())
             {
                 lastRun = "WALK_HALT";

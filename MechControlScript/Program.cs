@@ -27,14 +27,13 @@ namespace IngameScript
         // Script //
 
         public static Program Singleton { get; private set; }
-        public const string Version = "1.0.3-beta"; // major.minor.patch
+        public const string Version = "1.1.0-beta"; // major.minor.patch
 
         // Diagnostics //
 
         static IMyTextPanel debugPanel = null;
         static bool debugMode = false;
         static bool debugModeClearOnLoop = true;
-        static string debugModePanelName = "MCS_Debug";
 
         double[] averageRuntimes = new double[AverageRuntimeSampleSize];
         int averageRuntimeIndex = 0;
@@ -217,7 +216,7 @@ namespace IngameScript
         {
             // diag
             if (debugMode)
-                debugPanel = Singleton.GridTerminalSystem.GetBlockWithName(debugModePanelName) as IMyTextPanel;
+                debugPanel = Singleton.GridTerminalSystem.GetBlockWithName(DebugLCD) as IMyTextPanel;
 
             // blocks
             FetchInputs(); // cockpits
@@ -296,7 +295,7 @@ namespace IngameScript
                 Warn("Debug Mode Active", "Debug mode is active");
                 if (debugPanel == null)
                 {
-                    Warn("No Debug Panel", $"No debug panel was found named \"{debugModePanelName}\", using Echo instead");
+                    Warn("No Debug Panel", $"No debug panel was found named \"{DebugLCD}\", using Echo instead");
                 }
             }
 

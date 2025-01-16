@@ -14,6 +14,16 @@ Configuring:
 
 Most recent release:
 
+1.1.0-beta
+    * Change how legs calculate angles
+    * Thrusters are enabled on switch to hover mode
+    * Experimental strafe joints
+    * Tons of general changes
+      * Standing height basis now 1
+      * Thigh/calf length basis now 1:1 instead of 2.5:2.5
+      * Modulate and construct additional pylons
+      * Take over the world
+
 1.0.3-beta
     * Re-add jumping
     * Minor tweaks

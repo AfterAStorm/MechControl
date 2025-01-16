@@ -53,6 +53,7 @@ namespace IngameScript
 
         void UpdateInputs()
         {
+            Log("-- Inputs --");
             // find ship controllers
             controller = cockpits.Find((pit) => pit.IsUnderControl);
             anyController = controller ?? (cockpits.Count > 0 ? cockpits[0] : null);
@@ -62,11 +63,19 @@ namespace IngameScript
             rotationInput = controller?.RotationIndicator ?? Vector2.Zero;
             rollInput = controller?.RollIndicator ?? 0f;
 
+            Log($"moveInput: {moveInput}");
+            Log($"rotationInput: {rotationInput}");
+            Log($"rollInput: {rollInput}");
+
             // parse
             turnValue = turnOverride != 0 ? turnOverride : (ReverseTurnControls ? moveInput.X : rollInput);
             strafeValue = (ReverseTurnControls ? rollInput : moveInput.X);
 
             parsedMoveInput = new Vector3(strafeValue, turnValue, -moveInput.Z);
+
+            Log($"turnValue: {turnValue}");
+            Log($"strafeValue: {strafeValue}");
+            Log($"parsedMoveInput: {parsedMoveInput}");
         }
     }
 }

@@ -27,7 +27,7 @@ namespace IngameScript
 
         bool legsEnabled = true;
 
-        MovementInfo moveInfo = new MovementInfo();
+        static MovementInfo moveInfo = new MovementInfo();
         Vector3 lastMovementDirection = Vector3.Zero;
         Vector3 movement = Vector3.Zero;
 
@@ -37,8 +37,6 @@ namespace IngameScript
         static bool crouchOverride = false;
 
         bool isTurning, isWalking;
-
-        static bool limp = false;
 
         static double animationStepCounter = 0;
 
@@ -75,6 +73,7 @@ namespace IngameScript
 
         public void UpdateLegs()
         {
+            Log("-- Legs --");
             crouched = crouchOverride || moveInput.Y < 0;
 
             // delta calculations
@@ -148,8 +147,9 @@ namespace IngameScript
             turnValue = lastMovementDirection.Y;
             isTurning = turnValue != 0 && animationStepCounterDelta != 0;
 
-            isWalking = (movement * new Vector3(1, 0, 1)).LengthSquared() > 0; // animationStepCounterDelta.Absolute() > 0;
+            isWalking = (movement * new Vector3(0, 0, 1)).LengthSquared() > 0; // animationStepCounterDelta.Absolute() > 0;
             Log($"is turning: {isTurning}");
+            Log($"is crouching: {crouched}");
             Log($"is walking: {isWalking}");
             Log($"is flying : {isInFlight}");
             Log($"is jumping: {jumping}");
@@ -169,9 +169,23 @@ namespace IngameScript
                 (crouched ? Animation.Crouch : Animation.Idle);*/
             Log($"animation: {activeAnimation}");
 
+            // motion
+            moveInfo.Walking = (isWalking && (!isTurning || !SteeringTakesPriority));
+            moveInfo.Turning = !moveInfo.Walking && isTurning;
+            moveInfo.Strafing = (movement.X != 0);
+            moveInfo.Idle = !moveInfo.Walking && !moveInfo.Turning && !moveInfo.Strafing;
+
+            // states
+            moveInfo.Flying = isInFlight;
+            moveInfo.Crouched = crouched;
+
+            // values
             moveInfo.Direction = lastMovementDirection;
             moveInfo.Movement = movement;
             moveInfo.Delta = delta;
+            Log($"moveInfo: Direction={moveInfo.Direction}, Movement={moveInfo.Movement}, Delta={moveInfo.Delta}");
+            Log($"moveInfo: Walking={moveInfo.Walking}, Turning={moveInfo.Turning}, Strafing={moveInfo.Strafing}");
+            Log($"moveInfo: Idle={moveInfo.Idle}; Flying={moveInfo.Flying}, Crouched={moveInfo.Crouched}");
 
             if (legsEnabled)
                 foreach (var leg in legs.Values)

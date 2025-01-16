@@ -43,8 +43,8 @@ namespace IngameScript
                         return new CrabLegGroup();
                     case 5:
                         return new DigitigradeLegGroup();
-                    /*case 9:
-                        return new TestLegGroup();*/
+                    case 9:
+                        return new TestLegGroup();
                     default:
                         StaticWarn("Leg Type Not Supported!", $"Leg type {type} is not supported!");
                         return new HumanoidLegGroup();
@@ -70,6 +70,7 @@ namespace IngameScript
                 BlockType.GyroscopeElevation,
                 BlockType.GyroscopeRoll,
                 BlockType.GyroscopeStabilization,
+                BlockType.GyroscopeStop,
                 BlockType.Thruster
             };
 
@@ -111,6 +112,11 @@ namespace IngameScript
                             if (!(block is IMyMotorStator))
                                 break; // Liars!
                             blockType = BlockType.Quad;
+                            break;
+                        case "s":
+                            if (!(block is IMyMotorStator))
+                                break;
+                            blockType = BlockType.Strafe;
                             break;
                         /* Arm */
                         case "ap":
@@ -234,7 +240,7 @@ namespace IngameScript
                 return null;
             }
 
-            public static bool IsLegJoint(FetchedBlock block)
+            public static bool IsLegJoint(FetchedBlock block) // pretty sure this is duplicate of IsForLeg, but is used in AutoNaming instead of fetching blocks...?
             {
                 switch (block.Type)
                 {
@@ -242,6 +248,7 @@ namespace IngameScript
                     case BlockType.Knee:
                     case BlockType.Foot:
                     case BlockType.Quad:
+                    case BlockType.Strafe:
                         return true;
                     default:
                         return false;
@@ -256,6 +263,7 @@ namespace IngameScript
                     case BlockType.Knee:
                     case BlockType.Foot:
                     case BlockType.Quad:
+                    case BlockType.Strafe:
                     case BlockType.LandingGear:
                         return true;
                     default:
@@ -370,6 +378,7 @@ namespace IngameScript
                     case BlockType.Knee:
                     case BlockType.Foot: // if its a joint, create it and add it appropriately
                     case BlockType.Quad:
+                    case BlockType.Strafe:
                         if (block.Block is IMyPistonBase)
                         {
                             if (block.Side == BlockSide.Left)
@@ -405,6 +414,12 @@ namespace IngameScript
                                     leg.LeftQuadStators.Add(joint);
                                 else
                                     leg.RightQuadStators.Add(joint);
+                                break;
+                            case BlockType.Strafe:
+                                if (block.Side == BlockSide.Left)
+                                    leg.LeftStrafeStators.Add(joint);
+                                else
+                                    leg.RightStrafeStators.Add(joint);
                                 break;
                         }
                         break;

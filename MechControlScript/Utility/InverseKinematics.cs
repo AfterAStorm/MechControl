@@ -24,7 +24,7 @@ namespace IngameScript
     {
         public class InverseKinematics
         {
-            public static LegAngles CalculateLeg(double thighLength, double calfLength, double x, double y)
+            public static LegAngles CalculateLegOld(double thighLength, double calfLength, double x, double y)
             {
                 double distance = Math.Sqrt(Math.Pow(x, 2) + Math.Pow(y, 2));
 
@@ -56,6 +56,119 @@ namespace IngameScript
                     KneeDegrees = (180 - angle1),
                     FeetDegrees = 0
                 };
+            }
+
+            /// <summary>
+            /// Calculate leg angles for a 2 jointed leg, such as humanoid
+            /// </summary>
+            /// <remarks>The quad angle is always returned as zero</remarks>
+            /// <param name="thighLength"></param>
+            /// <param name="calfLength"></param>
+            /// <param name="x">x+ is right (forwards), x- is left (backwards)</param>
+            /// <param name="y">y+ is down, y- is up</param>
+            /// <returns></returns>
+            public static LegAngles Calculate2Joint2D(double thighLength, double calfLength, double x, double y)
+            {
+                LegAngles angles = new LegAngles();
+
+                // find difference from zero
+                double distance2 = Math.Pow(x, 2) + Math.Pow(y, 2);
+                double distance = Math.Sqrt(distance2);
+
+                // get angle to point
+                double atan = Math.Atan2(-x, y); // inverse x so x+ is "forwards"
+
+                // check if the length is too far for the joint to reach
+                if (thighLength + calfLength < distance)
+                {
+                    angles.HipDegrees = atan.ToDegrees();
+                    angles.FeetDegrees = -angles.HipDegrees;
+                    return angles;
+                }
+
+                double thighLength2 = Math.Pow(thighLength, 2);
+                double calfLength2 = Math.Pow(calfLength, 2);
+
+                // calculate ratio and then angle
+                // i pulled this from some source, it works!
+                // something something inverse cos rule or whatever
+
+                // edit: it uses the law of cosine to solve for gamma
+                double cosAngle0 =
+                    (distance2 + thighLength2 - calfLength2) / (2 * distance * thighLength);
+                double angle0 = Math.Acos(cosAngle0);
+
+                double cosAngle1 =
+                    (calfLength2 + thighLength2 - distance2) / (2 * calfLength * thighLength);
+                double angle1 = Math.Acos(cosAngle1);
+
+                // assign values
+                angles.HipDegrees = atan.ToDegrees() - angle0.ToDegrees();
+                angles.KneeDegrees = 180 - angle1.ToDegrees();
+                angles.FeetDegrees = -angles.HipDegrees - angles.KneeDegrees; // undo above
+
+                return angles;
+            }
+
+            /// <summary>
+            /// Calculate leg angles for a 2 jointed leg, such as humanoid
+            /// </summary>
+            /// <remarks>The quad angle is always returned as zero</remarks>
+            /// <param name="thighLength"></param>
+            /// <param name="calfLength"></param>
+            /// <param name="x">x+ is right (forwards), x- is left (backwards)</param>
+            /// <param name="y">y+ is down, y- is up</param>
+            /// <param name="z">z</param>
+            /// <returns></returns>
+            public static LegAngles Calculate2Joint3D(double thighLength, double calfLength, double x, double y, double z)
+            {
+                // calculate extra y space because z move it
+                // y is in/out
+                // x is up/down
+                // z is for/backward
+                // we turn the y and z length into right triangle
+                // and solve for hypotenuse
+                // and take that minus y to get the extra length
+                // and add that to our current y to offset it correctly
+                var side = Math.Sqrt(Math.Pow(y, 2) + Math.Pow(z, 2));
+                var remaining = side - y;
+                y += remaining;
+
+                var angles = Calculate2Joint2D(thighLength, calfLength, x, y);
+
+                // waterfall of angles
+                angles.FeetDegrees = angles.KneeDegrees;
+                angles.KneeDegrees = angles.HipDegrees;
+                angles.HipDegrees = Math.Atan2(z, y).ToDegrees();
+                return angles;
+            }
+
+            /// <summary>
+            /// Find the required distance where the knee is x radians
+            /// </summary>
+            /// <param name="kneeRadians"></param>
+            /// <returns></returns>
+            public static double FindDistanceWhereKnee(double thighLength, double calfLength, double kneeRadians)
+            {
+                // to solve:
+                // top = calfLength^2 + thighLength^2 - x^2
+                // bottom = 2 * calfLength * thighLength
+                // pi - kneeRadians = cos^-1([top - x] / [bottom])
+                // 
+
+                // find top/bottom
+                double topLeft = Math.Pow(calfLength, 2) + Math.Pow(thighLength, 2);
+                double bottom = 2 * calfLength * thighLength;
+
+                // find pi - kneeRadians
+                double targetAngle = Math.PI - kneeRadians;
+
+                // remove acos and use inverse + multiply bottom + get -x^2 by itself
+                // [top - x^2] / [bottom] = cos(targetAngle)
+                double right = -Math.Cos(targetAngle) * bottom + topLeft;
+                double answer = Math.Sqrt(right);
+
+                return answer;
             }
         }
     }

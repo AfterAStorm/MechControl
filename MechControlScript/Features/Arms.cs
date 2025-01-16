@@ -36,6 +36,7 @@ namespace IngameScript
 
         public void UpdateArms()
         {
+            Log("-- Arms --");
             armPitch = armsEnabled  ? - rotationInput.X : 0;
             armYaw = armsEnabled ? rotationInput.Y : 0;
 

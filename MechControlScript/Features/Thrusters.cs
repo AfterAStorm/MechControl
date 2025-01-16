@@ -41,6 +41,7 @@ namespace IngameScript
 
         public void UpdateThrusters()
         {
+            Log("-- Thrusters --");
             Log($"thruster mode:", ThrusterBehavior);
             Log($"moveInput.Y:", moveInput.Y);
 

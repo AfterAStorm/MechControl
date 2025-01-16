@@ -24,7 +24,7 @@ namespace IngameScript
     {
         public class SpideroidLegGroup : CrabLegGroup
         {
-            protected override double DirectionMultiplier => -1d;
+            public override double AnimationSpeedMultiplier => -1;
             protected override LegAngles LegAnglesOffset => new LegAngles(0, 90, 0, 0);
         }
     }

@@ -26,9 +26,7 @@ namespace IngameScript
         {
             public override double AnimationSpeedMultiplier => -1;
 
-            protected override double KneeOffset => -15d;
-
-            protected override LegAngles LegAnglesMultiplier => LegAngles.One;
+            protected override LegAngles LegAnglesMultiplier => LegAngles.MinusOne;
         }
     }
 }

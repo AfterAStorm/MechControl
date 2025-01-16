@@ -37,7 +37,7 @@ namespace IngameScript
 
             public int LegType;
             public bool HipsInverted = false, KneesInverted = false, FeetInverted = false, QuadInverted = false; // we define = false because they aren't set anymore (deprecated) TODO: REMOVE
-            public double HipOffsets, KneeOffsets, FootOffsets, QuadOffsets;
+            public double HipOffsets, KneeOffsets, FootOffsets, QuadOffsets, StrafeOffsets;
 
             public double ThighLength, CalfLength;
 
@@ -46,6 +46,9 @@ namespace IngameScript
 
             public double AnimationSpeed;// => WalkCycleSpeed;
             public double CrouchSpeed;
+
+            public double StandingHeight => Program.StandingHeight;
+            public double Lean => moveInfo.Movement.Z != 0 ? AccelerationLean : StandingLean;
 
             private int defaultValue;
             public bool Default => defaultValue <= 0;
@@ -101,6 +104,7 @@ CalfLength=2.5
                 ini.Set("Leg", "KneeOffsets", KneeOffsets);
                 ini.Set("Leg", "FootOffsets", FootOffsets);
                 ini.Set("Leg", "QuadOffsets", QuadOffsets);
+                // StrafeOffsets?
 
                 ini.Set("Leg", "StepLength", StepLength);
                 ini.Set("Leg", "StepHeight", StepHeight);
@@ -128,14 +132,15 @@ CalfLength=2.5
                     KneeOffsets = ini.Get("Leg", "KneeOffsets").ToDouble(0),//DefaultKneeOffsets),
                     FootOffsets = ini.Get("Leg", "FootOffsets").ToDouble(0),//DefaultFeetOffsets),
                     QuadOffsets = ini.Get("Leg", "QuadOffsets").ToDouble(0),//DefaultQuadOffsets),
+                    StrafeOffsets = 0,
 
                     /*HipsInverted = ini.Get("Leg", "HipsInverted").ToBoolean(),
                     KneesInverted = ini.Get("Leg", "KneesInverted").ToBoolean(),
                     FeetInverted = ini.Get("Leg", "FeetInverted").ToBoolean(),
                     QuadInverted = ini.Get("Leg", "QuadInverted").ToBoolean(),*/
 
-                    ThighLength = ini.Get("Leg", "ThighLength").ToDouble(2.5d),
-                    CalfLength = ini.Get("Leg", "CalfLength").ToDouble(2.5d),
+                    ThighLength = ini.Get("Leg", "ThighLength").ToDouble(1d),//2.5d),
+                    CalfLength = ini.Get("Leg", "CalfLength").ToDouble(1d),//2.5d),
 
                     StepLength = ini.Get("Leg", "StepLength").ToDouble(1),
                     StepHeight = ini.Get("Leg", "StepHeight").ToDouble(1),
