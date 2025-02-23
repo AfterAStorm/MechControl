@@ -38,7 +38,7 @@ namespace IngameScript
 
                 // calculate offsets
                 double baseHeight = InverseKinematics.FindDistanceWhereKnee(thighLength, calfLength, MathHelper.ToRadians(45)) * Configuration.StandingHeight; //Math.Sqrt(2) * 1.25 * Configuration.StandingHeight;
-                double maxHeight = InverseKinematics.FindDistanceWhereKnee(thighLength, calfLength, MathHelper.ToRadians(80));
+                double maxHeight = InverseKinematics.FindDistanceWhereKnee(thighLength, calfLength, MathHelper.ToRadians(80)) * Configuration.StandingHeight;
                 double crouchHeight = InverseKinematics.FindDistanceWhereKnee(thighLength, calfLength, MathHelper.ToRadians(90));
 
                 double deltaStepHeight   = -(maxHeight - baseHeight); // find the difference to reach said target angle

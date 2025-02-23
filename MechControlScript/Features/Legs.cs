@@ -193,6 +193,16 @@ namespace IngameScript
                     leg.Animation = activeAnimation;
                     leg.Update(moveInfo);
                 }
+
+            if (inputVisual && debugPanel != null)
+            {
+                debugPanel.ContentType = ContentType.SCRIPT;
+                var frame = debugPanel.DrawFrame();
+
+
+
+                frame.Dispose();
+            }
         }
     }
 }

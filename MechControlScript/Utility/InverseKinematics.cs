@@ -120,8 +120,9 @@ namespace IngameScript
             /// <param name="y">y+ is down, y- is up</param>
             /// <param name="z">z</param>
             /// <returns></returns>
-            public static LegAngles Calculate2Joint3D(double thighLength, double calfLength, double x, double y, double z)
+            public static LegAngles Calculate2Joint3D(double thighLength, double calfLength, double x, double y, double z, double zOffset=0)
             {
+
                 // calculate extra y space because z move it
                 // y is in/out
                 // x is up/down
@@ -130,16 +131,27 @@ namespace IngameScript
                 // and solve for hypotenuse
                 // and take that minus y to get the extra length
                 // and add that to our current y to offset it correctly
+                //z *= Math.Cos(zOffset * Math.PI / 180);
+                //double zRadians = zOffset.ToRadians();
+                //z -= Math.Sin(zRadians) * Math.Sqrt(2) * 2;
                 var side = Math.Sqrt(Math.Pow(y, 2) + Math.Pow(z, 2));
-                var remaining = side - y;
-                y += remaining;
+                //var remaining = side - y;
+                //y += remaining;
+                y = side;
+
+                // y = y + (side - y)
+                // y = side
+
+                // cos(x) = adj/hyp
+                // hypcos(x) = adj
 
                 var angles = Calculate2Joint2D(thighLength, calfLength, x, y);
 
                 // waterfall of angles
                 angles.FeetDegrees = angles.KneeDegrees;
                 angles.KneeDegrees = angles.HipDegrees;
-                angles.HipDegrees = Math.Atan2(z, y).ToDegrees();
+                Log($"atan2: {z} / {y}");
+                angles.HipDegrees = Math.Atan2(z, y).ToDegrees();// + zOffset;
                 return angles;
             }
 

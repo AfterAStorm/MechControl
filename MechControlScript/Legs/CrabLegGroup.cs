@@ -50,12 +50,15 @@ namespace IngameScript
 
                 // calculate values
                 double inverseMultiplier = LegAnglesMultiplier.HipDegrees;
-                double leftX = Configuration.Lean * inverseMultiplier;
-                double rightX = Configuration.Lean * inverseMultiplier;
-                double leftY = baseHeight;
-                double rightY = baseHeight;
-                double leftZ = 0;
-                double rightZ = 0;
+                double leftX = Configuration.Lean * inverseMultiplier + Configuration.XOffset;
+                double rightX = Configuration.Lean * inverseMultiplier + Configuration.XOffset;
+                double leftY = baseHeight + Configuration.YOffset; //- Math.Sin(Configuration.HipOffsets.ToRadians());
+                double rightY = baseHeight + Configuration.YOffset;
+
+                double leftZ = Configuration.ZOffset;//(42 * Math.Atan(Configuration.HipOffsets.ToRadians()) + 42 * Math.PI) / 25; // Configuration.HipOffsets.ToRadians() * (thighLength + calfLength) * Math.PI / 4;//leftY + (Math.Sqrt(Math.Pow(leftY, 2) + Math.Pow(2, 2))) - leftY;
+                Log($"y, z: {leftY}, {leftZ}");
+                //-Math.Sin(Configuration.HipOffsets.ToRadians());
+                double rightZ = Configuration.ZOffset;//Math.Sqrt(2);// -Math.Sin(Configuration.HipOffsets.ToRadians()) * baseHeight;
                 double leftStrafe = 0;
                 double rightStrafe = 0;
 
@@ -90,19 +93,19 @@ namespace IngameScript
                 if (info.Strafing)
                 {
                     leftX += Math.Max(-Math.Sin(Math.PI * 2 * leftStep + Math.PI / 2), 0) * .5 * Configuration.StepHeight;
-                    rightX += Math.Max(-Math.Sin(Math.PI * 2 * rightStep + Math.PI / 2), 0) * .5 * Configuration.StepHeight;
-                    leftY += -Math.Sin(Math.PI * 2 * leftStep) * .5 * Configuration.StepLength;
-                    rightY += -Math.Sin(Math.PI * 2 * leftStep) * .5 * Configuration.StepLength;
+                    rightX += Math.Max(Math.Sin(Math.PI * 2 * rightStep + Math.PI / 2), 0) * .5 * Configuration.StepHeight;
+                    leftY += -Math.Sin(Math.PI * 2 * (AnimationStep - IdOffset)) * .5 * Configuration.StepLength;
+                    rightY += Math.Sin(Math.PI * 2 * (AnimationStep - IdOffset)) * .5 * Configuration.StepLength;
                 }
 
                 leftX += deltaCrouchHeight;
                 rightX += deltaCrouchHeight;
 
                 // calculate ik
-                Log($"left: {leftX} {leftY}");
-                Log($"right: {rightX} {rightY}");
-                LegAngles left = InverseKinematics.Calculate2Joint3D(thighLength, calfLength, leftX, leftY, leftZ);
-                LegAngles right = InverseKinematics.Calculate2Joint3D(thighLength, calfLength, rightX, rightY, rightZ);
+                Log($"left: {leftX} {leftY} {leftZ}");
+                Log($"right: {rightX} {rightY} {rightZ}");
+                LegAngles left = InverseKinematics.Calculate2Joint3D(thighLength, calfLength, leftX, leftY, leftZ, Configuration.HipOffsets);
+                LegAngles right = InverseKinematics.Calculate2Joint3D(thighLength, calfLength, rightX, rightY, rightZ, Configuration.HipOffsets);
 
                 /*left.FeetDegrees = left.KneeDegrees;
                 left.KneeDegrees = left.HipDegrees;
@@ -111,6 +114,9 @@ namespace IngameScript
 
                 left.HipDegrees = Math.Atan2(leftZ, leftY).ToDegrees();
                 right.HipDegrees = Math.Atan2(rightZ, rightY).ToDegrees();*/
+
+                /*left.HipDegrees += Configuration.HipOffsets;
+                right.HipDegrees += Configuration.HipOffsets;*/
 
                 left.QuadDegrees = -left.KneeDegrees - left.FeetDegrees + 90;
                 right.QuadDegrees = -right.KneeDegrees - right.FeetDegrees + 90;

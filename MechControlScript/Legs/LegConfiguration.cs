@@ -38,6 +38,7 @@ namespace IngameScript
             public int LegType;
             public bool HipsInverted = false, KneesInverted = false, FeetInverted = false, QuadInverted = false; // we define = false because they aren't set anymore (deprecated) TODO: REMOVE
             public double HipOffsets, KneeOffsets, FootOffsets, QuadOffsets, StrafeOffsets;
+            public double XOffset, YOffset, ZOffset;
 
             public double ThighLength, CalfLength;
 
@@ -67,7 +68,9 @@ namespace IngameScript
                 Log($"Comparing LegConfiguration {this} with {obj}");
                 LegConfiguration a = (LegConfiguration)obj;
                 Log($"Comparison: {this.LegType} == {a.LegType} && {this.HipOffsets} == {a.HipOffsets} && {this.KneeOffsets} == {a.KneeOffsets} && {this.FootOffsets} == {a.FootOffsets} && {this.QuadOffsets} == {a.QuadOffsets} && {this.ThighLength} == {a.ThighLength} &&{this.CalfLength} == {a.CalfLength} && {this.StepLength} == {a.StepLength} &&{this.StepHeight} == {a.StepHeight} && {this.AnimationSpeed} == {a.AnimationSpeed} && {this.CrouchSpeed} == {a.CrouchSpeed}");
-                return LegType == a.LegType && HipOffsets == a.HipOffsets && KneeOffsets == a.KneeOffsets && FootOffsets == a.FootOffsets && QuadOffsets == a.QuadOffsets && ThighLength == a.ThighLength && CalfLength == a.CalfLength && StepLength == a.StepLength && StepHeight == a.StepHeight && AnimationSpeed == a.AnimationSpeed && CrouchSpeed == a.CrouchSpeed;
+                return LegType == a.LegType && HipOffsets == a.HipOffsets && KneeOffsets == a.KneeOffsets && FootOffsets == a.FootOffsets && QuadOffsets == a.QuadOffsets && ThighLength == a.ThighLength && CalfLength == a.CalfLength && StepLength == a.StepLength && StepHeight == a.StepHeight && AnimationSpeed == a.AnimationSpeed && CrouchSpeed == a.CrouchSpeed &&
+                    
+                    XOffset == a.XOffset && YOffset == a.YOffset && ZOffset == a.ZOffset;
             }
 
             public override int GetHashCode()
@@ -104,6 +107,9 @@ CalfLength=2.5
                 ini.Set("Leg", "KneeOffsets", KneeOffsets);
                 ini.Set("Leg", "FootOffsets", FootOffsets);
                 ini.Set("Leg", "QuadOffsets", QuadOffsets);
+                ini.Set("Leg", "XOffset", XOffset);
+                ini.Set("Leg", "YOffset", YOffset);
+                ini.Set("Leg", "ZOffset", ZOffset);
                 // StrafeOffsets?
 
                 ini.Set("Leg", "StepLength", StepLength);
@@ -132,6 +138,9 @@ CalfLength=2.5
                     KneeOffsets = ini.Get("Leg", "KneeOffsets").ToDouble(0),//DefaultKneeOffsets),
                     FootOffsets = ini.Get("Leg", "FootOffsets").ToDouble(0),//DefaultFeetOffsets),
                     QuadOffsets = ini.Get("Leg", "QuadOffsets").ToDouble(0),//DefaultQuadOffsets),
+                    XOffset = ini.Get("Leg", "XOffset").ToDouble(0),
+                    YOffset = ini.Get("Leg", "YOffset").ToDouble(0),
+                    ZOffset = ini.Get("Leg", "ZOffset").ToDouble(0),
                     StrafeOffsets = 0,
 
                     /*HipsInverted = ini.Get("Leg", "HipsInverted").ToBoolean(),

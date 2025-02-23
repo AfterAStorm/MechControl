@@ -41,6 +41,8 @@ namespace IngameScript
         int lastInstructions = 0;
         int maxInstructions = 0;
 
+        bool inputVisual = false;
+
         // Logging //
 
         public static void Log(params object[] messages)
