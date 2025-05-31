@@ -64,10 +64,10 @@ namespace IngameScript
         // - Joints
 
         static float AccelerationMultiplier = 1f;   // how fast the mech accelerates, 1f is normal, .5f is half speed, 2f is double speed
-        static float DecelerationMultiplier = 1.5f; // how fast the mech decelerates, same as above
+        static float DecelerationMultiplier = 1f; // how fast the mech decelerates, same as above
 
-        static float MaxRPM = float.MaxValue; // 60f is the max speed for rotors
-                                              // *Configure motor limits in the blocks themselves!* //
+        /*static float MaxRPM = float.MaxValue; // 60f is the max speed for rotors
+                                              // *Configure motor limits in the blocks themselves!* // */
 
         static float TorsoTwistSensitivity = 1f; // how sensitive the torso twist is, can also change based on the rotor's torque
         static float TorsoTwistMaxSpeed = 60f; // maximum RPM of the torso twist rotor;
@@ -149,7 +149,7 @@ namespace IngameScript
             AccelerationMultiplier = GetConfig("AccelerationMultiplier").ToSingle(1f);
             DecelerationMultiplier = GetConfig("DecelerationMultiplier").ToSingle(1.5f);
 
-            MaxRPM = GetConfig("MaxRPM").ToSingle(3600f);
+            //MaxRPM = GetConfig("MaxRPM").ToSingle(3600f);
 
             TorsoTwistSensitivity = GetConfig("TorsoTwistSensitivity").ToSingle(1f);
             TorsoTwistMaxSpeed = GetConfig("TorsoTwistMaxSpeed").ToSingle(3600f);

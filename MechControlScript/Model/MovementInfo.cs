@@ -61,15 +61,21 @@ namespace IngameScript
             /// </summary>
             public bool Walking { get; set; }
 
+            public float Walk { get; set; }
+
             /// <summary>
             /// Is the mech "strafing"
             /// </summary>
             public bool Strafing { get; set; }
 
+            public float Strafe { get; set; }
+
             /// <summary>
             /// Is the mech turning (takes into account SteeringTakesPriority)
             /// </summary>
             public bool Turning { get; set; }
+
+            public float Turn { get; set; }
 
             /// <summary>
             /// Is the mech "flying"?

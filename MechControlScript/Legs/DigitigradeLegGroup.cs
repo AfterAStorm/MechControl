@@ -2,439 +2,187 @@
 using Sandbox.ModAPI.Ingame;
 using Sandbox.ModAPI.Interfaces;
 using SpaceEngineers.Game.ModAPI.Ingame;
-using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Collections.Immutable;
+using System.Collections;
 using System.Linq;
 using System.Text;
-using VRage;
+using System;
 using VRage.Collections;
-using VRage.Game;
 using VRage.Game.Components;
 using VRage.Game.GUI.TextPanel;
-using VRage.Game.ModAPI.Ingame;
 using VRage.Game.ModAPI.Ingame.Utilities;
+using VRage.Game.ModAPI.Ingame;
 using VRage.Game.ObjectBuilders.Definitions;
+using VRage.Game;
+using VRage;
 using VRageMath;
+using System.Collections.Immutable;
 
 namespace IngameScript
 {
-    partial class Program
-    {
-        public class DigitigradeLegGroup : LegGroup
+	partial class Program
+	{
+        public class DigitigradeLegGroup : QuadLegGroup
         {
             protected virtual LegAngles LegAnglesMultiplier => LegAngles.One;
             protected virtual LegAngles LeftAnglesMultiplier => new LegAngles(-1, 1, 1, 1, 1);
-            protected virtual LegAngles RightAnglesMultiplier => new LegAngles(1, 1, 1, 1, -1);
+            protected virtual LegAngles RightAnglesMultiplier => new LegAngles(1, 1, 1, 1, 1);
 
-            protected override LegAngles CalculateAngles(double step)
+            float Radius, RadiusAnkle;
+
+            float XOffset;
+            float YOffset;
+            float ZOffset;
+
+            float StandingHeight, StandingDistance;
+            float StepLength;
+            float StepHeight;
+            float CrouchHeight;
+
+            float step = 0;
+
+            public override void Initialize()
             {
-                step *= -1;
-                step = step.Modulo(1);
-                bool crouch = Animation == Animation.Crouch || Animation == Animation.CrouchWalk;
+                base.Initialize();
 
-                // shamelessly borrowed from https://opentextbooks.clemson.edu/wangrobotics/chapter/inverse-kinematics/
-                // the equations anyway
-                // x and y are flipped, yay!
+                float radius = (float)(ThighLength + CalfLength);
+                float radiusAnkle = (float)(ThighLength + CalfLength + AnkleLength);
+                Radius = radius;
+                RadiusAnkle = radiusAnkle;
 
-                // Should cache this, but pff
-                double thighLength = Configuration.ThighLength >= 0 ? Configuration.ThighLength :
-                    (LeftHipStators.Count > 0 && LeftKneeStators.Count > 0 ? Vector3.Distance(LeftHipStators[0].Stator.GetPosition(), LeftKneeStators[0].Stator.GetPosition()) :
-                    (RightHipStators.Count > 0 && RightKneeStators.Count > 0 ? Vector3.Distance(RightHipStators[0].Stator.GetPosition(), RightKneeStators[0].Stator.GetPosition()) : 0));//2.5f;
-                double calfLength = Configuration.CalfLength >= 0 ? Configuration.CalfLength :
-                    (LeftFootStators.Count > 0 && LeftKneeStators.Count > 0 ? Vector3.Distance(LeftFootStators[0].Stator.GetPosition(), LeftKneeStators[0].Stator.GetPosition()) :
-                    (RightFootStators.Count > 0 && RightKneeStators.Count > 0 ? Vector3.Distance(RightFootStators[0].Stator.GetPosition(), RightKneeStators[0].Stator.GetPosition()) : 0));//2.5f;
+                XOffset = Configuration.VariableXOffset.GetMetersOf(GridSize, 0, radius);
+                YOffset = Configuration.VariableYOffset.GetMetersOf(GridSize, 0, 0);
+                ZOffset = Configuration.VariableZOffset.GetMetersOf(GridSize, 0, 0);
 
-                double maxDistance = (thighLength + calfLength);
-                //Log($"Lengths: {thighLength} {calfLength}");
+                StandingHeight = Configuration.VariableStandingHeight.GetMetersOf(GridSize, 0, radiusAnkle);
+                StandingDistance = Configuration.VariableStandingDistance.GetMetersOf(GridSize, 0, 0);
 
-                // with sin, 0-2 is 0 to 1 to 0, while 2-4 is 0 to -1 to 0
-                //        /\        .     1
-                //       /  \      .
-                // _____/____\____.__     0
-                //     .      \  /
-                //    .        \/        -1
-                //      0  1  2 3 4
-
-                // with cos, 0-2 is 1 to 0 to -1, while 2-4 is -1 to 0 to 1
-                //     .\        /.       1
-                //    .  \      /  .
-                //  _.____\____/___ .     0
-                //  .      \  /      .
-                // .        \/        .  -1
-                //      0 1  2 3 4
-
-                // Instead of converting (step / 4 * 360) to radians, we just multiply the number of radians instead! It's TECHNICALLY more accurate too (the output of Sin/Cos at least)!
-                double stepPercent = step;
-                double sin = Math.Sin(stepPercent * 2 * Math.PI);
-                double cos = Math.Cos(stepPercent * 2 * Math.PI);
-
-                /*double x = sin * 1.5d * Configuration.StepLengthMultiplier + (Animation == Animation.Walk || Animation == Animation.CrouchWalk ? AccelerationLean : StandingLean);
-                double y = MathHelper.Clamp(((maxDistance) - cos * (maxDistance) + StandingHeight - (crouch ? 1 : 0)), double.MinValue, 3d + StandingHeight - (crouch ? 1 : 0));*/
-
-                double crouchAdditive = -MathHelper.Clamp(CrouchWaitTime, 0, .5);//crouch ? -MathHelper.Clamp(CrouchWaitTime, 0, .9) : 0; //-.9d : 0;
-                Log($"crouchAdditive: {crouchAdditive}; isTurn: {Animation == Animation.Turn}");
-
-                double stepHeight = Configuration.StepHeight - .6d;
-                double standingHeight = StandingHeight - .35d;
-
-                double lean = (Animation == Animation.Walk || Animation == Animation.CrouchWalk ? AccelerationLean : StandingLean) + .5;
-                double x =
-                    -sin * Configuration.StepLength + lean;
-                double y = MathHelper.Clamp(
-                    // value
-                    cos * (1) + .5 + 2 + standingHeight + 1.5 + .25,
-
-                    // min/max
-                    0,
-                    2 + stepHeight + standingHeight + 1 + .25
-                ) + crouchAdditive;
-
-                if (Animation == Animation.Turn) // makes math above redudant, but rarely used so it's fine!
+                if (StandingHeight > radius)
                 {
-                    x = lean;
-                    y = MathHelper.Clamp(
-                        cos * (stepHeight + 0.5d) + 2 + .5 + standingHeight + 1,
-                        0,
-                        2 + stepHeight + standingHeight + 1);
-                    //y = MathHelper.Clamp(sin, double.MinValue, 0) * (maxDistance) + maxDistance;
+                    StaticWarn("Out of Bounds: Standing Height", $"The standing height of leg group {Configuration.Id} is out of bounds, maximum: {radius:f3}m");
                 }
 
-                if (jumping && !crouch)
+                // x^2 + y^2 = r^2
+                float maxStepLength = (float)Math.Sqrt(Math.Pow(radius, 2) - Math.Pow(StandingHeight, 2)); // sqrt(r^2 - y^2) = x
+
+                StepLength = Configuration.VariableStepLength.GetMetersOf(GridSize, 0, maxStepLength);
+                StepHeight = Configuration.VariableStepHeight.GetMetersOf(GridSize, 0, StandingHeight);
+                CrouchHeight = Configuration.VariableCrouchHeight.GetMetersOf(GridSize, 0, StandingHeight);
+
+                if (StepLength > maxStepLength)
                 {
-                    x = lean;
-                    y = thighLength + calfLength;
+                    StaticWarn("Out of Bounds: Step Length", $"The step length of leg group {Configuration.Id} is out of bounds, maximum: {maxStepLength:f3}m");
                 }
 
-                Log($"xy: {x}, {y}, {maxDistance};;;{standingHeight}");
-
-                return InverseKinematics.CalculateLegOld(thighLength, calfLength, x, y);
-
-                /*double targetY = Math.Sin((stepPercent * 360).ToRadians()) * 1.5f * Configuration.StepLengthMultiplier - 1; // x  //Math.Sin((AnimationStep / 4 * 360).ToRadians()) * 3;
-                double targetX = (MathHelper.Clamp(3 - Math.Cos((stepPercent * 360).ToRadians()) * 2f, float.MinValue, 2.5f) + 1 - (crouch ? 2 : 0)) * StandingHeight; // y  //Math.Cos((AnimationStep / 4 * 360).ToRadians()) * 3;
-                if (Animation == Animation.Turn) // makes math above redudant, but rarely used so it's fine!
+                if (StepHeight > StandingHeight)
                 {
-                    targetY = -1;
-                    targetX = MathHelper.Clamp(Math.Sin((stepPercent * 360).ToRadians()), double.MinValue, 0) * 1.5f + 3;
+                    StaticWarn("Out of Bounds: Step Height", $"The step height of leg group {Configuration.Id} is out of bounds, maximum: {StandingHeight:f3}m");
                 }
-
-                Log(targetY, targetX);
-                double distance = Math.Sqrt(
-                        Math.Pow(targetX - 0, 2) +
-                        Math.Pow(targetY - 0, 2)
-                );
-                distance = MathHelper.Clamp(distance, 0, maxDistance);
-
-                double diameter = Math.Atan(targetY / targetX);
-                double leftDiameter = Math.Acos(
-                    (Math.Pow(thighLength, 2) + Math.Pow(distance, 2) - Math.Pow(calfLength, 2))
-                    /
-                    (2 * thighLength * distance)
-                );
-                double hipAngle = diameter - leftDiameter;
-
-                double diameter2 = Math.Acos(
-                    (Math.Pow(thighLength, 2) + Math.Pow(calfLength, 2) - Math.Pow(distance, 2))
-                    /
-                    (2 * thighLength * calfLength)
-                );
-                double kneeAngle = Math.PI - diameter2;
-
-                double footDeg =
-                    (180 - hipAngle.ToDegrees() - kneeAngle.ToDegrees());
-
-                return new LegAngles() { 
-                    HipDegrees = hipAngle.ToDegrees(),
-                    KneeDegrees = kneeAngle.ToDegrees(),
-                    FeetDegrees = footDeg
-                };*/
-                /*double hipDeg =
-                    (!crouch ? -60 : -70) + Math.Sin(step / 4 * Math.PI * 2) * 15d * (crouch ? .5d : 1d);
-                double kneeDeg =
-                    hipDeg - Math.Cos(step / 4 * Math.PI * 2) * 20d * (crouch ? .5d : 1d) - (!crouch ? 30d : 40d);
-                double footDeg =
-                    (kneeDeg - hipDeg);
-                return new double[] { hipDeg, kneeDeg, footDeg };*/
+                else if (CrouchHeight + StepHeight > StandingHeight)
+                {
+                    StaticWarn("Out of Bounds: Crouch Height", $"The crouch height of leg group {Configuration.Id} is out of bounds, maximum {StandingHeight - StepHeight:f3}m");
+                }
             }
+
+            private double phase, x, y;
 
             public override void Update(MovementInfo info)
             {
                 base.Update(info);
+                step = (step + (1 / 60f) / 2f) % 1f;
+                Log("Step:", step);
 
-                // get lengths
-                double thighLength = CalculatedThighLength;
-                double calfLength = CalculatedCalfLength;
+                // left
+                phase = step;
+                x =
+                    AnimationDirectionMultiplier * Math.Sin(2 * phase * Math.PI) * StepLength * info.Walk
+                    + XOffset;
+                y = YOffset + StandingHeight - CrouchHeight * CrouchWaitTime - Math.Max(Math.Sin(2 * phase * Math.PI + Math.PI / 2d), 0) * StepHeight * Math.Abs(AbsMax(info.Walk, AbsMax(info.Strafe, info.Turn)));
 
-                // calculate offsets
-                double baseHeight = InverseKinematics.FindDistanceWhereKnee(thighLength, calfLength, MathHelper.ToRadians(70)) * Configuration.StandingHeight; //Math.Sqrt(2) * 1.25 * Configuration.StandingHeight;
-                double maxHeight = InverseKinematics.FindDistanceWhereKnee(thighLength, calfLength, MathHelper.ToRadians(80));
-                double crouchHeight = InverseKinematics.FindDistanceWhereKnee(thighLength, calfLength, MathHelper.ToRadians(90));
-
-                double deltaStepHeight = -(maxHeight - baseHeight); // find the difference to reach said target angle
-                double deltaCrouchHeight = -(crouchHeight - baseHeight) * CrouchWaitTime;
-
-                // calculate values
-                double inverseMultiplier = LegAnglesMultiplier.HipDegrees;
-                double leftX = Configuration.Lean * inverseMultiplier;
-                double rightX = Configuration.Lean * inverseMultiplier;
-                double leftY = baseHeight;
-                double rightY = baseHeight;
-                double leftStrafe = 0;
-                double rightStrafe = 0;
-
-                double leftStep = AnimationStep + IdOffset;
-                double rightStep = AnimationStepOffset + IdOffset;
-
-                if (info.Idle)
+                if (customTarget != Vector3D.Zero)
                 {
-
+                    x = customTarget.X;
+                    y = customTarget.Y;
                 }
+                LegAngles leftAngles = InverseKinematics.Calculate2Joint2D(ThighLength, CalfLength, x, y);
+                Log("Left  Target:");
+                Log("X:", x);
+                Log("Y:", y);
+                Log("Left  Angles:");
+                Log("Hip :", leftAngles.HipDegrees);
+                Log("Knee:", leftAngles.KneeDegrees);
+                Log("Foot:", leftAngles.FeetDegrees);
+                Log("Quad:", leftAngles.QuadDegrees);
 
-                if (info.Walking)
+                // right
+
+                // a^2 + b^2 = c^2
+                // a^2 = c^2 - b^2
+
+                double distanceFromCenter = Math.Sqrt(Math.Pow(AnkleLength, 2) - Math.Pow(StandingDistance, 2));
+                Log("distanceFromCenter:", distanceFromCenter);
+
+                phase += .5f;
+                x =
+                    AnimationDirectionMultiplier * Math.Sin(2 * phase * Math.PI) * StepLength * info.Walk
+                    + XOffset;
+                y = YOffset
+                    + StandingHeight
+                    - CrouchHeight * CrouchWaitTime
+                    - Math.Max(Math.Sin(2 * phase * Math.PI + Math.PI / 2d), 0) * StepHeight * Math.Abs(AbsMax(info.Walk, AbsMax(info.Strafe, info.Turn)));
+
+                if (customTarget != Vector3D.Zero)
                 {
-                    OffsetLegs = true;
-                    leftX += -Math.Sin(Math.PI * 2 * leftStep) * .5 * Configuration.StepLength;
-                    rightX += -Math.Sin(Math.PI * 2 * rightStep) * .5 * Configuration.StepLength;
-                    leftY -= Math.Max(-Math.Sin(Math.PI * 2 * leftStep + Math.PI / 2), 0) * deltaStepHeight * Configuration.StepHeight;
-                    rightY -= Math.Max(-Math.Sin(Math.PI * 2 * rightStep + Math.PI / 2), 0) * deltaStepHeight * Configuration.StepHeight;
+                    x = customTarget.X;
+                    y = customTarget.Y;
                 }
+                double toTarget = Math.Atan2(y, x) - Math.PI / 2;
+                Log("toTarget:", toTarget);
+                Vector2D fake = new Vector2D(x, y);
+                fake -= Vector2D.Normalize(fake) * StandingDistance;
+                fake += Vector2D.Normalize(new Vector2D(fake.Y, fake.X)) * distanceFromCenter;
 
-                if (info.Turning)
-                {
-                    OffsetLegs = true;
-                    leftY -= Math.Max(Math.Sin(Math.PI * 2 * leftStep), 0) * deltaStepHeight;
-                    rightY -= Math.Max(Math.Sin(Math.PI * 2 * rightStep), 0) * deltaStepHeight;
-                }
+                double fakeX = x + distanceFromCenter; //* Math.Sin(toTarget);
+                double fakeY = y - StandingDistance; //* Math.Cos(toTarget);
+                LegAngles rightAngles = InverseKinematics.Calculate2Joint2D(ThighLength, CalfLength, fakeX, fakeY);
 
-                if (info.Strafing)
-                {
-                    leftStrafe = -Math.Max(Math.Sin(Math.PI * 2 * -AnimationStep * inverseMultiplier * 3 / 4), 0) * 10;
-                    rightStrafe = Math.Max(Math.Sin(Math.PI * 2 * -AnimationStep * inverseMultiplier * 3 / 4 - Math.PI / 2), 0) * 10;
-                }
+                double a = Math.Sqrt(Math.Pow(fakeX, 2) + Math.Pow(fakeY, 2));
+                double b = AnkleLength;
+                double c = Math.Sqrt(Math.Pow(x, 2) + Math.Pow(y, 2));
+                double angle = Math.Acos(
+                    (Math.Pow(a, 2) + Math.Pow(b, 2) - Math.Pow(c, 2))
+                    /
+                    (2 * a * b)
+                ).ToDegrees();
+                Log("solved angle:", angle);
+                double littleGuy = (180 - rightAngles.HipDegrees.Absolute() - rightAngles.KneeDegrees.Absolute());
+                double finalAngle = angle - littleGuy;
+                Log("final angle:", finalAngle);
+                rightAngles.FeetDegrees -= finalAngle;
+                rightAngles.QuadDegrees = finalAngle;
 
-                leftY -= deltaCrouchHeight;
-                rightY -= deltaCrouchHeight;
+                // remaining
+                // sin(theta) = opp/hyp
+                // theta = asin(opp/hyp)
+                /*double offset = Math.Asin((y - AnkleLength) / AnkleLength).ToDegrees();
+                rightAngles.FeetDegrees -= offset;
+                rightAngles.QuadDegrees = offset;*/
+                //double sideLength = 
 
-                // calculate ik
-                Log($"left: {leftX} {leftY}");
-                Log($"right: {rightX} {rightY}");
-                LegAngles left = InverseKinematics.Calculate2Joint2D(thighLength, calfLength, leftX, leftY);
-                LegAngles right = InverseKinematics.Calculate2Joint2D(thighLength, calfLength, rightX, rightY);
-
-                double angle = -Math.Atan(.5 / 1.5).ToDegrees();
-                left.FeetDegrees += angle;
-                left.QuadDegrees = -angle;
-                right.FeetDegrees += angle;
-                right.QuadDegrees = -angle;
-
-                left.StrafeDegrees = leftStrafe;
-                right.StrafeDegrees = rightStrafe;
+                Log("Right Target:");
+                Log("X:", x, fakeX);
+                Log("Y:", y, fakeY);
+                Log("Right Angles:");
+                Log("Hip :", rightAngles.HipDegrees);
+                Log("Knee:", rightAngles.KneeDegrees);
+                Log("Foot:", rightAngles.FeetDegrees);
+                Log("Quad:", rightAngles.QuadDegrees);
 
                 SetAngles(
-                    left * LeftAnglesMultiplier * LegAnglesMultiplier,
-                    right * RightAnglesMultiplier * LegAnglesMultiplier
+                    LegAnglesMultiplier * LeftAnglesMultiplier  * leftAngles ,
+                    LegAnglesMultiplier * RightAnglesMultiplier * rightAngles
                 );
-                HandlePistons();
-                /*base.Update(info);
-                Log($"- DigitigradeLegGroup Update -");
-                Log($"Step: {AnimationStep}");
-                Log($"Info: {info.Direction} {info.Movement}");
-
-                LegAngles leftAngles, rightAngles;
-                switch (Animation)
-                {
-                    default:
-                    case Animation.Crouch:
-                    case Animation.Idle:
-                        leftAngles = CalculateAngles(AnimationStep + (OffsetLegs ? IdOffset : 0));
-                        rightAngles = CalculateAngles(AnimationStepOffset + (OffsetLegs ? IdOffset : 0));
-                        break;
-                    case Animation.CrouchTurn:
-                    case Animation.Turn:
-                        OffsetLegs = false;
-                        leftAngles = CalculateAngles(AnimationStep + IdOffset);
-                        OffsetLegs = true;
-                        rightAngles = CalculateAngles(AnimationStepOffset + IdOffset);
-                        break;
-                    case Animation.CrouchWalk:
-                    case Animation.Walk:
-                        OffsetLegs = true;
-                        leftAngles = CalculateAngles(AnimationStep + IdOffset);
-                        rightAngles = CalculateAngles(AnimationStepOffset + IdOffset);
-                        break;
-                    case Animation.Force:
-                        leftAngles = CalculateAngles(AnimationStep);
-                        rightAngles = CalculateAngles(AnimationStep);
-                        break;
-                }
-
-                leftAngles *= new LegAngles(-1, -1, 1);
-                rightAngles *= new LegAngles(-1, -1, 1);
-
-                //leftAngles.FeetRadians = Math.PI - leftAngles.HipRadians - leftAngles.KneeRadians;
-                //rightAngles.FeetRadians = Math.PI - rightAngles.HipRadians - rightAngles.KneeRadians;
-                leftAngles.KneeDegrees -= 10;
-                rightAngles.KneeDegrees -= 10;
-
-                double foot = leftAngles.FeetDegrees;
-
-                leftAngles.FeetDegrees = -(leftAngles.HipDegrees + leftAngles.KneeDegrees);//180 - leftAngles.HipDegrees.Absolute180() - leftAngles.KneeDegrees.Absolute180();
-                rightAngles.FeetDegrees = -(rightAngles.HipDegrees + rightAngles.KneeDegrees);
-
-                /*double stepMultiplier = AnimationStep.Modulo(2) / 2;
-                if (stepMultiplier > .5)
-                    stepMultiplier = (.5 - stepMultiplier) * 2;
-                else
-                    stepMultiplier *= 2;* /
-
-                leftAngles.FeetDegrees *= -leftAngles.KneeDegrees / 45 * .5;
-                rightAngles.FeetDegrees *= -rightAngles.KneeDegrees / 45 * .5;
-                leftAngles.FeetDegrees += 25;
-                rightAngles.FeetDegrees += 25;
-
-                leftAngles.QuadDegrees = (leftAngles.HipDegrees + leftAngles.KneeDegrees + leftAngles.FeetDegrees);
-                rightAngles.QuadDegrees = -(rightAngles.HipDegrees + rightAngles.KneeDegrees + rightAngles.FeetDegrees);
-
-                Log("Digitigrade (left):", leftAngles.HipDegrees, leftAngles.KneeDegrees, leftAngles.FeetDegrees);
-                Log("Digitigrade (right):", rightAngles.HipDegrees, rightAngles.KneeDegrees, rightAngles.FeetDegrees);
-                SetAngles(leftAngles * new LegAngles(1, -1, -1, 1), rightAngles * new LegAngles(-1, -1, -1, -1));*/
             }
-
-            /*public override void Update(Vector3 forwardsDeltaVec, Vector3 movementVector, double delta)
-            {
-                double forwardsDelta = forwardsDeltaVec.Z;
-                forwardsDelta *= -1;
-                base.Update(forwardsDeltaVec, movementVector, delta);
-                Log($"Step: {AnimationStep} {Animation} {delta}");
-
-                if (!Animation.IsCrouch())
-                    CrouchWaitTime = Math.Max(0, jumping ? 0 : CrouchWaitTime - delta * 2);
-                else
-                    CrouchWaitTime = Math.Min(.9d, CrouchWaitTime + delta * 2);
-                Log($"CrouchWaitTime: {CrouchWaitTime}");
-
-                LegAngles leftAngles, rightAngles;
-                switch (Animation)
-                {
-                    default:
-                    case Animation.Crouch:
-                    case Animation.Idle:
-                        /*if ((AnimationStep - 0).Absolute() < .025 || (AnimationStep - 2).Absolute() < .025 || AnimationWaitTime <= 0)
-                        {
-                            AnimationStep = 0;
-                            AnimationWaitTime = 0;
-                        }
-                        else
-                        {
-                            OffsetLegs = true;
-                            Animation = Animation.Walk;
-                        }* /
-                        AnimationStep = 0;
-                        AnimationWaitTime = 0;
-                        leftAngles = CalculateAngles(AnimationStep + (OffsetLegs ? IdOffset : 0));
-                        rightAngles = CalculateAngles(AnimationStepOffset + (OffsetLegs ? IdOffset : 0));
-                        foreach (IMyLandingGear lg in LeftGears.Concat(RightGears))
-                        {
-                            lg.Enabled = true;
-                            lg.AutoLock = true;
-                        }
-                        break;
-                    case Animation.CrouchTurn:
-                    case Animation.Turn:
-                        AnimationStep += delta * 2;
-                        leftAngles = CalculateAngles(AnimationStep + IdOffset);
-                        OffsetLegs = true;
-                        rightAngles = CalculateAngles(AnimationStepOffset + IdOffset);
-                        break;
-                    case Animation.CrouchWalk:
-                    case Animation.Walk:
-                        if (AnimationWaitTime == 0)
-                            AnimationStep = 0d;
-                        AnimationWaitTime += forwardsDelta * Configuration.AnimationSpeed;
-                        //double absWaitTime = Math.Abs(AnimationWaitTime);
-                        /*if (absWaitTime < 2f)
-                        {
-                            foreach (IMyLandingGear lg in LeftGears.Concat(RightGears))
-                            {
-                                lg.Enabled = true;
-                                lg.AutoLock = false;
-                                lg.Unlock();
-                            }
-                            leftAngles = CalculateAngles(AnimationStep);
-                            rightAngles = CalculateAngles(AnimationStepOffset);//(AnimationWaitTime + 2f) % 4);
-                            break;
-                        }*/
-                        /*else if (absWaitTime <= 2.3f)
-                        {
-                            leftAngles = CalculateAngles(AnimationStep);
-                            rightAngles = CalculateAngles(3f * (AnimationWaitTime / Math.Abs(AnimationWaitTime)));
-                            break;
-                        }* /
-                        // else
-                        leftAngles = CalculateAngles(AnimationStep + IdOffset);
-                        rightAngles = CalculateAngles(AnimationStepOffset + IdOffset);
-
-                        /* this might be wrong now
-                         *   3
-                         * 2   4
-                         *   1
-                         * * /
-
-                        bool leftGears = AnimationStep < 3f && AnimationStep > 1f;
-                        foreach (IMyLandingGear lg in LeftGears)
-                        {
-                            if (!leftGears)
-                                lg.Unlock();
-                            lg.Enabled = true;
-                            lg.AutoLock = true;
-                        }
-
-                        foreach (IMyLandingGear lg in RightGears)
-                        {
-                            if (leftGears)
-                                lg.Unlock();
-                            lg.Enabled = true;
-                            lg.AutoLock = true;
-                        }
-                        break;
-                    case Animation.Force:
-                        leftAngles = CalculateAngles(AnimationStep);
-                        rightAngles = CalculateAngles(AnimationStep);
-                        break;
-                }
-
-                leftAngles *= new LegAngles(-1, -1, 1);
-                rightAngles *= new LegAngles(-1, -1, 1);
-
-                //leftAngles.FeetRadians = Math.PI - leftAngles.HipRadians - leftAngles.KneeRadians;
-                //rightAngles.FeetRadians = Math.PI - rightAngles.HipRadians - rightAngles.KneeRadians;
-                leftAngles.KneeDegrees -= 10;
-                rightAngles.KneeDegrees -= 10;
-
-                double foot = leftAngles.FeetDegrees;
-
-                leftAngles.FeetDegrees = -(leftAngles.HipDegrees + leftAngles.KneeDegrees);//180 - leftAngles.HipDegrees.Absolute180() - leftAngles.KneeDegrees.Absolute180();
-                rightAngles.FeetDegrees = -(rightAngles.HipDegrees + rightAngles.KneeDegrees);
-
-                double stepMultiplier = AnimationStep.Modulo(2) / 2;
-                if (stepMultiplier > .5)
-                    stepMultiplier = (.5 - stepMultiplier) * 2;
-                else
-                    stepMultiplier *= 2;
-
-                leftAngles.FeetDegrees *= -leftAngles.KneeDegrees / 45 * .5;
-                rightAngles.FeetDegrees *= -rightAngles.KneeDegrees / 45 * .5;
-                leftAngles.FeetDegrees += 25;
-                rightAngles.FeetDegrees += 25;
-
-                leftAngles.QuadDegrees = (leftAngles.HipDegrees + leftAngles.KneeDegrees + leftAngles.FeetDegrees);
-                rightAngles.QuadDegrees = -(rightAngles.HipDegrees + rightAngles.KneeDegrees + rightAngles.FeetDegrees);
-
-                Log("Digitigrade (left):", leftAngles.HipDegrees, leftAngles.KneeDegrees, leftAngles.FeetDegrees);
-                Log("Digitigrade (right):", rightAngles.HipDegrees, rightAngles.KneeDegrees, rightAngles.FeetDegrees);
-                SetAngles(leftAngles * new LegAngles(1, -1, 1, 1), rightAngles * new LegAngles(-1, 1, -1, 1));
-            }*/
         }
     }
 }

@@ -61,6 +61,14 @@ namespace IngameScript
                 StrafeDegrees = 0;
             }
 
+            public void Shift()
+            {
+                QuadDegrees = FeetDegrees;
+                FeetDegrees = KneeDegrees;
+                KneeDegrees = HipDegrees;
+                HipDegrees = 0;
+            }
+
             public static LegAngles operator +(LegAngles left, LegAngles right) => new LegAngles(left.HipDegrees + right.HipDegrees, left.KneeDegrees + right.KneeDegrees, left.FeetDegrees + right.FeetDegrees, left.QuadDegrees + right.QuadDegrees, left.StrafeDegrees + right.StrafeDegrees);
             public static LegAngles operator *(LegAngles left, LegAngles right) => new LegAngles(left.HipDegrees * right.HipDegrees, left.KneeDegrees * right.KneeDegrees, left.FeetDegrees * right.FeetDegrees, left.QuadDegrees * right.QuadDegrees, left.StrafeDegrees * right.StrafeDegrees);
         }

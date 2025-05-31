@@ -29,6 +29,8 @@ namespace IngameScript
         public static Program Singleton { get; private set; }
         public const string Version = "1.1.0-beta"; // major.minor.patch
 
+        public static readonly double TicksPerSecond = 1d / 60d;
+
         // Diagnostics //
 
         static IMyTextPanel debugPanel = null;
@@ -217,7 +219,7 @@ namespace IngameScript
         public void Fetch()
         {
             // diag
-            if (debugMode)
+            //if (debugMode)
                 debugPanel = Singleton.GridTerminalSystem.GetBlockWithName(DebugLCD) as IMyTextPanel;
 
             // blocks
@@ -313,6 +315,9 @@ namespace IngameScript
             }
             if (legs.Count <= 0) // how bruh gonna *walk* without legza?
                 Warn("No Legs Found!", "Failed to find any leg groups!\nNeed help setting up? Check the documentation at github.com/AfterAStorm/MechControl/wiki");
+
+            foreach (var warn in setupWarnings)
+                Warn(warn.Title, warn.Info);
 
             // handle arguments / commands
             if (!string.IsNullOrEmpty(argument))

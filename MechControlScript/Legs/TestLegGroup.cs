@@ -40,8 +40,8 @@ namespace IngameScript
                 Log($"Info: {info.Direction} {info.Movement}");
 
                 // get lengths
-                double thighLength = CalculatedThighLength;
-                double calfLength = CalculatedCalfLength;
+                double thighLength = AACalculatedThighLength;
+                double calfLength = AACalculatedCalfLength;
 
                 // calculate offsets
                 double baseHeight = InverseKinematics.FindDistanceWhereKnee(thighLength, calfLength, MathHelper.ToRadians(65)) * Configuration.StandingHeight; //Math.Sqrt(2) * 1.25 * Configuration.StandingHeight;

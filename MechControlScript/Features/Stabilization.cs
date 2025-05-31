@@ -112,7 +112,15 @@ namespace IngameScript
                 Log("No reference for stabilization");
                 return;
             }
-            Vector3D gravity = reference.GetTotalGravity();
+            Vector3D gravity;
+            try
+            {
+                gravity = reference.GetTotalGravity();
+            }
+            catch
+            {
+                return; // not in gravity well, prevent script crash
+            }
             if (gravity == null || reference.WorldMatrix == null)
                 return;
             Vector3D up = reference.WorldMatrix.Up;

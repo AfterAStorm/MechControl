@@ -76,7 +76,7 @@ namespace IngameScript
                 double distance = Math.Sqrt(distance2);
 
                 // get angle to point
-                double atan = Math.Atan2(-x, y); // inverse x so x+ is "forwards"
+                double atan = Math.Atan2(x, y); // inverse x so x+ is "forwards"
 
                 // check if the length is too far for the joint to reach
                 if (thighLength + calfLength < distance)

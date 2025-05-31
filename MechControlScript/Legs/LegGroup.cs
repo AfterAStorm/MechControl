@@ -29,20 +29,20 @@ namespace IngameScript
 
             public new LegConfiguration Configuration;
 
-            public List<LegJoint> LeftHipStators = new List<LegJoint>();
-            public List<LegJoint> RightHipStators = new List<LegJoint>();
+            public List<LegJoint> AALeftHipStators = new List<LegJoint>();
+            public List<LegJoint> AARightHipStators = new List<LegJoint>();
 
-            public List<LegJoint> LeftKneeStators = new List<LegJoint>();
-            public List<LegJoint> RightKneeStators = new List<LegJoint>();
+            public List<LegJoint> AALeftKneeStators = new List<LegJoint>();
+            public List<LegJoint> AARightKneeStators = new List<LegJoint>();
 
-            public List<LegJoint> LeftFootStators = new List<LegJoint>();
-            public List<LegJoint> RightFootStators = new List<LegJoint>();
+            public List<LegJoint> AALeftFootStators = new List<LegJoint>();
+            public List<LegJoint> AARightFootStators = new List<LegJoint>();
 
-            public List<LegJoint> LeftQuadStators = new List<LegJoint>();
-            public List<LegJoint> RightQuadStators = new List<LegJoint>();
+            public List<LegJoint> AALeftQuadStators = new List<LegJoint>();
+            public List<LegJoint> AARightQuadStators = new List<LegJoint>();
 
-            public List<LegJoint> LeftStrafeStators = new List<LegJoint>();
-            public List<LegJoint> RightStrafeStators = new List<LegJoint>();
+            public List<LegJoint> AALeftStrafeStators = new List<LegJoint>();
+            public List<LegJoint> AARightStrafeStators = new List<LegJoint>();
 
             public List<FetchedBlock> LeftPistons = new List<FetchedBlock>();
             public List<FetchedBlock> RightPistons = new List<FetchedBlock>();
@@ -51,7 +51,7 @@ namespace IngameScript
             public List<IMyLandingGear> RightGears = new List<IMyLandingGear>();
 
             public List<IMyTerminalBlock> AllBlocks =>
-                LeftHipStators.Concat(RightHipStators).Concat(LeftKneeStators).Concat(RightKneeStators).Concat(LeftFootStators).Concat(RightFootStators).Concat(LeftQuadStators).Concat(RightQuadStators).Select(j => j.Stator as IMyTerminalBlock).Concat(LeftPistons.Concat(RightPistons).Select(p => p.Block)).Concat(LeftGears.Concat(RightGears)).ToList();
+                AALeftHipStators.Concat(AARightHipStators).Concat(AALeftKneeStators).Concat(AARightKneeStators).Concat(AALeftFootStators).Concat(AARightFootStators).Concat(AALeftQuadStators).Concat(AARightQuadStators).Select(j => j.Stator as IMyTerminalBlock).Concat(LeftPistons.Concat(RightPistons).Select(p => p.Block)).Concat(LeftGears.Concat(RightGears)).ToList();
 
             //public IMyCameraBlock[] InclineCameras; // TODO: use these, give them a purpose!
 
@@ -63,11 +63,11 @@ namespace IngameScript
             public bool OffsetLegs = true;
             public Animation Animation = Animation.Idle;
             public double AnimationWaitTime = 0;
-            public virtual double AnimationSpeedMultiplier => 1;
+            public virtual double AnimationDirectionMultiplier => 1;
 
-            public double CalculatedThighLength = 0;
-            public double CalculatedCalfLength = 0;
-            public double CalculatedQuadLength = 0;
+            public double AACalculatedThighLength = 0;
+            public double AACalculatedCalfLength = 0;
+            public double AACalculatedQuadLength = 0;
 
             protected double HipInversedMultiplier = 1;
             protected double KneeInversedMultiplier = 1;
@@ -92,9 +92,22 @@ namespace IngameScript
                 FeetInversedMultiplier = Configuration.FeetInverted ? -1 : 1;
                 QuadInversedMultiplier = Configuration.QuadInverted ? -1 : 1;
 
-                CalculatedThighLength = Configuration.ThighLength > 0 ? Configuration.ThighLength : FindThighLength();
-                CalculatedCalfLength = Configuration.CalfLength > 0 ? Configuration.CalfLength : FindCalfLength(); // lower leg, or upper leg for spiders
-                CalculatedQuadLength = Configuration.ThighLength > 0 ? Configuration.ThighLength : FindQuadLength(); // lower lower leg, or lower leg for spiders
+                AACalculatedThighLength = Configuration.ThighLength > 0 ? Configuration.ThighLength : FindThighLength();
+                AACalculatedCalfLength = Configuration.CalfLength > 0 ? Configuration.CalfLength : FindCalfLength(); // lower leg, or upper leg for spiders
+                AACalculatedQuadLength = Configuration.ThighLength > 0 ? Configuration.ThighLength : FindQuadLength(); // lower lower leg, or lower leg for spiders
+            }
+
+            public virtual void AddLeftRightBlock<T>(List<T> leftBlocks, List<T> rightBlocks, T block, BlockSide side)
+            {
+                if (side == BlockSide.Left)
+                    leftBlocks.Add(block);
+                else
+                    rightBlocks.Add(block);
+            }
+
+            public virtual void AddBlock(FetchedBlock block)
+            {
+
             }
 
             public override void SetConfiguration(object config)
@@ -115,10 +128,10 @@ namespace IngameScript
                 //motor.Stator.TargetVelocityRPM = (float)MathHelper.Clamp((-rightAngle * motor.Configuration.InversedMultiplier).AbsoluteDegrees(motor.Stator.BlockDefinition.SubtypeName.Contains("Hinge")) - motor.Stator.Angle.ToDegrees() - offset - motor.Configuration.Offset, -MaxRPM, MaxRPM);
             }
 
-            protected virtual void SetAnglesOf(List<LegJoint> stators, double angle, double offset)
+            protected virtual void SetAnglesOf(List<LegJoint> stators, double angle, double offset, bool rotorInvert = false)
             {
                 foreach (var motor in stators)
-                    motor.SetAngle((angle + /*(motor.IsRotor ?*/ offset /*: -offset)*/ + motor.Configuration.Offset) * motor.Configuration.InversedMultiplier);
+                    motor.SetAngle((angle + /*(motor.IsRotor ?*/ offset * (rotorInvert && motor.IsRotor ? -1 : 1)/*: -offset)*/ + motor.Configuration.Offset) * motor.Configuration.InversedMultiplier);
             }
 
             /*protected virtual void SetAngles(double leftHipDegrees, double leftKneeDegrees, double leftFeetDegrees, double leftQuadDegrees, double rightHipDegrees, double rightKneeDegrees, double rightFeetDegrees, double rightQuadDegrees)
@@ -132,53 +145,53 @@ namespace IngameScript
 
             protected virtual void SetAngles(LegAngles leftAngles, LegAngles rightAngles)
             {
-                SetAnglesOf(LeftHipStators, leftAngles.HipDegrees, Configuration.HipOffsets); // +hip goes the right way
-                SetAnglesOf(RightHipStators, rightAngles.HipDegrees, -Configuration.HipOffsets);
+                SetAnglesOf(AALeftHipStators, leftAngles.HipDegrees, Configuration.HipOffsets); // +hip goes the right way
+                SetAnglesOf(AARightHipStators, rightAngles.HipDegrees, -Configuration.HipOffsets);
 
-                SetAnglesOf(LeftKneeStators, leftAngles.KneeDegrees, -Configuration.KneeOffsets); //Configuration.HipOffsets + Configuration.KneeOffsets); // why is this different from hip
-                SetAnglesOf(RightKneeStators, rightAngles.KneeDegrees, -Configuration.KneeOffsets);//-Configuration.HipOffsets + Configuration.KneeOffsets);
+                SetAnglesOf(AALeftKneeStators, leftAngles.KneeDegrees, -Configuration.KneeOffsets); //Configuration.HipOffsets + Configuration.KneeOffsets); // why is this different from hip
+                SetAnglesOf(AARightKneeStators, rightAngles.KneeDegrees, -Configuration.KneeOffsets);//-Configuration.HipOffsets + Configuration.KneeOffsets);
 
-                SetAnglesOf(LeftFootStators, leftAngles.FeetDegrees, -Configuration.FootOffsets);// + Configuration.KneeOffsets); // what?
-                SetAnglesOf(RightFootStators, rightAngles.FeetDegrees, -Configuration.FootOffsets);// + Configuration.KneeOffsets);
+                SetAnglesOf(AALeftFootStators, leftAngles.FeetDegrees, -Configuration.FootOffsets);// + Configuration.KneeOffsets); // what?
+                SetAnglesOf(AARightFootStators, rightAngles.FeetDegrees, -Configuration.FootOffsets);// + Configuration.KneeOffsets);
 
-                SetAnglesOf(LeftQuadStators, leftAngles.QuadDegrees, -Configuration.QuadOffsets);
-                SetAnglesOf(RightQuadStators, rightAngles.QuadDegrees, -Configuration.QuadOffsets);
+                SetAnglesOf(AALeftQuadStators, leftAngles.QuadDegrees, -Configuration.QuadOffsets);
+                SetAnglesOf(AARightQuadStators, rightAngles.QuadDegrees, -Configuration.QuadOffsets);
 
-                SetAnglesOf(LeftStrafeStators, leftAngles.StrafeDegrees, -Configuration.StrafeOffsets);
-                SetAnglesOf(RightStrafeStators, rightAngles.StrafeDegrees, -Configuration.StrafeOffsets);
+                SetAnglesOf(AALeftStrafeStators, leftAngles.StrafeDegrees, -Configuration.StrafeOffsets);
+                SetAnglesOf(AARightStrafeStators, rightAngles.StrafeDegrees, -Configuration.StrafeOffsets);
             }
 
             protected double FindThighLength()
             {
-                if (LeftHipStators.Count == 0 || LeftKneeStators.Count == 0)
+                if (AALeftHipStators.Count == 0 || AALeftKneeStators.Count == 0)
                 {
-                    if (RightHipStators.Count == 0 || RightKneeStators.Count == 0)
+                    if (AARightHipStators.Count == 0 || AARightKneeStators.Count == 0)
                         return 2.5d;
-                    return (RightHipStators.First().Stator.GetPosition() - RightKneeStators.First().Stator.GetPosition()).Length();
+                    return (AARightHipStators.First().Stator.GetPosition() - AARightKneeStators.First().Stator.GetPosition()).Length();
                 }
-                return (LeftHipStators.First().Stator.GetPosition() - LeftKneeStators.First().Stator.GetPosition()).Length();
+                return (AALeftHipStators.First().Stator.GetPosition() - AALeftKneeStators.First().Stator.GetPosition()).Length();
             }
 
             protected double FindCalfLength()
             {
-                if (LeftFootStators.Count == 0 || LeftKneeStators.Count == 0)
+                if (AALeftFootStators.Count == 0 || AALeftKneeStators.Count == 0)
                 {
-                    if (RightFootStators.Count == 0 || RightKneeStators.Count == 0)
+                    if (AARightFootStators.Count == 0 || AARightKneeStators.Count == 0)
                         return 2.5d;
-                    return (RightFootStators.First().Stator.GetPosition() - RightKneeStators.First().Stator.GetPosition()).Length();
+                    return (AARightFootStators.First().Stator.GetPosition() - AARightKneeStators.First().Stator.GetPosition()).Length();
                 }
-                return (LeftFootStators.First().Stator.GetPosition() - LeftKneeStators.First().Stator.GetPosition()).Length();
+                return (AALeftFootStators.First().Stator.GetPosition() - AALeftKneeStators.First().Stator.GetPosition()).Length();
             }
 
             protected double FindQuadLength()
             {
-                if (LeftFootStators.Count == 0 || LeftQuadStators.Count == 0)
+                if (AALeftFootStators.Count == 0 || AALeftQuadStators.Count == 0)
                 {
-                    if (RightFootStators.Count == 0 || RightQuadStators.Count == 0)
+                    if (AARightFootStators.Count == 0 || AARightQuadStators.Count == 0)
                         return 2.5d;
-                    return (RightFootStators.First().Stator.GetPosition() - RightQuadStators.First().Stator.GetPosition()).Length();
+                    return (AARightFootStators.First().Stator.GetPosition() - AARightQuadStators.First().Stator.GetPosition()).Length();
                 }
-                return (LeftFootStators.First().Stator.GetPosition() - LeftQuadStators.First().Stator.GetPosition()).Length();
+                return (AALeftFootStators.First().Stator.GetPosition() - AALeftQuadStators.First().Stator.GetPosition()).Length();
             }
 
             /// <summary>
@@ -196,12 +209,12 @@ namespace IngameScript
             {
                 Log($"- {GetType().Name} (group {Configuration.Id}) -");
                 // Animate crouch
-                if (!Animation.IsCrouch() && !info.Crouched)
-                    CrouchWaitTime = Math.Max(0, jumping ? 0 : CrouchWaitTime - info.Delta * 2 * Configuration.CrouchSpeed * CrouchSpeed);
+                if (!info.Crouched)//!Animation.IsCrouch() && !info.Crouched)
+                    CrouchWaitTime = Math.Max(0, CrouchWaitTime - info.Delta * Configuration.CrouchSpeed);//CrouchWaitTime = Math.Max(0, jumping ? 0 : CrouchWaitTime - info.Delta * 2 * Configuration.CrouchSpeed * CrouchSpeed);
                 else
-                    CrouchWaitTime = Math.Min(1, CrouchWaitTime + info.Delta * 2 * Configuration.CrouchSpeed * CrouchSpeed);
+                    CrouchWaitTime = Math.Min(1, CrouchWaitTime + info.Delta * Configuration.CrouchSpeed);
 
-                AnimationStep = (animationStepCounter * Configuration.AnimationSpeed * AnimationSpeedMultiplier).Modulo(1);
+                AnimationStep = (animationStepCounter * Configuration.AnimationSpeed + (animationStepCounter > 0 ? IdOffset : 0)).Modulo(1);
             }
 
             public virtual void Update(Vector3 forwardsDeltaVec, Vector3 movementVector, double delta)
@@ -275,8 +288,8 @@ namespace IngameScript
 
             protected void HandlePistons(float multiplier = 1)
             {
-                HandlePistonGroup(LeftPistons, LeftHipStators, LeftKneeStators, LeftFootStators, ref leftLegCounter);
-                HandlePistonGroup(RightPistons, RightHipStators, RightKneeStators, RightFootStators, ref rightLegCounter);
+                HandlePistonGroup(LeftPistons, AALeftHipStators, AALeftKneeStators, AALeftFootStators, ref leftLegCounter);
+                HandlePistonGroup(RightPistons, AARightHipStators, AARightKneeStators, AARightFootStators, ref rightLegCounter);
             }
 
             #endregion

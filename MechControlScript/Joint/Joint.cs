@@ -62,13 +62,15 @@ namespace IngameScript
 
             public float GetRPMFor(double angle)
             {
-                angle = ClampDegrees(angle);
+                /*angle =*/ return (float)ClampDegrees(angle);
 
-                return (float)angle.Clamp(-MaxRPM, MaxRPM);
+                //return (float)angle.Clamp(-MaxRPM, MaxRPM);
             }
 
             public void SetRPM(float rotationsPerMinute)
             {
+                if (float.IsNaN(rotationsPerMinute) || float.IsInfinity(rotationsPerMinute))
+                    rotationsPerMinute = 0;
                 Stator.TargetVelocityRPM = rotationsPerMinute;// * .9f;
             }
 

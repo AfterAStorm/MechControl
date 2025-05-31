@@ -22,11 +22,10 @@ namespace IngameScript
 {
     partial class Program
     {
-        public class CrabLegGroup : SpideroidLegGroup
+        public class OldSpideroidLegGroup : OldCrabLegGroup
         {
             public override double AnimationDirectionMultiplier => -1;
-
-            protected override LegAngles LegAnglesOffset => LegAngles.Zero;
+            protected override LegAngles LegAnglesOffset => new LegAngles(0, 90, 0, 0);
         }
     }
 }

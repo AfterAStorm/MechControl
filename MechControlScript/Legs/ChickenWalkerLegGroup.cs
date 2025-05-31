@@ -24,7 +24,7 @@ namespace IngameScript
     {
         public class ChickenWalkerLegGroup : HumanoidLegGroup
         {
-            public override double AnimationSpeedMultiplier => -1;
+            public override double AnimationDirectionMultiplier => -1;
 
             protected override LegAngles LegAnglesMultiplier => LegAngles.MinusOne;
         }

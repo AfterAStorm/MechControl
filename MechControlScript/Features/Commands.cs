@@ -235,6 +235,7 @@ namespace IngameScript
                     testLegX = TryParseFloat(arguments[1]);
                     testLegY = TryParseFloat(arguments[2]);
                     testLegZ = TryParseFloat(arguments[3]);
+                    customTarget = new Vector3D(testLegX, testLegY, testLegZ);
                     break;
             }
         }

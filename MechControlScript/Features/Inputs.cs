@@ -24,8 +24,17 @@ namespace IngameScript
     {
         static List<IMyShipController> cockpits = new List<IMyShipController>();
 
-        Vector3 moveInput = Vector3.Zero;     // 
+        Vector3 moveInput = Vector3.Zero;     //
+        /// <summary>
+        /// X: Strafe
+        /// Y: Turn
+        /// Z: Forward
+        /// </summary>
         Vector3 parsedMoveInput = Vector3.Zero;
+        float parsedVerticalInput;
+        /// <summary>
+        /// ???
+        /// </summary>
         Vector2 rotationInput = Vector2.Zero; // MOUSE (gyro) => X is -pitch, Y is yaw
         float rollInput = 0f;                 // Q+E   (roll) => left is -, right is +
 
@@ -72,6 +81,8 @@ namespace IngameScript
             strafeValue = (ReverseTurnControls ? rollInput : moveInput.X);
 
             parsedMoveInput = new Vector3(strafeValue, turnValue, -moveInput.Z);
+            parsedVerticalInput = moveInput.Y;
+            Log("parsedVerticalInput", parsedVerticalInput);
 
             Log($"turnValue: {turnValue}");
             Log($"strafeValue: {strafeValue}");

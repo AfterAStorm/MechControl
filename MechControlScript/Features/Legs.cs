@@ -31,6 +31,8 @@ namespace IngameScript
         Vector3 lastMovementDirection = Vector3.Zero;
         Vector3 movement = Vector3.Zero;
 
+        public static Vector3D customTarget = Vector3D.Zero;
+
         static bool jumping = false;
         static double jumpTime = 0;
         static bool crouched = false;
@@ -50,7 +52,7 @@ namespace IngameScript
             return maxComponent;
         }
 
-        float AbsMax(float x, float y)
+        public static float AbsMax(float x, float y)
         {
             if (Math.Abs(x) > Math.Abs(y))
                 return x;
@@ -71,15 +73,91 @@ namespace IngameScript
                     leg.CrouchWaitTime = 1;
         }
 
+        /// <summary>
+        /// Determine a acceleration/deceleration multiplier based on a basis and direction
+        /// </summary>
+        float GetDirectionMultiplier(float direction, float from, float accel, float decel)
+        {
+            if (direction == 0)
+                return 0;
+            // if slowing down, return decel rate
+            if (from < 0 && direction > 0 || from > 0 && direction < 0)
+                return decel;
+            return accel; // otherwise return accel rate
+        }
+
+        float Translate(float current, float target, float accel, float decel) 
+        {
+            float direction = target - current;
+            if (Math.Abs(direction) < .08f)
+                return target;
+            if (target == 0)
+                return current + direction * DecelerationMultiplier * (float)TicksPerSecond;
+            return current + direction * AccelerationMultiplier * (float)TicksPerSecond;
+        }
+
         public void UpdateLegs()
         {
             Log("-- Legs --");
             crouched = crouchOverride || moveInput.Y < 0;
 
             // delta calculations
-            Vector3 moveDirection = (parsedMoveInput - movement);
+            Vector3 moveDirection = parsedMoveInput;//(parsedMoveInput - movement);
 
-            if (controller != null || AutoHalt)
+            // if key is released, go to 0 by default
+            //moveDirection.X = moveDirection.X == 0 ? -movement.X : moveDirection.X;
+            //moveDirection.Y = moveDirection.Y == 0 ? -movement.Y : moveDirection.Y;
+            //moveDirection.Z = moveDirection.Z == 0 ? -movement.Z : moveDirection.Z;
+
+            // move "movement"--current movement vector--if controller in use/auto halt
+            if (moveDirection != Vector3.Zero || AutoHalt)
+            {
+                /*movement.X = MathHelper.Clamp(
+                    movement.X + GetDirectionMultiplier(moveDirection.X, movement.X, AccelerationMultiplier, DecelerationMultiplier) * .5f * (float)delta, -1f, 1f);
+                movement.Y = MathHelper.Clamp(
+                    movement.Y + GetDirectionMultiplier(moveDirection.Y, movement.Y, AccelerationMultiplier, DecelerationMultiplier) * .5f * (float)delta, -1f, 1f);*/
+                movement.X = Translate(movement.X, moveDirection.X, AccelerationMultiplier, DecelerationMultiplier);
+                movement.Y = Translate(movement.Y, moveDirection.Y, AccelerationMultiplier, DecelerationMultiplier);
+                movement.Z = Translate(movement.Z, moveDirection.Z, AccelerationMultiplier, DecelerationMultiplier);
+                /*movement.Z = MathHelper.Clamp(
+                    movement.Z + GetDirectionMultiplier(moveDirection.Z, movement.Z, AccelerationMultiplier, DecelerationMultiplier) * .5f * (float)delta, -1f, 1f);*/
+            }
+            Log($"movement: {movement}");
+
+            moveInfo.Walk       = -movement.Z; // since -1 is forward, negative it so 1 is forward
+            moveInfo.Turn       = movement.Y;
+            moveInfo.Strafe     = movement.X;
+            moveInfo.Crouched   = parsedVerticalInput < 0;
+            moveInfo.Delta = 1 / 60f;
+
+            /// X: Strafe
+            /// Y: Turn
+            /// Z: Forward
+            // updating deltas
+            /*float maxComponent = MaxComponentOf(movement);
+
+            animationStepCounter += maxComponent * delta;*/
+            if (movement.LengthSquared() != 0)
+                animationStepCounter = (animationStepCounter + moveInfo.Delta * WalkCycleSpeed * .5f);
+            else
+            {
+                if (animationStepCounter > 1)
+                    animationStepCounter -= (animationStepCounter - 1); // return to terms of 0 to 1
+                if (animationStepCounter > .25 && animationStepCounter < .75)
+                    animationStepCounter = .5;
+                else
+                    animationStepCounter = 0;
+            }
+            Log($"animationStepCounter: {animationStepCounter}");
+
+            if (legsEnabled)
+                foreach (var leg in legs.Values)
+                {
+                    leg.Animation = activeAnimation;
+                    leg.Update(moveInfo);
+                }
+
+            /*if (controller != null || AutoHalt)
             {
                 // TODO: fix multipliers to work, currently walking backwards uses decel/acc in reverse
                 movement.X += moveDirection.X * (moveDirection.X > 0 ? AccelerationMultiplier : DecelerationMultiplier) * .3f * (float)delta;
@@ -167,7 +245,7 @@ namespace IngameScript
             activeAnimation = chosenAnimation;/*turning ? (crouched ? Animation.CrouchTurn : Animation.Turn) :
                 animationStepCounterDelta.Absolute() > 0 ? (crouched ? Animation.CrouchWalk : Animation.Walk) :
                 (crouched ? Animation.Crouch : Animation.Idle);*/
-            Log($"animation: {activeAnimation}");
+            /*Log($"animation: {activeAnimation}");
 
             // motion
             moveInfo.Walking = (isWalking && (!isTurning || !SteeringTakesPriority));
@@ -202,7 +280,7 @@ namespace IngameScript
 
 
                 frame.Dispose();
-            }
+            }*/
         }
     }
 }

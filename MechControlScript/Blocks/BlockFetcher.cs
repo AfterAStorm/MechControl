@@ -372,6 +372,7 @@ namespace IngameScript
             public static void AddToLeg(FetchedBlock block, LegGroup leg) // adds a fetched block to the leg
             {
                 Log($"AddToLeg Block {block.Block.CustomName} as {block.Type}");
+                leg.AddBlock(block);
                 switch (block.Type)
                 {
                     case BlockType.Hip:
@@ -393,33 +394,33 @@ namespace IngameScript
                         {
                             case BlockType.Hip:
                                 if (block.Side == BlockSide.Left)
-                                    leg.LeftHipStators.Add(joint);
+                                    leg.AALeftHipStators.Add(joint);
                                 else
-                                    leg.RightHipStators.Add(joint);
+                                    leg.AARightHipStators.Add(joint);
                                 break;
                             case BlockType.Knee:
                                 if (block.Side == BlockSide.Left)
-                                    leg.LeftKneeStators.Add(joint);
+                                    leg.AALeftKneeStators.Add(joint);
                                 else
-                                    leg.RightKneeStators.Add(joint);
+                                    leg.AARightKneeStators.Add(joint);
                                 break;
                             case BlockType.Foot:
                                 if (block.Side == BlockSide.Left)
-                                    leg.LeftFootStators.Add(joint);
+                                    leg.AALeftFootStators.Add(joint);
                                 else
-                                    leg.RightFootStators.Add(joint);
+                                    leg.AARightFootStators.Add(joint);
                                 break;
                             case BlockType.Quad:
                                 if (block.Side == BlockSide.Left)
-                                    leg.LeftQuadStators.Add(joint);
+                                    leg.AALeftQuadStators.Add(joint);
                                 else
-                                    leg.RightQuadStators.Add(joint);
+                                    leg.AARightQuadStators.Add(joint);
                                 break;
                             case BlockType.Strafe:
                                 if (block.Side == BlockSide.Left)
-                                    leg.LeftStrafeStators.Add(joint);
+                                    leg.AALeftStrafeStators.Add(joint);
                                 else
-                                    leg.RightStrafeStators.Add(joint);
+                                    leg.AARightStrafeStators.Add(joint);
                                 break;
                         }
                         break;

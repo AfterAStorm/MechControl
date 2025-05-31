@@ -54,8 +54,8 @@ namespace IngameScript
             foreach (var pair in legs)
             {
                 var group = pair.Value;
-                group.LeftHipStators.ForEach(j => IterateThroughJoint(stators, BlockType.Hip, j.Stator, $"L{pair.Key}+"));
-                group.RightHipStators.ForEach(j => IterateThroughJoint(stators, BlockType.Hip, j.Stator, $"R{pair.Key}+"));
+                group.AALeftHipStators.ForEach(j => IterateThroughJoint(stators, BlockType.Hip, j.Stator, $"L{pair.Key}+"));
+                group.AARightHipStators.ForEach(j => IterateThroughJoint(stators, BlockType.Hip, j.Stator, $"R{pair.Key}+"));
             }
             Reload();
         }
