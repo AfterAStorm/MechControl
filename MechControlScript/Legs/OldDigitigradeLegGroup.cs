@@ -39,12 +39,12 @@ namespace IngameScript
                 // x and y are flipped, yay!
 
                 // Should cache this, but pff
-                double thighLength = Configuration.ThighLength >= 0 ? Configuration.ThighLength :
+                double thighLength = 0;/*Configuration.ThighLength >= 0 ? Configuration.ThighLength :
                     (AALeftHipStators.Count > 0 && AALeftKneeStators.Count > 0 ? Vector3.Distance(AALeftHipStators[0].Stator.GetPosition(), AALeftKneeStators[0].Stator.GetPosition()) :
-                    (AARightHipStators.Count > 0 && AARightKneeStators.Count > 0 ? Vector3.Distance(AARightHipStators[0].Stator.GetPosition(), AARightKneeStators[0].Stator.GetPosition()) : 0));//2.5f;
-                double calfLength = Configuration.CalfLength >= 0 ? Configuration.CalfLength :
+                    (AARightHipStators.Count > 0 && AARightKneeStators.Count > 0 ? Vector3.Distance(AARightHipStators[0].Stator.GetPosition(), AARightKneeStators[0].Stator.GetPosition()) : 0));//2.5f;*/
+                double calfLength = 0;/*Configuration.CalfLength >= 0 ? Configuration.CalfLength :
                     (AALeftFootStators.Count > 0 && AALeftKneeStators.Count > 0 ? Vector3.Distance(AALeftFootStators[0].Stator.GetPosition(), AALeftKneeStators[0].Stator.GetPosition()) :
-                    (AARightFootStators.Count > 0 && AARightKneeStators.Count > 0 ? Vector3.Distance(AARightFootStators[0].Stator.GetPosition(), AARightKneeStators[0].Stator.GetPosition()) : 0));//2.5f;
+                    (AARightFootStators.Count > 0 && AARightKneeStators.Count > 0 ? Vector3.Distance(AARightFootStators[0].Stator.GetPosition(), AARightKneeStators[0].Stator.GetPosition()) : 0));//2.5f;*/
 
                 double maxDistance = (thighLength + calfLength);
                 //Log($"Lengths: {thighLength} {calfLength}");

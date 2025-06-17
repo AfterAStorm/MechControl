@@ -55,6 +55,9 @@ namespace IngameScript
             /// </summary>
             public bool Crouched { get; set; }
 
+            public bool Jumping { get; set; }
+            public bool Jumped { get; set; }
+
             /// <summary>
             /// Is the mech "walking" (takes into account SteeringTakesPriority)
             /// <para>*true if strafing</para>

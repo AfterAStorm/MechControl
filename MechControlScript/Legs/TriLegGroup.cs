@@ -39,6 +39,8 @@ namespace IngameScript
 
             public List<LegJoint> AllJoints = new List<LegJoint>();
 
+            protected LegAngles LegAnglesOffset;
+
             public float GridSize { protected set; get; }
 
             public float ThighLength { protected set; get; }
@@ -66,6 +68,8 @@ namespace IngameScript
             {
                 base.Initialize();
 
+                LegAnglesOffset = new LegAngles(Configuration.HipOffsets, Configuration.KneeOffsets, Configuration.FootOffsets, Configuration.QuadOffsets, Configuration.StrafeOffsets);
+
                 // add joints
                 AllJoints.AddRange(LeftHipJoints);
                 AllJoints.AddRange(LeftKneeJoints);
@@ -80,8 +84,8 @@ namespace IngameScript
 
                 // calculate lengths
                 // we assume the left/right legs are both the same length.. at least for easy sake
-                ThighLength = Math.Max(FindJointLength(LeftHipJoints, LeftKneeJoints), FindJointLength(RightHipJoints, RightKneeJoints));
-                CalfLength  = Math.Max(FindJointLength(LeftKneeJoints, LeftFootJoints), FindJointLength(RightKneeJoints, RightFootJoints));
+                ThighLength = Configuration.ThighLength ?? Math.Max(FindJointLength(LeftHipJoints, LeftKneeJoints), FindJointLength(RightHipJoints, RightKneeJoints));
+                CalfLength  = Configuration.CalfLength ?? Math.Max(FindJointLength(LeftKneeJoints, LeftFootJoints), FindJointLength(RightKneeJoints, RightFootJoints));
 
             }
 
@@ -92,20 +96,20 @@ namespace IngameScript
                 Log("# L/R Knees  :", LeftKneeJoints.Count, "/", RightKneeJoints.Count);
                 Log("# L/R Feet   :", LeftFootJoints.Count, "/", RightFootJoints.Count);
                 Log("# L/R Strafe :", LeftStrafeJoints.Count, "/", RightStrafeJoints.Count);
-                Log("Thigh Length :", ThighLength, "meters");
-                Log("Calf  Length :", CalfLength, "meters");
+                Log("Thigh Length :", ThighLength, "meters", Configuration.ThighLength);
+                Log("Calf  Length :", CalfLength, "meters", Configuration.CalfLength);
             }
 
             protected override void SetAngles(LegAngles left, LegAngles right)
             {
-                SetAnglesOf(LeftHipJoints, left.HipDegrees, Configuration.HipOffsets, false);
-                SetAnglesOf(RightHipJoints, right.HipDegrees, Configuration.HipOffsets, true);
-                SetAnglesOf(LeftKneeJoints, left.KneeDegrees, Configuration.KneeOffsets, false);
-                SetAnglesOf(RightKneeJoints, right.KneeDegrees, Configuration.KneeOffsets, true);
-                SetAnglesOf(LeftFootJoints, left.FeetDegrees, Configuration.FootOffsets, false);
-                SetAnglesOf(RightFootJoints, right.FeetDegrees, Configuration.FootOffsets, true);
-                SetAnglesOf(LeftStrafeJoints, left.StrafeDegrees, Configuration.StrafeOffsets, false);
-                SetAnglesOf(RightStrafeJoints, right.StrafeDegrees, Configuration.StrafeOffsets, true);
+                SetAnglesOf(LeftHipJoints, left.HipDegrees);
+                SetAnglesOf(RightHipJoints, right.HipDegrees);
+                SetAnglesOf(LeftKneeJoints, left.KneeDegrees);
+                SetAnglesOf(RightKneeJoints, right.KneeDegrees);
+                SetAnglesOf(LeftFootJoints, left.FeetDegrees);
+                SetAnglesOf(RightFootJoints, right.FeetDegrees);
+                SetAnglesOf(LeftStrafeJoints, left.StrafeDegrees);
+                SetAnglesOf(RightStrafeJoints, right.StrafeDegrees);
             }
 
             public override void AddBlock(FetchedBlock block)

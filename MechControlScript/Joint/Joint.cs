@@ -77,6 +77,7 @@ namespace IngameScript
             public void SetAngle(double angle)
             {
                 SetRPM(GetRPMFor(angle));
+                //Stator.RotateToAngle(MyRotationDirection.AUTO, (float)angle, float.MaxValue); // too snappy and doesn't allow for compensation for overshooting; limits are also wacky
                 //Stator.RotorLock = (Stator.Angle - ClampDegrees(angle)).Absolute() < 2d;
             }
         }

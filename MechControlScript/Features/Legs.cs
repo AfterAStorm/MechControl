@@ -28,6 +28,7 @@ namespace IngameScript
         bool legsEnabled = true;
 
         static MovementInfo moveInfo = new MovementInfo();
+        static MovementInfo lastMoveInfo = new MovementInfo();
         Vector3 lastMovementDirection = Vector3.Zero;
         Vector3 movement = Vector3.Zero;
 
@@ -41,8 +42,6 @@ namespace IngameScript
         bool isTurning, isWalking;
 
         static double animationStepCounter = 0;
-
-        static Animation activeAnimation, lastAnimation;
 
         float MaxComponentOf(Vector3 vector)
         {
@@ -102,7 +101,7 @@ namespace IngameScript
             crouched = crouchOverride || moveInput.Y < 0;
 
             // delta calculations
-            Vector3 moveDirection = parsedMoveInput;//(parsedMoveInput - movement);
+            Vector3 moveDirection = legsEnabled ? parsedMoveInput : Vector3.Zero;//(parsedMoveInput - movement);
 
             // if key is released, go to 0 by default
             //moveDirection.X = moveDirection.X == 0 ? -movement.X : moveDirection.X;
@@ -124,11 +123,22 @@ namespace IngameScript
             }
             Log($"movement: {movement}");
 
-            moveInfo.Walk       = -movement.Z; // since -1 is forward, negative it so 1 is forward
-            moveInfo.Turn       = movement.Y;
-            moveInfo.Strafe     = movement.X;
-            moveInfo.Crouched   = parsedVerticalInput < 0;
-            moveInfo.Delta = 1 / 60f;
+            lastMoveInfo.Walk     = moveInfo.Walk;
+            lastMoveInfo.Turn     = moveInfo.Turn;
+            lastMoveInfo.Strafe   = moveInfo.Strafe;
+            lastMoveInfo.Crouched = moveInfo.Crouched;
+            lastMoveInfo.Jumping  = moveInfo.Jumping;
+            lastMoveInfo.Jumped   = moveInfo.Jumped;
+            lastMoveInfo.Delta    = moveInfo.Delta;
+
+            moveInfo.Walk         = movement.Z; // since -1 is forward, negative it so 1 is forward -- already inverted in parsedMoveInput
+            moveInfo.Turn         = movement.Y;
+            moveInfo.Strafe       = movement.X;
+            moveInfo.Crouched     = parsedVerticalInput < 0;
+            moveInfo.Jumping      = parsedVerticalInput > 0;
+            moveInfo.Jumped       = (moveInfo.Jumped || parsedVerticalInput > 0) && !(parsedVerticalInput < 0);
+            moveInfo.Delta        = 1 / 60f;
+            Log($"move info: WALK:{moveInfo.Walk}; TURN:{moveInfo.Turn}; STRAFE:{moveInfo.Strafe}; CROUCHED:{moveInfo.Crouched}");
 
             /// X: Strafe
             /// Y: Turn
@@ -150,12 +160,10 @@ namespace IngameScript
             }
             Log($"animationStepCounter: {animationStepCounter}");
 
-            if (legsEnabled)
-                foreach (var leg in legs.Values)
-                {
-                    leg.Animation = activeAnimation;
-                    leg.Update(moveInfo);
-                }
+            foreach (var leg in legs.Values)
+            {
+                leg.Update(moveInfo);
+            }
 
             /*if (controller != null || AutoHalt)
             {

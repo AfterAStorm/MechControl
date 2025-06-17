@@ -22,10 +22,12 @@ namespace IngameScript
 {
     partial class Program
     {
+        #region mdk preserve
         public enum ThrusterMode
         {
             Override = 0,
             Hover = 1,
         }
+        #endregion
     }
 }

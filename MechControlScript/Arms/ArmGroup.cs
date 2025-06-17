@@ -49,6 +49,11 @@ namespace IngameScript
                 Configuration = (ArmConfiguration)config;
             }
 
+            public override void ApplyConfiguration()
+            {
+                // n/a
+            }
+
             public void ToZero()
             {
                 IsZeroing = true;
@@ -61,6 +66,8 @@ namespace IngameScript
                     IsZeroing = false;
                 foreach (var joint in PitchJoints)
                 {
+                    if (joint.Stator.RotorLock)
+                        continue;
                     if (IsZeroing)
                         joint.SetAngle(joint.Configuration.Offset);
                     else
@@ -69,6 +76,8 @@ namespace IngameScript
                 }
                 foreach (var joint in YawJoints)
                 {
+                    if (joint.Stator.RotorLock)
+                        continue;
                     if (IsZeroing)
                         joint.SetAngle(joint.Configuration.Offset);
                     else

@@ -36,12 +36,13 @@ namespace IngameScript
         double TryParseDouble(string arg)
         {
             double value;
-            bool parsed = double.TryParse(arg, out value);
-            return parsed ? value : 0f;
+            return double.TryParse(arg, out value) ? value : 0f;
         }
 
         double HandleDoubleArgument(double current, string arg)
         {
+            if (string.IsNullOrEmpty(arg))
+                return current;
             switch (arg.Substring(0, 1))
             {
                 default: return current;
@@ -54,12 +55,13 @@ namespace IngameScript
         float TryParseFloat(string arg)
         {
             float value;
-            bool parsed = float.TryParse(arg, out value);
-            return parsed ? value : 0f;
+            return float.TryParse(arg, out value) ? value : 0f;
         }
 
         float HandleFloatArgument(float current, string arg)
         {
+            if (string.IsNullOrEmpty(arg))
+                return current;
             switch (arg.Substring(0, 1))
             {
                 default: return current;
@@ -78,6 +80,8 @@ namespace IngameScript
 
         int HandleIntArgument(int current, string arg)
         {
+            if (string.IsNullOrEmpty(arg))
+                return current;
             switch (arg.Substring(0, 1))
             {
                 default: return TryParseInt(arg);
@@ -85,6 +89,30 @@ namespace IngameScript
                 case "+": return current + TryParseInt(arg.Substring(1));
                 case "-": return current - TryParseInt(arg.Substring(1));
             }
+        }
+
+        JointVariable HandleVariable(JointVariable current, string arg)
+        {
+            if (string.IsNullOrEmpty(arg))
+                return current;
+            JointVariable replace = new JointVariable(arg.Trim('=', '+', '-'));
+            if (replace.Type != current.Type) // if not same type, just do a =
+            {
+                arg = "="; // force replacement
+            }
+            switch (arg.Substring(0, 1))
+            {
+                default: return current;
+                case "=": return replace;
+                case "+": return new JointVariable(current.Type, replace.Value + current.Value);
+                case "-": return new JointVariable(current.Type, replace.Value - current.Value);
+            }
+        }
+
+        void ReinitializeLegs()
+        {
+            foreach (var leg in legs.Values)
+                leg.Initialize();
         }
 
         void HandleCommand(string command)
@@ -132,8 +160,8 @@ namespace IngameScript
 
                 case "walk":
                     // if already moving, halt
-                    if ((movementOverride * Vector3.Forward).Z != 0)
-                        movementOverride *= new Vector3(1, 1, 0); // halt
+                    if ((movementOverride * Vector3.Forward).LengthSquared() != 0)
+                        movementOverride *= Vector3.Zero;//Vector3.One - Vector3.Forward; // halt
                     else
                         switch (arg == null ? "" : arg.ToLower().Trim())
                         {
@@ -173,6 +201,11 @@ namespace IngameScript
                     break;
 
                 // Settings
+                case "apply":
+                    foreach (var group in legs.Values)
+                        group.ApplyConfiguration();
+                    break;
+
                 case "stepspeed":
                     WalkCycleSpeed = HandleFloatArgument(WalkCycleSpeed, arg);
                     break;
@@ -180,36 +213,71 @@ namespace IngameScript
                     CrouchSpeed = HandleFloatArgument(CrouchSpeed, arg);
                     break;
 
-                case "lean":
+                /*case "lean":
                     StandingLean = HandleDoubleArgument(StandingLean, arg);
                     AccelerationLean = HandleDoubleArgument(AccelerationLean, arg);
-                    break;
-                case "standinglean":
+                    break;*/
+                /*case "standinglean":
                     StandingLean = HandleDoubleArgument(StandingLean, arg);
                     break;
                 case "accelerationlean":
                     AccelerationLean = HandleDoubleArgument(AccelerationLean, arg);
-                    break;
+                    break;*/
 
                 case "standingheight":
-                    StandingHeight = HandleFloatArgument(StandingHeight, arg);
+                    //StandingHeight = HandleFloatArgument(StandingHeight, arg);
+                    foreach (var group in legs.Values)
+                        group.Configuration.VariableStandingHeight = HandleVariable(group.Configuration.VariableStandingHeight, arg);
+                    ReinitializeLegs();
+                    break;
+                case "standingdistance":
+                    foreach (var group in legs.Values)
+                        group.Configuration.VariableStandingDistance = HandleVariable(group.Configuration.VariableStandingDistance, arg);
+                    ReinitializeLegs();
                     break;
                 case "steplength":
                     foreach (var group in legs.Values)
-                        group.Configuration.StepLength = HandleDoubleArgument(group.Configuration.StepLength, arg);
+                        group.Configuration.VariableStepLength = HandleVariable(group.Configuration.VariableStepLength, arg);
+                    ReinitializeLegs();
                     break;
                 case "stepheight":
                     foreach (var group in legs.Values)
-                        group.Configuration.StepHeight = HandleDoubleArgument(group.Configuration.StepLength, arg);
+                        group.Configuration.VariableStepHeight = HandleVariable(group.Configuration.VariableStepHeight, arg);
+                    ReinitializeLegs();
+                    break;
+                case "crouchheight":
+                    foreach (var group in legs.Values)
+                        group.Configuration.VariableCrouchHeight = HandleVariable(group.Configuration.VariableCrouchHeight, arg);
+                    ReinitializeLegs();
+                    break;
+                case "strafedistance":
+                    foreach (var group in legs.Values)
+                        group.Configuration.VariableStrafeDistance = HandleVariable(group.Configuration.VariableStrafeDistance, arg);
+                    ReinitializeLegs();
+                    break;
+                case "xoffset":
+                    foreach (var group in legs.Values)
+                        group.Configuration.VariableXOffset = HandleVariable(group.Configuration.VariableXOffset, arg);
+                    ReinitializeLegs();
+                    break;
+                case "yoffset":
+                    foreach (var group in legs.Values)
+                        group.Configuration.VariableYOffset = HandleVariable(group.Configuration.VariableYOffset, arg);
+                    ReinitializeLegs();
+                    break;
+                case "zoffset":
+                    foreach (var group in legs.Values)
+                        group.Configuration.VariableZOffset = HandleVariable(group.Configuration.VariableZOffset, arg);
+                    ReinitializeLegs();
                     break;
 
                 case "autohalt":
-                    AccelerationLean = HandleDoubleArgument(AccelerationLean, arg);
+                    AutoHalt = HandleBoolArgument(AutoHalt, arg);
                     break;
 
                 // Joints & Arms
                 case "twist":
-                    targetTorsoTwistAngle = HandleDoubleArgument(0, arg).Modulo(360);
+                    targetTorsoTwistAngle = HandleDoubleArgument(torsoTwistStators.Average(j => j.Stator.Angle).ToDegrees(), arg).Modulo(360);
                     break;
 
                 case "arm":

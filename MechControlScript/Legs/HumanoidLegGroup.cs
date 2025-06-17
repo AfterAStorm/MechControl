@@ -79,6 +79,7 @@ namespace IngameScript
             }
 
             private double x, y, z;
+            private Vector3D max;
 
             public override void Update(MovementInfo info)
             {
@@ -87,7 +88,7 @@ namespace IngameScript
 
                 // left
                 x =
-                    AnimationDirectionMultiplier * Math.Sin(2 * AnimationStep * Math.PI) * StepLength * info.Walk
+                    AnimationDirectionMultiplier * Math.Sin(2 * AnimationStep * Math.PI) * StepLength * -info.Walk
                     + XOffset;
                 y = YOffset
                     + StandingHeight
@@ -109,6 +110,7 @@ namespace IngameScript
 
                 leftAngles.StrafeDegrees = strafe.ToDegrees();
 
+                max = Vector3D.Max(max, new Vector3D(x, y, z));
                 Log("Left  Target:");
                 Log("X:", x);
                 Log("Y:", y);
@@ -119,10 +121,11 @@ namespace IngameScript
                 Log("Foot  :", leftAngles.FeetDegrees);
                 Log("Quad  :", leftAngles.QuadDegrees);
                 Log("Strafe:", leftAngles.StrafeDegrees);
+                Log("max   :", max);
 
                 // right
                 x =
-                    AnimationDirectionMultiplier * Math.Sin(2 * AnimationStepOffset * Math.PI) * StepLength * info.Walk
+                    AnimationDirectionMultiplier * Math.Sin(2 * AnimationStepOffset * Math.PI) * StepLength * -info.Walk
                     + XOffset;
                 y = YOffset
                     + StandingHeight
@@ -154,10 +157,10 @@ namespace IngameScript
                 Log("Foot  :", rightAngles.FeetDegrees);
                 Log("Quad  :", rightAngles.QuadDegrees);
                 Log("Strafe:", rightAngles.StrafeDegrees);
-
+                
                 SetAngles(
-                    LegAnglesMultiplier * LeftAnglesMultiplier  * leftAngles ,
-                    LegAnglesMultiplier * RightAnglesMultiplier * rightAngles
+                    LegAnglesOffset * LeftAnglesMultiplier  + LegAnglesMultiplier * LeftAnglesMultiplier  * leftAngles ,
+                    LegAnglesOffset * RightAnglesMultiplier + LegAnglesMultiplier * RightAnglesMultiplier * rightAngles
                 );
             }
         }

@@ -22,9 +22,9 @@ namespace IngameScript
 {
     partial class Program
     {
-        /*double Map(double x, double r1_min, double r1_max, double r2_min, double r2_max)
+        static double MapRange(double x, double r1_min, double r1_max, double r2_min, double r2_max)
         {
             return (x - r1_min) * (r2_max - r2_min) / (r1_max - r1_min) + r2_min;
-        }*/
+        }
     }
 }

@@ -27,6 +27,7 @@ namespace IngameScript
             public JointConfiguration Configuration = null;
 
             public abstract void SetConfiguration(object config);
+            public abstract void ApplyConfiguration();
         }
     }
 }

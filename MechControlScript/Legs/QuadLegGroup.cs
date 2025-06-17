@@ -43,7 +43,7 @@ namespace IngameScript
 
                 // calculate lengths
                 // we assume the left/right legs are both the same length.. at least for easy sake
-                AnkleLength = Math.Max(FindJointLength(LeftFootJoints, LeftQuadJoints), FindJointLength(RightFootJoints, RightQuadJoints));
+                AnkleLength = Configuration.AnkleLength ?? Math.Max(FindJointLength(LeftFootJoints, LeftQuadJoints), FindJointLength(RightFootJoints, RightQuadJoints));
 
             }
 
@@ -51,14 +51,14 @@ namespace IngameScript
             {
                 base.Update(info);
                 Log("# L/R Quads  :", LeftQuadJoints.Count, "/", RightQuadJoints.Count);
-                Log("Ankle Length :", AnkleLength, "meters");
+                Log("Ankle Length :", AnkleLength, "meters", Configuration.AnkleLength);
             }
 
             protected override void SetAngles(LegAngles left, LegAngles right)
             {
                 base.SetAngles(left, right);
-                SetAnglesOf(LeftQuadJoints, left.QuadDegrees, Configuration.HipOffsets);
-                SetAnglesOf(RightQuadJoints, right.QuadDegrees, Configuration.HipOffsets);
+                SetAnglesOf(LeftQuadJoints, left.QuadDegrees);
+                SetAnglesOf(RightQuadJoints, right.QuadDegrees);
             }
 
             public override void AddBlock(FetchedBlock block)

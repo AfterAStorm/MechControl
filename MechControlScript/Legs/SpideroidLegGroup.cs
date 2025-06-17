@@ -26,7 +26,7 @@ namespace IngameScript
         {
             //public override double AnimationSpeedMultiplier => -1;
             //protected void LegAngles LegAnglesOffset => new LegAngles(0, 90, 0, 0);
-            protected virtual LegAngles LegAnglesOffset => new LegAngles(0, 90, 0, 0);
+            protected virtual LegAngles LocalLegAnglesOffset => new LegAngles(0, 90, 0, 0);
 
             protected float StandingHeight;
             protected float StandingDistance;
@@ -46,6 +46,7 @@ namespace IngameScript
 
                 Radius = (float)(CalfLength + AnkleLength);
                 StandingDistance = Configuration.VariableStandingDistance.GetMetersOf(GridSize, 0, Radius);
+                float remainingRadius = Radius - StandingDistance;
                 StandingHeight = Configuration.VariableStandingHeight.GetMetersOf(GridSize, 0, Radius);
 
                 if (StandingDistance > Radius)
@@ -66,7 +67,7 @@ namespace IngameScript
                 XOffset = Configuration.VariableXOffset.GetMetersOf(GridSize, 0, maxLength);
                 YOffset = Configuration.VariableYOffset.GetMetersOf(GridSize, 0, maxLength);
                 StepHeight = Configuration.VariableStepHeight.GetMetersOf(GridSize, 0, maxLength);
-                StrafeDistance = Configuration.VariableStrafeDistance.GetMetersOf(GridSize, 0, maxLength);
+                StrafeDistance = Configuration.VariableStrafeDistance.GetMetersOf(GridSize, 0, remainingRadius);
                 CrouchHeight = Configuration.VariableCrouchHeight.GetMetersOf(GridSize, 0, maxLength);
 
                 if (StepLength > maxLength)
@@ -96,6 +97,7 @@ namespace IngameScript
 
                 Log("StandingHeight:", StandingHeight);
                 Log("StandingDistance:", StandingDistance);
+                Log("StrafeDistance:", StrafeDistance);
                 Log("StepLength:", StepLength);
                 Log("StepHeight:", StepHeight);
                 Log("CrouchHeight:", CrouchHeight);
@@ -106,7 +108,7 @@ namespace IngameScript
 
                 // left
                 x = XOffset * AnimationDirectionMultiplier
-                    + AnimationDirectionMultiplier * Math.Sin(2 * AnimationStep * Math.PI) * StepLength * AbsMax(info.Walk, info.Turn) * (AbsMax(info.Walk, info.Turn) == info.Turn ? -1 : 1);
+                    + AnimationDirectionMultiplier * Math.Sin(2 * AnimationStep * Math.PI) * StepLength * AbsMax(-info.Walk, info.Turn) * (AbsMax(info.Walk, info.Turn) == info.Turn ? -1 : 1);
 
                 y = YOffset
                     + StandingHeight
@@ -115,8 +117,8 @@ namespace IngameScript
 
                 z = ZOffset
                     + StandingDistance
-                    + (Math.Sign(info.Strafe) * Math.Sin(2 * AnimationStep * Math.PI)) * StrafeDistance / 2f * Math.Abs(info.Strafe)
-                    + StrafeDistance * Math.Abs(info.Strafe);
+                    + (Math.Sign(info.Strafe) * Math.Sin(2 * AnimationStep * Math.PI)) * StrafeDistance * Math.Abs(info.Strafe);
+                    //+ StrafeDistance * Math.Abs(info.Strafe);
                 
                 if (customTarget != Vector3D.Zero)
                 {
@@ -140,7 +142,7 @@ namespace IngameScript
 
                 // right
                 x = XOffset * AnimationDirectionMultiplier
-                    + AnimationDirectionMultiplier * Math.Sin(2 * AnimationStepOffset * Math.PI) * StepLength * AbsMax(info.Walk, info.Turn) * (info.Turn.Absolute() > .1d ? 1 : 1);
+                    + AnimationDirectionMultiplier * Math.Sin(2 * AnimationStepOffset * Math.PI) * StepLength * AbsMax(info.Walk, info.Turn) * (AbsMax(info.Walk, info.Turn) == info.Turn ? 1 : -1);
 
                 y = YOffset
                     + StandingHeight
@@ -171,8 +173,8 @@ namespace IngameScript
                 Log("Quad:", rightAngles.QuadDegrees);
 
                 SetAngles(
-                    LegAnglesOffset + leftAngles,
-                    LegAnglesOffset + rightAngles
+                    LegAnglesOffset + LocalLegAnglesOffset + leftAngles,
+                    LegAnglesOffset + LocalLegAnglesOffset + rightAngles
                 );
             }
         }

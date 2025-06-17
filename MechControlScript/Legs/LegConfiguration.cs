@@ -58,6 +58,12 @@ namespace IngameScript
                 }
             }
 
+            public JointVariable(JointVariableType type, float value)
+            {
+                Type = type;
+                Value = value;
+            }
+
             public override string ToString()
             {
                 string suffix = "";
@@ -110,7 +116,7 @@ namespace IngameScript
             public double XOffset, YOffset, ZOffset;
             public JointVariable VariableXOffset, VariableYOffset, VariableZOffset;
 
-            public double ThighLength, CalfLength;
+            public float? ThighLength = null, CalfLength = null, AnkleLength = null;
 
             public double StepLength;
             public double StepHeight;
@@ -118,6 +124,8 @@ namespace IngameScript
 
             public double AnimationSpeed;// => WalkCycleSpeed;
             public double CrouchSpeed;
+
+            public bool IndependantStep => IndependantStepEnabled;
 
             public double StandingHeight => Program.StandingHeight;
             public JointVariable VariableStandingHeight, VariableStandingDistance, VariableStrafeDistance;
@@ -145,7 +153,7 @@ namespace IngameScript
             public override int GetHashCode()
             {
                 return (
-                    LegType.GetHashCode() * 2+
+                    LegType.GetHashCode() * 2 +
                     HipOffsets.GetHashCode() * 3 +
                     KneeOffsets.GetHashCode() * 4 +
                     FootOffsets.GetHashCode() * 5 +
@@ -158,7 +166,10 @@ namespace IngameScript
                     VariableStepHeight.GetHashCode() * 12 +
                     VariableStandingHeight.GetHashCode() * 13 +
                     VariableStrafeDistance.GetHashCode() * 14 +
-                    VariableStandingDistance.GetHashCode() * 15
+                    VariableStandingDistance.GetHashCode() * 15 +
+                    ThighLength.GetHashCode() * 16 +
+                    CalfLength.GetHashCode() * 17 +
+                    AnkleLength.GetHashCode() * 18
                 ) % int.MaxValue;
             }
 
@@ -214,14 +225,36 @@ CalfLength=2.5
 
                 ini.Set("Leg", "WalkSpeed", AnimationSpeed);
                 ini.Set("Leg", "CrouchSpeed", CrouchSpeed);
+                //ini.Set("Leg", "IndependantStep", IndependantStep);
                 //ini.SetComment("Leg", "WalkSpeed", "How fast legs walk and crouch");
 
-                ini.Set("Leg", "ThighLength", ThighLength);
-                ini.Set("Leg", "CalfLength", CalfLength);
+                ini.Set("Leg", "ThighLength", FromAutoFloat(ThighLength));
+                ini.Set("Leg", "CalfLength", FromAutoFloat(CalfLength));
+                if (LegType > 2)
+                    ini.Set("Leg", "AnkleLength", FromAutoFloat(AnkleLength));
                 //ini.SetComment("Leg", "ThighLength", "Change theoretical apendage lengths");
 
                 ini.SetSectionComment("Leg", $"Leg (group {Id}) settings. These change all of the joints in the same group.");
                 return ini.ToString();
+            }
+
+            public static float? ToAutoFloat(string str)
+            {
+                if (string.IsNullOrEmpty(str) || str.Equals("auto", StringComparison.OrdinalIgnoreCase))
+                    return null;
+                float result;
+                if (float.TryParse(str, out result))
+                {
+                    return result;
+                }
+                return null;
+            }
+
+            public static string FromAutoFloat(float? value)
+            {
+                if (value != null)
+                    return value.Value.ToString();
+                return "auto";
             }
 
             public static LegConfiguration Parse(MyIni ini)
@@ -246,9 +279,10 @@ CalfLength=2.5
                     KneesInverted = ini.Get("Leg", "KneesInverted").ToBoolean(),
                     FeetInverted = ini.Get("Leg", "FeetInverted").ToBoolean(),
                     QuadInverted = ini.Get("Leg", "QuadInverted").ToBoolean(),*/
-
-                    ThighLength = ini.Get("Leg", "ThighLength").ToDouble(1d),//2.5d),
-                    CalfLength = ini.Get("Leg", "CalfLength").ToDouble(1d),//2.5d),
+                    
+                    ThighLength = ToAutoFloat(ini.Get("Leg", "ThighLength").ToString("auto")),
+                    CalfLength = ToAutoFloat(ini.Get("Leg", "CalfLength").ToString("auto")),
+                    AnkleLength = ToAutoFloat(ini.Get("Leg", "AnkleLength").ToString("auto")),
 
                     StepLength = ini.Get("Leg", "StepLength").ToDouble(1),
                     VariableStepLength = new JointVariable(ini.Get("Leg", "StepLength").ToString("45%")),
@@ -261,6 +295,7 @@ CalfLength=2.5
 
                     AnimationSpeed = ini.Get("Leg", "WalkSpeed").ToDouble(1),
                     CrouchSpeed = ini.Get("Leg", "CrouchSpeed").ToDouble(1),
+                    //IndependantStep = ini.Get("Leg", "IndependantStep").ToBoolean(false),
 
                     defaultValue = 1
                 };

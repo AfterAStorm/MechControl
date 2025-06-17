@@ -367,13 +367,16 @@ namespace IngameScript
                     add(block, leg);
                     groups.Add(block.Group, leg);
                 }
+
+                foreach (var group in groups.Values)
+                    group.ApplyConfiguration();
             }
 
             public static void AddToLeg(FetchedBlock block, LegGroup leg) // adds a fetched block to the leg
             {
                 Log($"AddToLeg Block {block.Block.CustomName} as {block.Type}");
                 leg.AddBlock(block);
-                switch (block.Type)
+                /*switch (block.Type)
                 {
                     case BlockType.Hip:
                     case BlockType.Knee:
@@ -432,8 +435,8 @@ namespace IngameScript
                         break;
                     default:
                         return;
-                }
-                block.Block.CustomData = leg.Configuration.ToCustomDataString(); // set new configuration
+                }*/
+                //block.Block.CustomData = leg.Configuration.ToCustomDataString(); // set new configuration
             }
 
             public static void AddToArm(FetchedBlock block, ArmGroup arm)

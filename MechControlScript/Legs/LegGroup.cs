@@ -29,35 +29,19 @@ namespace IngameScript
 
             public new LegConfiguration Configuration;
 
-            public List<LegJoint> AALeftHipStators = new List<LegJoint>();
-            public List<LegJoint> AARightHipStators = new List<LegJoint>();
-
-            public List<LegJoint> AALeftKneeStators = new List<LegJoint>();
-            public List<LegJoint> AARightKneeStators = new List<LegJoint>();
-
-            public List<LegJoint> AALeftFootStators = new List<LegJoint>();
-            public List<LegJoint> AARightFootStators = new List<LegJoint>();
-
-            public List<LegJoint> AALeftQuadStators = new List<LegJoint>();
-            public List<LegJoint> AARightQuadStators = new List<LegJoint>();
-
-            public List<LegJoint> AALeftStrafeStators = new List<LegJoint>();
-            public List<LegJoint> AARightStrafeStators = new List<LegJoint>();
-
             public List<FetchedBlock> LeftPistons = new List<FetchedBlock>();
             public List<FetchedBlock> RightPistons = new List<FetchedBlock>();
 
             public List<IMyLandingGear> LeftGears = new List<IMyLandingGear>();
             public List<IMyLandingGear> RightGears = new List<IMyLandingGear>();
 
-            public List<IMyTerminalBlock> AllBlocks =>
-                AALeftHipStators.Concat(AARightHipStators).Concat(AALeftKneeStators).Concat(AARightKneeStators).Concat(AALeftFootStators).Concat(AARightFootStators).Concat(AALeftQuadStators).Concat(AARightQuadStators).Select(j => j.Stator as IMyTerminalBlock).Concat(LeftPistons.Concat(RightPistons).Select(p => p.Block)).Concat(LeftGears.Concat(RightGears)).ToList();
+            public List<FetchedBlock> AllBlocks = new List<FetchedBlock>();
 
             //public IMyCameraBlock[] InclineCameras; // TODO: use these, give them a purpose!
 
             protected double LastDelta = 1;
             public double AnimationStep = 0; // pff, who needes getters and setters?
-            public double AnimationStepOffset => OffsetLegs ? (AnimationStep + .5).Modulo(1) : AnimationStep;
+            public double AnimationStepOffset;// => OffsetLegs ? (AnimationStep + .5).Modulo(1) : AnimationStep;
             public double CrouchWaitTime = 0; // extra property for stuffs that needs it
             public double IdOffset => Configuration.Id % 2 == 1 ? 0 : .5;
             public bool OffsetLegs = true;
@@ -92,12 +76,12 @@ namespace IngameScript
                 FeetInversedMultiplier = Configuration.FeetInverted ? -1 : 1;
                 QuadInversedMultiplier = Configuration.QuadInverted ? -1 : 1;
 
-                AACalculatedThighLength = Configuration.ThighLength > 0 ? Configuration.ThighLength : FindThighLength();
-                AACalculatedCalfLength = Configuration.CalfLength > 0 ? Configuration.CalfLength : FindCalfLength(); // lower leg, or upper leg for spiders
-                AACalculatedQuadLength = Configuration.ThighLength > 0 ? Configuration.ThighLength : FindQuadLength(); // lower lower leg, or lower leg for spiders
+                //AACalculatedThighLength = Configuration.ThighLength > 0 ? Configuration.ThighLength : FindThighLength();
+                //AACalculatedCalfLength = Configuration.CalfLength > 0 ? Configuration.CalfLength : FindCalfLength(); // lower leg, or upper leg for spiders
+                //AACalculatedQuadLength = Configuration.ThighLength > 0 ? Configuration.ThighLength : FindQuadLength(); // lower lower leg, or lower leg for spiders
             }
 
-            public virtual void AddLeftRightBlock<T>(List<T> leftBlocks, List<T> rightBlocks, T block, BlockSide side)
+            protected virtual void AddLeftRightBlock<T>(List<T> leftBlocks, List<T> rightBlocks, T block, BlockSide side)
             {
                 if (side == BlockSide.Left)
                     leftBlocks.Add(block);
@@ -107,7 +91,7 @@ namespace IngameScript
 
             public virtual void AddBlock(FetchedBlock block)
             {
-
+                AllBlocks.Add(block);
             }
 
             public override void SetConfiguration(object config)
@@ -115,7 +99,14 @@ namespace IngameScript
                 Configuration = (LegConfiguration)config;
             }
 
-            protected virtual void SetAnglesOf(List<LegJoint> leftStators, List<LegJoint> rightStators, double leftAngle, double rightAngle, double offset)
+            public override void ApplyConfiguration()
+            {
+                string data = Configuration.ToCustomDataString();
+                foreach (var block in AllBlocks)
+                    block.Block.CustomData = data;
+            }
+
+            protected virtual void SetAnglesOf(List<LegJoint> leftStators, List<LegJoint> rightStators, double leftAngle, double rightAngle, double offset=0)
             {
                 // We could split this into ANOTHER method, but i don't believe it's worth it
                 foreach (var motor in leftStators)
@@ -128,7 +119,7 @@ namespace IngameScript
                 //motor.Stator.TargetVelocityRPM = (float)MathHelper.Clamp((-rightAngle * motor.Configuration.InversedMultiplier).AbsoluteDegrees(motor.Stator.BlockDefinition.SubtypeName.Contains("Hinge")) - motor.Stator.Angle.ToDegrees() - offset - motor.Configuration.Offset, -MaxRPM, MaxRPM);
             }
 
-            protected virtual void SetAnglesOf(List<LegJoint> stators, double angle, double offset, bool rotorInvert = false)
+            protected virtual void SetAnglesOf(List<LegJoint> stators, double angle, double offset=0, bool rotorInvert = false)
             {
                 foreach (var motor in stators)
                     motor.SetAngle((angle + /*(motor.IsRotor ?*/ offset * (rotorInvert && motor.IsRotor ? -1 : 1)/*: -offset)*/ + motor.Configuration.Offset) * motor.Configuration.InversedMultiplier);
@@ -143,56 +134,8 @@ namespace IngameScript
                 SetAnglesOf(LeftQuadStators,    RightQuadStators,   (leftQuadDegrees * QuadInversedMultiplier),     (rightQuadDegrees * QuadInversedMultiplier),   Configuration.QuadOffsets + Configuration.FootOffsets);
             }*/
 
-            protected virtual void SetAngles(LegAngles leftAngles, LegAngles rightAngles)
-            {
-                SetAnglesOf(AALeftHipStators, leftAngles.HipDegrees, Configuration.HipOffsets); // +hip goes the right way
-                SetAnglesOf(AARightHipStators, rightAngles.HipDegrees, -Configuration.HipOffsets);
+            protected virtual void SetAngles(LegAngles leftAngles, LegAngles rightAngles) {}
 
-                SetAnglesOf(AALeftKneeStators, leftAngles.KneeDegrees, -Configuration.KneeOffsets); //Configuration.HipOffsets + Configuration.KneeOffsets); // why is this different from hip
-                SetAnglesOf(AARightKneeStators, rightAngles.KneeDegrees, -Configuration.KneeOffsets);//-Configuration.HipOffsets + Configuration.KneeOffsets);
-
-                SetAnglesOf(AALeftFootStators, leftAngles.FeetDegrees, -Configuration.FootOffsets);// + Configuration.KneeOffsets); // what?
-                SetAnglesOf(AARightFootStators, rightAngles.FeetDegrees, -Configuration.FootOffsets);// + Configuration.KneeOffsets);
-
-                SetAnglesOf(AALeftQuadStators, leftAngles.QuadDegrees, -Configuration.QuadOffsets);
-                SetAnglesOf(AARightQuadStators, rightAngles.QuadDegrees, -Configuration.QuadOffsets);
-
-                SetAnglesOf(AALeftStrafeStators, leftAngles.StrafeDegrees, -Configuration.StrafeOffsets);
-                SetAnglesOf(AARightStrafeStators, rightAngles.StrafeDegrees, -Configuration.StrafeOffsets);
-            }
-
-            protected double FindThighLength()
-            {
-                if (AALeftHipStators.Count == 0 || AALeftKneeStators.Count == 0)
-                {
-                    if (AARightHipStators.Count == 0 || AARightKneeStators.Count == 0)
-                        return 2.5d;
-                    return (AARightHipStators.First().Stator.GetPosition() - AARightKneeStators.First().Stator.GetPosition()).Length();
-                }
-                return (AALeftHipStators.First().Stator.GetPosition() - AALeftKneeStators.First().Stator.GetPosition()).Length();
-            }
-
-            protected double FindCalfLength()
-            {
-                if (AALeftFootStators.Count == 0 || AALeftKneeStators.Count == 0)
-                {
-                    if (AARightFootStators.Count == 0 || AARightKneeStators.Count == 0)
-                        return 2.5d;
-                    return (AARightFootStators.First().Stator.GetPosition() - AARightKneeStators.First().Stator.GetPosition()).Length();
-                }
-                return (AALeftFootStators.First().Stator.GetPosition() - AALeftKneeStators.First().Stator.GetPosition()).Length();
-            }
-
-            protected double FindQuadLength()
-            {
-                if (AALeftFootStators.Count == 0 || AALeftQuadStators.Count == 0)
-                {
-                    if (AARightFootStators.Count == 0 || AARightQuadStators.Count == 0)
-                        return 2.5d;
-                    return (AARightFootStators.First().Stator.GetPosition() - AARightQuadStators.First().Stator.GetPosition()).Length();
-                }
-                return (AALeftFootStators.First().Stator.GetPosition() - AALeftQuadStators.First().Stator.GetPosition()).Length();
-            }
 
             /// <summary>
             /// Used internally in each leg implementation, calculates each leg angle
@@ -209,12 +152,41 @@ namespace IngameScript
             {
                 Log($"- {GetType().Name} (group {Configuration.Id}) -");
                 // Animate crouch
-                if (!info.Crouched)//!Animation.IsCrouch() && !info.Crouched)
-                    CrouchWaitTime = Math.Max(0, CrouchWaitTime - info.Delta * Configuration.CrouchSpeed);//CrouchWaitTime = Math.Max(0, jumping ? 0 : CrouchWaitTime - info.Delta * 2 * Configuration.CrouchSpeed * CrouchSpeed);
+                if (!info.Crouched && !info.Jumping)//!Animation.IsCrouch() && !info.Crouched)
+                    CrouchWaitTime = Math.Max(0, CrouchWaitTime - info.Delta * Configuration.CrouchSpeed * CrouchSpeed * (info.Jumped ? 1000f : 1f));//CrouchWaitTime = Math.Max(0, jumping ? 0 : CrouchWaitTime - info.Delta * 2 * Configuration.CrouchSpeed * CrouchSpeed);
                 else
-                    CrouchWaitTime = Math.Min(1, CrouchWaitTime + info.Delta * Configuration.CrouchSpeed);
+                    CrouchWaitTime = Math.Min(1, CrouchWaitTime + info.Delta * Configuration.CrouchSpeed * CrouchSpeed);
 
-                AnimationStep = (animationStepCounter * Configuration.AnimationSpeed + (animationStepCounter > 0 ? IdOffset : 0)).Modulo(1);
+                // normal mode
+                if (!Configuration.IndependantStep)
+                {
+                    AnimationStep = (animationStepCounter * Configuration.AnimationSpeed * WalkCycleSpeed + (animationStepCounter > 0 ? IdOffset : 0)).Modulo(1);
+                    AnimationStepOffset = OffsetLegs ? (AnimationStep + .5).Modulo(1) : AnimationStep;
+                    return;
+                }
+                
+                // handle independant step, where each leg moves 1 cycle over the whole "step"
+                double totalGroups = legs.Count;
+                double myGroup = Configuration.Id;
+                double segmentSize = 1 / (totalGroups * 2);
+                double segmentOffset = (myGroup - 1) / (totalGroups * 2); // offset of left legs, it goes in the order of L1 -> L2 -> L3
+                double segmentOffsetOffset = segmentSize * totalGroups + segmentOffset; // offset of right legs, after the left legs all go, R1 -> R2 -> R3 
+                // final order: L1 -> L2 -> L3 -> R1 -> R2 -> R3
+
+                // get step like normal, but exclude id offset since it will screw everything up... it doesn't matter here since we already account for it
+                double currentStep = (animationStepCounter * Configuration.AnimationSpeed * WalkCycleSpeed).Modulo(1);
+
+                // 0.5 is rest, so default to it
+                AnimationStep = 0.5f;
+                AnimationStepOffset = 0.5f;
+                if (currentStep >= segmentOffset && currentStep <= segmentOffset + segmentSize) // left leg's turn
+                {
+                    AnimationStep = (.5f + MapRange(currentStep, segmentOffset, segmentOffset + segmentSize, 0, 1)).Modulo(1);
+                }
+                else if (currentStep >= segmentOffsetOffset && currentStep <= segmentOffsetOffset + segmentSize) // right leg's turn
+                {
+                    AnimationStepOffset = (.5f + MapRange(currentStep, segmentOffsetOffset, segmentOffsetOffset + segmentSize, 0, 1)).Modulo(1);
+                }
             }
 
             public virtual void Update(Vector3 forwardsDeltaVec, Vector3 movementVector, double delta)
@@ -252,7 +224,7 @@ namespace IngameScript
 
             #region Experimental
 
-            int leftLegCounter = 0;
+            /*int leftLegCounter = 0;
             int rightLegCounter = 0;
 
             private void HandlePistonGroup(List<FetchedBlock> pistons, List<LegJoint> hips, List<LegJoint> knees, List<LegJoint> feet, ref int counter)
@@ -284,12 +256,12 @@ namespace IngameScript
                     }
                     block.Enabled = true;//Math.Abs(rpm) > .05;
                 }
-            }
+            }*/
 
             protected void HandlePistons(float multiplier = 1)
             {
-                HandlePistonGroup(LeftPistons, AALeftHipStators, AALeftKneeStators, AALeftFootStators, ref leftLegCounter);
-                HandlePistonGroup(RightPistons, AARightHipStators, AARightKneeStators, AARightFootStators, ref rightLegCounter);
+                //HandlePistonGroup(LeftPistons, AALeftHipStators, AALeftKneeStators, AALeftFootStators, ref leftLegCounter);
+                //HandlePistonGroup(RightPistons, AARightHipStators, AARightKneeStators, AARightFootStators, ref rightLegCounter);
             }
 
             #endregion

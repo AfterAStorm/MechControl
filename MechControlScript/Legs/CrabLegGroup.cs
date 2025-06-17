@@ -26,7 +26,7 @@ namespace IngameScript
         {
             public override double AnimationDirectionMultiplier => -1;
 
-            protected override LegAngles LegAnglesOffset => LegAngles.Zero;
+            protected override LegAngles LocalLegAnglesOffset => LegAngles.Zero;
         }
     }
 }

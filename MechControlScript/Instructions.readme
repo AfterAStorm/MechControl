@@ -14,6 +14,13 @@ Configuring:
 
 Most recent release:
 
+2.0.0-beta
+    * Percentage and meter based inverse kinematics
+    * General improvements
+    * Strafing is real-- it's real!
+    * Add more options
+    * Add (and praise) more clang
+
 1.1.0-beta
     * Change how legs calculate angles
     * Thrusters are enabled on switch to hover mode

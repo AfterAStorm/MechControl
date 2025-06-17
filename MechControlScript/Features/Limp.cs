@@ -30,8 +30,8 @@ namespace IngameScript
             foreach (var group in legs.Values)
                 group.AllBlocks.ForEach(b =>
                 {
-                    if (b is IMyFunctionalBlock)
-                        (b as IMyFunctionalBlock).Enabled = !limp;
+                    if (b.Block is IMyFunctionalBlock)
+                        (b.Block as IMyFunctionalBlock).Enabled = !limp;
                 });
         }
     }

@@ -27,7 +27,7 @@ namespace IngameScript
         // Script //
 
         public static Program Singleton { get; private set; }
-        public const string Version = "1.1.0-beta"; // major.minor.patch
+        public const string Version = "2.0.0-beta"; // major.minor.patch
 
         public static readonly double TicksPerSecond = 1d / 60d;
 
@@ -61,7 +61,7 @@ namespace IngameScript
         void Warn(string title, string info)
         {
             Echo($"[Color=#dcf71600]Warning: {title}[/Color]");
-            Echo($"[Color=#c8e02d00]{info}[/Color]\n");
+            Echo($"{info}\n");//Echo($"[Color=#c8e02d00]{info}[/Color]\n");
         }
 
         struct Warning
@@ -287,7 +287,8 @@ namespace IngameScript
                 Echo($"Last Instructions: {lastInstructions}");
                 Echo($"Last Complexity: {lastInstructions / Runtime.MaxInstructionCount * 100:f1}%");
                 Echo($"Max Instructions: {maxInstructions}");
-                Echo($"Updates/s: {1 / fakeDelta:f1} up/s\n");
+                Echo($"Updates/s: {1 / fakeDelta:f1} up/s");
+                Echo("");
             }
 
             // warnings
@@ -308,8 +309,8 @@ namespace IngameScript
                 List<IMyShipController> controllers = new List<IMyShipController>();
                 GridTerminalSystem.GetBlocksOfType(controllers);
                 if (controllers.Count > 0) // if there is any actual controllers, add it to the warning message
-                    Warn("No Cockpits Found!", "Failed to find any MAIN cockpits or remote controls\n" +
-                        $"Maybe try changing {(controllers.Count > 1 ? $"one of the {controllers.Count} ship controllers to the main cockpit" : $"{controllers[0].CustomName} to the main cockpit")}");
+                    Warn("No Cockpits Found!", "Failed to find any MAIN cockpits or remote controls; " +
+                        $"try changing [Color=#0000ff77]{(controllers.Count > 1 ? $"one of the {controllers.Count} ship controllers[/Color] to the main cockpit?" : $"{controllers[0].CustomName}[/Color] to the main cockpit?")}");
                 else
                     Warn("No Cockpits Found!", "Failed to find any MAIN cockpits or remote controls");
             }

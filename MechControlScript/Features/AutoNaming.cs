@@ -24,7 +24,7 @@ namespace IngameScript
     {
         Dictionary<BlockType, BlockType> jointHierarchy = new Dictionary<BlockType, BlockType>()
         {
-            { BlockType.Hip, BlockType.Knee },
+            { BlockType.Hip , BlockType.Knee },
             { BlockType.Knee, BlockType.Foot },
             { BlockType.Foot, BlockType.Quad },
         };
@@ -50,13 +50,82 @@ namespace IngameScript
         public void TryAutoTag()
         {
             Reload(); // catchup on all configs
-            List<IMyMotorStator> stators = BlockFinder.GetBlocksOfType<IMyMotorStator>();
-            foreach (var pair in legs)
+            IMyShipController reference = cockpits.Count > 0 ? cockpits.First() : null;
+            if (reference == null)
+            {
+                Log("No reference for autotag");
+                return;
+            }
+
+            List<IMyMotorStator> allStators = BlockFinder.GetBlocksOfType<IMyMotorStator>();
+            var stators = allStators.Where(stator => stator.CubeGrid == Me.CubeGrid);
+            Dictionary<float, MyTuple<List<IMyMotorStator>, List<IMyMotorStator>>> groups = new Dictionary<float, MyTuple<List<IMyMotorStator>, List<IMyMotorStator>>>(); 
+            foreach (var stator in stators)
+            {
+                float dot = Vector3.Dot(stator.GetPosition() - reference.GetPosition(), reference.WorldMatrix.Left);
+                BlockSide side = dot > 0 ? BlockSide.Left : BlockSide.Right;
+
+                float distance = Vector3.Dot(reference.WorldMatrix.Forward, reference.GetPosition()) - Vector3.Dot(reference.WorldMatrix.Forward, stator.GetPosition());
+
+                // check if close enough key
+                bool found = false;
+                foreach (var kv in groups)
+                {
+                    if (Math.Abs(kv.Key - distance) < .1f)
+                    {
+                        found = true;
+                        if (side == BlockSide.Left)
+                            groups[kv.Key].Item1.Add(stator);
+                        else if (side == BlockSide.Right)
+                            groups[kv.Key].Item2.Add(stator);
+                        break;
+                    }
+                }
+
+                if (!found)
+                {
+                    // create instead
+                    groups[distance] = new MyTuple<List<IMyMotorStator>, List<IMyMotorStator>>(new List<IMyMotorStator>(), new List<IMyMotorStator>());
+                        if (side == BlockSide.Left)
+                        groups[distance].Item1.Add(stator);
+                    else if (side == BlockSide.Right)
+                        groups[distance].Item2.Add(stator);
+                }
+
+                //string suffix = $"{ToInitial(side)}{"
+                //stator.CustomName = $"Joint {ToInitial(side)}{}"
+
+            }
+            List<float> distances = groups.Keys.ToList();
+            distances.Sort();
+
+            int num = 1;
+            foreach (var distance in distances)
+            {
+                var leftRight = groups[distance];
+
+                string suffix = $"{ToInitial(BlockSide.Left)}{num}+";
+                foreach (var left in leftRight.Item1)
+                {
+                    left.CustomName = $"{ToInitial(BlockType.Hip)}{suffix}";
+                    IterateThroughJoint(allStators, BlockType.Hip, left, suffix);
+                }
+
+                suffix = $"{ToInitial(BlockSide.Right)}{num}+";
+                foreach (var right in leftRight.Item2)
+                {
+                    right.CustomName = $"{ToInitial(BlockType.Hip)}{suffix}";
+                    IterateThroughJoint(allStators, BlockType.Hip, right, suffix);
+                }
+
+                num++;
+            }
+            /*foreach (var pair in legs)
             {
                 var group = pair.Value;
-                group.AALeftHipStators.ForEach(j => IterateThroughJoint(stators, BlockType.Hip, j.Stator, $"L{pair.Key}+"));
-                group.AARightHipStators.ForEach(j => IterateThroughJoint(stators, BlockType.Hip, j.Stator, $"R{pair.Key}+"));
-            }
+                //group.AALeftHipStators.ForEach(j => IterateThroughJoint(stators, BlockType.Hip, j.Stator, $"L{pair.Key}+"));
+                //group.AARightHipStators.ForEach(j => IterateThroughJoint(stators, BlockType.Hip, j.Stator, $"R{pair.Key}+"));
+            }*/
             Reload();
         }
 
@@ -98,7 +167,7 @@ namespace IngameScript
             {
                 var group = pair.Value;
                 group.Configuration.LegType = type;
-                group.AllBlocks.ForEach(b => b.CustomData = group.Configuration.ToCustomDataString());
+                group.AllBlocks.ForEach(b => b.Block.CustomData = group.Configuration.ToCustomDataString());
             }
             Reload();
         }
