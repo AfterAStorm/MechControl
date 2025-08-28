@@ -95,7 +95,7 @@ namespace IngameScript
         {
             if (string.IsNullOrEmpty(arg))
                 return current;
-            JointVariable replace = new JointVariable(arg.Trim('=', '+', '-'));
+            JointVariable replace = new JointVariable(arg.Substring(1));//arg.Trim('=', '+', '-'));
             if (replace.Type != current.Type) // if not same type, just do a =
             {
                 arg = "="; // force replacement
@@ -190,14 +190,12 @@ namespace IngameScript
                     thrustersEnabled = HandleBoolArgument(thrustersEnabled, arg);
                     break;
 
+                case "vtol":
+                    thrustersVtol = HandleBoolArgument(thrustersVtol, arg);
+                    break;
+
                 case "hover":
-                    ThrusterMode lastMode = ThrusterBehavior;
-                    if (arg == null)
-                        ThrusterBehavior = (ThrusterMode)(((int)ThrusterBehavior + 1) % 2);
-                    else
-                        ThrusterBehavior = HandleBoolArgument(ThrusterBehavior == ThrusterMode.Hover, arg) ? ThrusterMode.Hover : ThrusterMode.Override;
-                    if (ThrusterBehavior == ThrusterMode.Hover && lastMode != ThrusterMode.Hover)
-                        thrustersEnabled = true;
+                    thrusterBehavior = HandleBoolArgument(thrusterBehavior == ThrusterMode.Hover, arg) ? ThrusterMode.Hover : ThrusterMode.Override;
                     break;
 
                 // Settings
@@ -207,10 +205,12 @@ namespace IngameScript
                     break;
 
                 case "stepspeed":
-                    WalkCycleSpeed = HandleFloatArgument(WalkCycleSpeed, arg);
+                    foreach (var group in legs.Values)
+                        group.Configuration.AnimationSpeed = HandleDoubleArgument(group.Configuration.AnimationSpeed, arg);
                     break;
                 case "crouchspeed":
-                    CrouchSpeed = HandleFloatArgument(CrouchSpeed, arg);
+                    foreach (var group in legs.Values)
+                        group.Configuration.CrouchSpeed = HandleDoubleArgument(group.Configuration.CrouchSpeed, arg);
                     break;
 
                 /*case "lean":
@@ -255,17 +255,17 @@ namespace IngameScript
                         group.Configuration.VariableStrafeDistance = HandleVariable(group.Configuration.VariableStrafeDistance, arg);
                     ReinitializeLegs();
                     break;
-                case "xoffset":
+                case "standinglean"://case "xoffset":
                     foreach (var group in legs.Values)
                         group.Configuration.VariableXOffset = HandleVariable(group.Configuration.VariableXOffset, arg);
                     ReinitializeLegs();
                     break;
-                case "yoffset":
+                /*case "yoffset": // "standing height" clone
                     foreach (var group in legs.Values)
                         group.Configuration.VariableYOffset = HandleVariable(group.Configuration.VariableYOffset, arg);
                     ReinitializeLegs();
-                    break;
-                case "zoffset":
+                    break;*/
+                case "standingwidth"://case "zoffset":
                     foreach (var group in legs.Values)
                         group.Configuration.VariableZOffset = HandleVariable(group.Configuration.VariableZOffset, arg);
                     ReinitializeLegs();
@@ -300,9 +300,9 @@ namespace IngameScript
 
                 // Test Leg //
                 case "ik":
-                    testLegX = TryParseFloat(arguments[1]);
-                    testLegY = TryParseFloat(arguments[2]);
-                    testLegZ = TryParseFloat(arguments[3]);
+                    double testLegX = TryParseFloat(arguments[1]);
+                    double testLegY = TryParseFloat(arguments[2]);
+                    double testLegZ = TryParseFloat(arguments[3]);
                     customTarget = new Vector3D(testLegX, testLegY, testLegZ);
                     break;
             }

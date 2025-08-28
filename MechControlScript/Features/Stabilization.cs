@@ -42,9 +42,12 @@ namespace IngameScript
         void FetchStabilizers()
         {
             azimuthStators.Clear();
+            azimuthStators.AddRange(blockFetcher.GetBlocks(BlockType.GyroscopeAzimuth).Where(fb => fb.Block is IMyMotorStator).Select(fb => new RotorGyroscope(fb, blockFinder)));
             elevationStators.Clear();
+            elevationStators.AddRange(blockFetcher.GetBlocks(BlockType.GyroscopeElevation).Where(fb => fb.Block is IMyMotorStator).Select(fb => new RotorGyroscope(fb, blockFinder)));
             rollStators.Clear();
-            foreach (FetchedBlock block in BlockFinder.GetBlocksOfType<IMyMotorStator>(motor => BlockFetcher.ParseBlock(motor).HasValue).Select(motor => BlockFetcher.ParseBlock(motor)))
+            rollStators.AddRange(blockFetcher.GetBlocks(BlockType.GyroscopeRoll).Where(fb => fb.Block is IMyMotorStator).Select(fb => new RotorGyroscope(fb, blockFinder)));
+            /*foreach (FetchedBlock block in BlockFinder.GetBlocksOfType<IMyMotorStator>(motor => BlockFetcher.ParseBlockOne(motor).HasValue).Select(motor => BlockFetcher.ParseBlockOne(motor)))
             {
                 switch (block.Type)
                 {
@@ -60,10 +63,11 @@ namespace IngameScript
                         rollStators.Add(new RotorGyroscope(block));
                         break;
                 }
-            }
+            }*/
 
             stabilizationGyros.Clear();
-            foreach (FetchedBlock block in BlockFinder.GetBlocksOfType<IMyGyro>(gyro => BlockFetcher.ParseBlock(gyro).HasValue).Select(gyro => BlockFetcher.ParseBlock(gyro)))
+            stabilizationGyros.AddRange(blockFetcher.CachedBlocks.Where(fb => fb.Block is IMyGyro).Select(fb => new Gyroscope(fb)));
+            /*foreach (FetchedBlock block in BlockFinder.GetBlocksOfType<IMyGyro>(gyro => BlockFetcher.ParseBlockOne(gyro).HasValue).Select(gyro => BlockFetcher.ParseBlockOne(gyro)))
                 switch (block.Type)
                 {
                     case BlockType.GyroscopeAzimuth:
@@ -73,7 +77,7 @@ namespace IngameScript
                     case BlockType.GyroscopeStop:
                         stabilizationGyros.Add(new Gyroscope(block));
                         break;
-                }
+                }*/
         }
 
         void SetAngles(Gyroscope gyroBlock, float yaw, float pitch, float roll)
@@ -102,6 +106,8 @@ namespace IngameScript
             }
         }
 
+        public static Vector3D gravity = Vector3D.Zero;
+
         void UpdateStabilization()
         {
             Log("-- Stabilization --");
@@ -112,9 +118,9 @@ namespace IngameScript
                 Log("No reference for stabilization");
                 return;
             }
-            Vector3D gravity = reference.GetTotalGravity();
-            Log(gravity);
-            if (gravity == null || gravity.LengthSquared() == 0 || reference.WorldMatrix == null)
+            gravity = reference.GetTotalGravity();
+            Log("gravity:", gravity);
+            if (double.IsNaN(gravity.X))
             {
                 Log("Not in gravity well or invalid world reference");
                 return;

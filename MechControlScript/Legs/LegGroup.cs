@@ -35,8 +35,6 @@ namespace IngameScript
             public List<IMyLandingGear> LeftGears = new List<IMyLandingGear>();
             public List<IMyLandingGear> RightGears = new List<IMyLandingGear>();
 
-            public List<FetchedBlock> AllBlocks = new List<FetchedBlock>();
-
             //public IMyCameraBlock[] InclineCameras; // TODO: use these, give them a purpose!
 
             protected double LastDelta = 1;
@@ -48,15 +46,6 @@ namespace IngameScript
             public Animation Animation = Animation.Idle;
             public double AnimationWaitTime = 0;
             public virtual double AnimationDirectionMultiplier => 1;
-
-            public double AACalculatedThighLength = 0;
-            public double AACalculatedCalfLength = 0;
-            public double AACalculatedQuadLength = 0;
-
-            protected double HipInversedMultiplier = 1;
-            protected double KneeInversedMultiplier = 1;
-            protected double FeetInversedMultiplier = 1;
-            protected double QuadInversedMultiplier = 1;
 
             #endregion
 
@@ -70,12 +59,6 @@ namespace IngameScript
 
             public virtual void Initialize()
             {
-                // Update multipliers
-                HipInversedMultiplier = Configuration.HipsInverted ? -1 : 1;
-                KneeInversedMultiplier = Configuration.KneesInverted ? -1 : 1;
-                FeetInversedMultiplier = Configuration.FeetInverted ? -1 : 1;
-                QuadInversedMultiplier = Configuration.QuadInverted ? -1 : 1;
-
                 //AACalculatedThighLength = Configuration.ThighLength > 0 ? Configuration.ThighLength : FindThighLength();
                 //AACalculatedCalfLength = Configuration.CalfLength > 0 ? Configuration.CalfLength : FindCalfLength(); // lower leg, or upper leg for spiders
                 //AACalculatedQuadLength = Configuration.ThighLength > 0 ? Configuration.ThighLength : FindQuadLength(); // lower lower leg, or lower leg for spiders
@@ -87,11 +70,6 @@ namespace IngameScript
                     leftBlocks.Add(block);
                 else
                     rightBlocks.Add(block);
-            }
-
-            public virtual void AddBlock(FetchedBlock block)
-            {
-                AllBlocks.Add(block);
             }
 
             public override void SetConfiguration(object config)
@@ -187,37 +165,6 @@ namespace IngameScript
                 {
                     AnimationStepOffset = (.5f + MapRange(currentStep, segmentOffsetOffset, segmentOffsetOffset + segmentSize, 0, 1)).Modulo(1);
                 }
-            }
-
-            public virtual void Update(Vector3 forwardsDeltaVec, Vector3 movementVector, double delta)
-            {
-                double forwardsDelta = forwardsDeltaVec.Z;
-                // Update multipliers, we should probably isolate this in a "Initialize" method or something
-                HipInversedMultiplier = Configuration.HipsInverted ? -1 : 1;
-                KneeInversedMultiplier = Configuration.KneesInverted ? -1 : 1;
-                FeetInversedMultiplier = Configuration.FeetInverted ? -1 : 1;
-                QuadInversedMultiplier = Configuration.QuadInverted ? -1 : 1;
-
-                // If the legs should be offset or not, used for animation stuffs
-                OffsetLegs = forwardsDelta != 0;
-
-                if (OffsetLegs)
-                    LastDelta = forwardsDelta;
-
-                // Animate crouch
-                if (!Animation.IsCrouch())
-                    CrouchWaitTime = Math.Max(0, jumping ? 0 : CrouchWaitTime - delta * 2 * Configuration.CrouchSpeed);
-                else
-                    CrouchWaitTime = Math.Min(1, CrouchWaitTime + delta * 2 * Configuration.CrouchSpeed);
-
-                // Update animation step
-                double multiplier = forwardsDelta / Math.Abs(forwardsDelta);
-                Log($"mul: {multiplier}");
-                //if (!double.IsNaN(multiplier))
-                AnimationStep = (animationStepCounter * Configuration.AnimationSpeed) % 4;
-                //else
-                //    AnimationStep += (!double.IsNaN(multiplier) ? forwardsDelta : delta * (LastDelta / Math.Abs(LastDelta)) / 2) * Configuration.AnimationSpeed;//delta * (!double.IsNaN(multiplier) ? multiplier : 1) * Configuration.AnimationSpeed;
-                AnimationStep %= 4; // 0 to 3
             }
 
             #endregion

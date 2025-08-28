@@ -38,8 +38,8 @@ namespace IngameScript
             public double StrafeDegrees;
 
             public double HipRadians => HipDegrees.ToRadians();
-            public double KneeRadians => KneeRadians.ToRadians();
-            public double FeetRadians => FeetRadians.ToRadians();
+            public double KneeRadians => KneeDegrees.ToRadians();
+            public double FeetRadians => FeetDegrees.ToRadians();
             public double QuadRadians => QuadDegrees.ToRadians();
             public double StrafeRadians => StrafeDegrees.ToRadians();
 

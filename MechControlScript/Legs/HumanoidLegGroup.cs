@@ -45,14 +45,14 @@ namespace IngameScript
                 float radius = (float)(ThighLength + CalfLength);
 
                 XOffset = Configuration.VariableXOffset.GetMetersOf(GridSize, 0, radius);
-                YOffset = Configuration.VariableYOffset.GetMetersOf(GridSize, 0, 0);
-                ZOffset = Configuration.VariableZOffset.GetMetersOf(GridSize, 0, 0);
+                YOffset = Configuration.VariableYOffset.GetMetersOf(GridSize, 0, radius);
+                ZOffset = Configuration.VariableZOffset.GetMetersOf(GridSize, 0, radius);
 
                 StandingHeight = Configuration.VariableStandingHeight.GetMetersOf(GridSize, 0, radius);
 
                 if (StandingHeight > radius)
                 {
-                    StaticWarn("Out of Bounds: Standing Height", $"The standing height of leg group {Configuration.Id} is out of bounds, maximum: {radius:f3}m");
+                    StaticWarn("Out of Bounds: Standing Height", $"The standing height of leg group {Configuration.Id} is out of bounds, current/maximum: {StandingHeight:f3}m/{radius:f3}m");
                 }
 
                 // x^2 + y^2 = r^2
@@ -65,16 +65,16 @@ namespace IngameScript
 
                 if (StepLength > maxStepLength)
                 {
-                    StaticWarn("Out of Bounds: Step Length", $"The step length of leg group {Configuration.Id} is out of bounds, maximum: {maxStepLength:f3}m");
+                    StaticWarn("Out of Bounds: Step Length", $"The step length of leg group {Configuration.Id} is out of bounds, current/maximum: {StepLength:f3}m/{maxStepLength:f3}m");
                 }
 
                 if (StepHeight > StandingHeight)
                 {
-                    StaticWarn("Out of Bounds: Step Height", $"The step height of leg group {Configuration.Id} is out of bounds, maximum: {StandingHeight:f3}m");
+                    StaticWarn("Out of Bounds: Step Height", $"The step height of leg group {Configuration.Id} is out of bounds, current/maximum: {StepHeight:f3}m/{StandingHeight:f3}m");
                 }
                 else if (CrouchHeight + StepHeight > StandingHeight)
                 {
-                    StaticWarn("Out of Bounds: Crouch Height", $"The crouch height of leg group {Configuration.Id} is out of bounds, maximum {StandingHeight - StepHeight:f3}m");
+                    StaticWarn("Out of Bounds: Crouch Height", $"The crouch height of leg group {Configuration.Id} is out of bounds, current/maximum {CrouchHeight}m/{StandingHeight - StepHeight:f3}m");
                 }
             }
 
@@ -85,15 +85,26 @@ namespace IngameScript
             {
                 base.Update(info);
                 Log("Step:", AnimationStep, AnimationStepOffset);
+                var cameraOffsets = UpdateCameras();
+                Log("Camera Offsets:", cameraOffsets.Item1, cameraOffsets.Item2);
+
+                LegAngles flyingAngles = new LegAngles();
+                if (info.Flying && Configuration.VtolActive)
+                {
+                    flyingAngles.HipDegrees = flyingOffset.X * 45;
+                    flyingAngles.StrafeDegrees = flyingOffset.Z * 45;
+                }
+                Log("Flying Angles:", flyingAngles.HipDegrees, flyingAngles.StrafeDegrees);
 
                 // left
                 x =
                     AnimationDirectionMultiplier * Math.Sin(2 * AnimationStep * Math.PI) * StepLength * -info.Walk
-                    + XOffset;
+                    - XOffset * AnimationDirectionMultiplier;
                 y = YOffset
+                    - cameraOffsetTween.Item1
                     + StandingHeight
                     - CrouchHeight * CrouchWaitTime
-                    - Math.Max(Math.Sin(2 * AnimationStep * Math.PI + Math.PI / 2d), 0) * StepHeight * Math.Abs(AbsMax(info.Walk, AbsMax(info.Strafe, info.Turn)));
+                    - Math.Max(Math.Sin(2 * AnimationStep * Math.PI + Math.PI / 2d), 0) * (StepHeight - cameraOffsetTween.Item1) * Math.Abs(AbsMax(info.Walk, AbsMax(info.Strafe, info.Turn)));
                 z = ZOffset
                     + (-Math.Sign(info.Strafe) * Math.Sin(2 * AnimationStep * Math.PI)) * StrafeDistance * Math.Abs(info.Strafe)
                     + StrafeDistance * Math.Abs(info.Strafe);
@@ -126,11 +137,12 @@ namespace IngameScript
                 // right
                 x =
                     AnimationDirectionMultiplier * Math.Sin(2 * AnimationStepOffset * Math.PI) * StepLength * -info.Walk
-                    + XOffset;
+                    - XOffset * AnimationDirectionMultiplier;
                 y = YOffset
+                    - cameraOffsetTween.Item2
                     + StandingHeight
                     - CrouchHeight * CrouchWaitTime
-                    - Math.Max(Math.Sin(2 * AnimationStepOffset * Math.PI + Math.PI / 2d), 0) * StepHeight * Math.Abs(AbsMax(info.Walk, AbsMax(info.Strafe, info.Turn)));
+                    - Math.Max(Math.Sin(2 * AnimationStepOffset * Math.PI + Math.PI / 2d), 0) * (StepHeight - cameraOffsetTween.Item2) * Math.Abs(AbsMax(info.Walk, AbsMax(info.Strafe, info.Turn)));
                 z = ZOffset
                     + (-Math.Sign(info.Strafe) * Math.Sin(2 * AnimationStep * Math.PI)) * StrafeDistance * Math.Abs(info.Strafe)
                     + StrafeDistance * Math.Abs(info.Strafe);
@@ -157,11 +169,122 @@ namespace IngameScript
                 Log("Foot  :", rightAngles.FeetDegrees);
                 Log("Quad  :", rightAngles.QuadDegrees);
                 Log("Strafe:", rightAngles.StrafeDegrees);
-                
-                SetAngles(
-                    LegAnglesOffset * LeftAnglesMultiplier  + LegAnglesMultiplier * LeftAnglesMultiplier  * leftAngles ,
-                    LegAnglesOffset * RightAnglesMultiplier + LegAnglesMultiplier * RightAnglesMultiplier * rightAngles
-                );
+
+                LegAngles leftAnglesFinal  = flyingAngles * LeftAnglesMultiplier  * new LegAngles(1, 1, 1, 1, -1) + LegAnglesOffset * LeftAnglesMultiplier  + LegAnglesMultiplier * LeftAnglesMultiplier  * leftAngles;
+                LegAngles rightAnglesFinal = flyingAngles * RightAnglesMultiplier                                 + LegAnglesOffset * RightAnglesMultiplier + LegAnglesMultiplier * RightAnglesMultiplier * rightAngles;
+                SetAngles(leftAnglesFinal, rightAnglesFinal);
+                Log("set angles!");
+
+                // hydraulics
+                UpdateHydraulics();
+                /*if (Hydraulics.Count == 0)
+                    return; // save perf
+                            // TODO: cache groups and use "getter" Func to get leg angles instead of creating new objects every iteration?
+                /*List<HydraulicGroup> leftHydraulics = new List<HydraulicGroup>()
+                {
+                    new HydraulicGroup(LeftHipJoints[0].Stator, leftAnglesFinal.HipRadians),
+                    new HydraulicGroup(LeftKneeJoints[0].Stator, leftAnglesFinal.KneeRadians),
+                    new HydraulicGroup(LeftFootJoints[0].Stator, leftAnglesFinal.FeetRadians),
+                };
+                List<HydraulicGroup> rightHydraulics = new List<HydraulicGroup>()
+                {
+                    new HydraulicGroup(RightHipJoints[0].Stator, rightAnglesFinal.HipRadians),
+                    new HydraulicGroup(RightKneeJoints[0].Stator, rightAnglesFinal.KneeRadians),
+                    new HydraulicGroup(RightFootJoints[0].Stator, rightAnglesFinal.FeetRadians),
+                };*/
+
+                /*Log("has hydraulics!");
+                /*foreach (var hy in Hydraulics.Where(h => h.Valid))
+                {
+                    Log($"Update {hy.Source.Name}");
+                    Log($"Update {hy.TopStator.CustomName} {hy.BottomStator.CustomName}");
+                    //HydraulicGroup group;
+                    hy.TopPosition = hy.TopStator.WorldMatrix;
+                    hy.BottomPosition = hy.BottomStator.WorldMatrix;
+                    /*for (int index = 0; index < leftHydraulics.Count; index++)
+                    {
+                        group = leftHydraulics[index];
+                        if (group.Grid.Equals(hy.TopGrid))
+                        {
+                            Log($"found top grid! {hy.Source.Name} {index}");
+                            HandleHydraulic(hy, leftHydraulics, index, true);
+                        }
+                        if (group.Grid.Equals(hy.BottomGrid))
+                        {
+                            Log($"found bottom grid! {hy.Source.Name} {index}");
+                            HandleHydraulic(hy, leftHydraulics, index, false);
+                        }
+                        group = rightHydraulics[index];
+                        if (group.Grid.Equals(hy.TopGrid))
+                        {
+                            Log($"found top grid! {hy.Source.Name} {index}");
+                            HandleHydraulic(hy, rightHydraulics, index, true);
+                        }
+                        if (group.Grid.Equals(hy.BottomGrid))
+                        {
+                            Log($"found bottom grid! {hy.Source.Name} {index}");
+                            HandleHydraulic(hy, rightHydraulics, index, false);
+                        }
+                    }*/
+                    /*Log("distance:", Vector3D.Distance(hy.TopPosition.Translation, hy.BottomPosition.Translation), Math.Abs(Vector3D.Dot(Base6Directions.GetIntVector(hy.TopStator.Top.Orientation.Up), hy.TopPosition.Translation) - Vector3D.Dot(Base6Directions.GetIntVector(hy.TopStator.Top.Orientation.Up), hy.BottomPosition.Translation)));
+                    Log("dist:", hy.BottomStator.CustomName, hy.BottomDistance, hy.TopStator.CustomName, hy.TopDistance, "inter:", hy.IntermediateDistance);*/
+                    /*hy.Update();
+                    // assume grids
+                    // bottom = KR --> FR
+                    // top = HR --> KR
+                    /*double angle1 = (rightAnglesFinal.HipRadians - RightHipJoints[0].Stator.Angle);
+                    MatrixD pos1 = GetRotatedPosition(hy.TopStator.WorldMatrix, RightHipJoints[0].Stator.WorldMatrix, angle1, Vector3D.Up);//RightHipJoints[0].Stator.WorldMatrix.Up);
+
+                    MatrixD pos2a = GetRotatedPosition(RightKneeJoints[0].Stator.WorldMatrix, RightHipJoints[0].Stator.WorldMatrix, angle1, Vector3D.Up);//, RightHipJoints[0].Stator.WorldMatrix.Up);
+                    MatrixD pos2b = GetRotatedPosition(hy.BottomStator.WorldMatrix, RightHipJoints[0].Stator.WorldMatrix, angle1, Vector3D.Up);//, RightHipJoints[0].Stator.WorldMatrix.Up);
+                    double angle2 = (rightAnglesFinal.KneeRadians - RightKneeJoints[0].Stator.Angle);
+                    MatrixD pos2 = GetRotatedPosition(pos2b, pos2a, angle2, Vector3D.Right);//, pos2b.Up);
+
+                    Log("angles", angle1, angle2);
+                    Log("pos:", pos1.Translation - hy.TopStator.WorldMatrix.Translation);
+                    Log("pos:", pos2.Translation - hy.TopStator.WorldMatrix.Translation);
+                    Log("pos1 - pos2:", Vector3D.Distance(pos1.Translation, pos2.Translation));
+                    double distance = Vector3D.Distance(pos1.Translation, pos2.Translation) - 1.5d;
+                    hy.Piston.MoveToPosition((float)distance, 10f);*/
+                //}*/
+            }
+
+            /*void HandleHydraulic(Hydraulic hy, List<HydraulicGroup> groups, int index, bool top)
+            {
+                var grid = top ? hy.TopGrid : hy.BottomGrid;
+                var stator = top ? hy.TopStator : hy.BottomStator;
+
+                MatrixD statorPos = stator.WorldMatrix;
+                MatrixD referencePos = MatrixD.Identity;
+                for (int i = 0; i < index + 1; i++)
+                {
+                    var group = groups[i];
+                    var angle = group.Target; // already rotated in HydraulicGroup :3 (offset from rotor's current rotation)
+
+                    if (i > 0)
+                    {
+                        // rotate reference
+                        referencePos = GetRotatedPosition(group.Reference.WorldMatrix, referencePos, groups[i - 1].Target, groups[i - 1].Axis);
+                    }
+                    else
+                        referencePos = group.Reference.WorldMatrix;
+
+                    statorPos = GetRotatedPosition(statorPos, referencePos, angle, group.Axis);
+
+                    if (i == index)
+                    {
+                        // target group
+                        if (top)
+                            hy.TopPosition = statorPos;
+                        else
+                            hy.BottomPosition = statorPos;
+                    }
+                }
+            }*/
+
+            MatrixD GetRotatedPosition(MatrixD position, MatrixD pivot, double angle, Vector3D axis) // radians
+            {
+                return position * MatrixD.Invert(pivot) * MatrixD.CreateFromAxisAngle(axis, angle) * pivot; //pivot * MatrixD.CreateFromAxisAngle(axis, angle) * inverted * position; //Vector3D.Transform(position, transform);
             }
         }
     }

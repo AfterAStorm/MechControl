@@ -17,6 +17,7 @@ using VRage.Game.ModAPI.Ingame;
 using VRage.Game.ModAPI.Ingame.Utilities;
 using VRage.Game.ObjectBuilders.Definitions;
 using VRageMath;
+using static IngameScript.Program;
 
 namespace IngameScript
 {
@@ -54,14 +55,19 @@ namespace IngameScript
                     StaticWarn("Out of Bounds: Standing Height", $"The standing height of leg group {Configuration.Id} is out of bounds, maximum: {Radius:f3}m");
                 }
 
-                ZOffset = Configuration.VariableZOffset.GetMetersOf(GridSize, 0, Radius);
+                ZOffset = Configuration.VariableZOffset.GetMetersOf(GridSize, 0, Radius).AlwaysANumber();
 
                 // x^2 + y^2 + z^2 = r^2
                 // account for standing height
                 Radius = (float)Math.Sqrt(Math.Pow(Radius, 2) - Math.Pow(StandingHeight, 2));
 
                 // x^2 + y^2 = r^2
-                float maxLength = (float)Math.Sqrt(Math.Pow(Radius, 2) - Math.Pow(StandingDistance, 2)); // sqrt(r^2 - y^2) = x
+                float maxLength = (float)Math.Sqrt(Math.Pow(Radius, 2) - Math.Pow(StandingDistance, 2)).AlwaysANumber(); // sqrt(r^2 - y^2) = x
+
+                if (Radius < StandingDistance)
+                {
+                    StaticWarn("Out of Bounds: Standing Distance", $"The standing distance of leg group {Configuration.Id} is out of bounds, current/maximum: {StandingDistance:f3}m/{Radius:f3}m");
+                }
 
                 StepLength = Configuration.VariableStepLength.GetMetersOf(GridSize, 0, maxLength);
                 XOffset = Configuration.VariableXOffset.GetMetersOf(GridSize, 0, maxLength);
@@ -72,16 +78,16 @@ namespace IngameScript
 
                 if (StepLength > maxLength)
                 {
-                    StaticWarn("Out of Bounds: Step Length", $"The step length of leg group {Configuration.Id} is out of bounds, maximum: {maxLength:f3}m");
+                    StaticWarn("Out of Bounds: Step Length", $"The step length of leg group {Configuration.Id} is out of bounds, current/maximum: {StepLength:f3}m/{maxLength:f3}m");
                 }
 
                 if (StepHeight > maxLength)
                 {
-                    StaticWarn("Out of Bounds: Step Height", $"The step height of leg group {Configuration.Id} is out of bounds, maximum: {maxLength:f3}m");
+                    StaticWarn("Out of Bounds: Step Height", $"The step height of leg group {Configuration.Id} is out of bounds, current/maximum: {StepHeight:f3}m/{maxLength:f3}m");
                 }
                 else if (CrouchHeight + StepHeight > maxLength)
                 {
-                    StaticWarn("Out of Bounds: Crouch Height", $"The crouch height of leg group {Configuration.Id} is out of bounds, maximum {maxLength - StepHeight:f3}m");
+                    StaticWarn("Out of Bounds: Crouch Height", $"The crouch height of leg group {Configuration.Id} is out of bounds, current/maximum {CrouchHeight + StepHeight:f3}m/{maxLength - StepHeight:f3}m");
                 }
             }
 
@@ -106,11 +112,14 @@ namespace IngameScript
                 Log("YOffset:", YOffset);
                 Log("ZOffset:", ZOffset);
 
+                var cameraOffsets = UpdateCameras();
+
                 // left
                 x = XOffset * AnimationDirectionMultiplier
                     + AnimationDirectionMultiplier * Math.Sin(2 * AnimationStep * Math.PI) * StepLength * AbsMax(-info.Walk, info.Turn) * (AbsMax(info.Walk, info.Turn) == info.Turn ? -1 : 1);
 
                 y = YOffset
+                    - cameraOffsets.Item1
                     + StandingHeight
                     - CrouchHeight * CrouchWaitTime
                     - Math.Max(-Math.Sin(2 * AnimationStep * Math.PI + Math.PI / 2d), 0) * StepHeight * Math.Abs(AbsMax(info.Walk, AbsMax(info.Strafe, info.Turn)));
@@ -119,7 +128,7 @@ namespace IngameScript
                     + StandingDistance
                     + (Math.Sign(info.Strafe) * Math.Sin(2 * AnimationStep * Math.PI)) * StrafeDistance * Math.Abs(info.Strafe);
                     //+ StrafeDistance * Math.Abs(info.Strafe);
-                
+
                 if (customTarget != Vector3D.Zero)
                 {
                     x = customTarget.X;
@@ -145,6 +154,7 @@ namespace IngameScript
                     + AnimationDirectionMultiplier * Math.Sin(2 * AnimationStepOffset * Math.PI) * StepLength * AbsMax(info.Walk, info.Turn) * (AbsMax(info.Walk, info.Turn) == info.Turn ? 1 : -1);
 
                 y = YOffset
+                    - cameraOffsets.Item2
                     + StandingHeight
                     - CrouchHeight * CrouchWaitTime
                     - Math.Max(-Math.Sin(2 * AnimationStepOffset * Math.PI + Math.PI / 2d), 0) * StepHeight * Math.Abs(AbsMax(info.Walk, AbsMax(info.Strafe, info.Turn)));
@@ -174,8 +184,42 @@ namespace IngameScript
 
                 SetAngles(
                     LegAnglesOffset + LocalLegAnglesOffset + leftAngles,
-                    LegAnglesOffset + LocalLegAnglesOffset + rightAngles
+                    LegAnglesOffset * new LegAngles(-1, 1, 1, 1, 1) + LocalLegAnglesOffset + rightAngles
                 );
+                UpdateHydraulics();
+
+                foreach (var mag in LeftMagnets)
+                {
+                    mag.AutoLock = false;
+                    /*if ((AnimationStep > .5d && AnimationStep < .75d) || (AnimationStep > 0d && AnimationStep < 0.25d))
+                    {
+                        mag.Unlock();
+                    }
+                    else
+                    {
+                        mag.Lock();
+                    }*/
+                    mag.Unlock();
+                }
+                foreach (var mag in RightMagnets)
+                {
+                    mag.AutoLock = false;
+                    mag.Unlock();
+                    /*if ((new Random()).NextDouble() > 0.5)
+                    {
+                        mag.Lock();
+                    }
+                    else mag.Unlock();*/
+                    /*if ((AnimationStepOffset > .5d && AnimationStepOffset < .75d) || (AnimationStepOffset > 0d && AnimationStepOffset < 0.25d))
+                    {
+                        mag.ResetAutoLock();
+                        mag.Unlock();
+                    }
+                    else
+                    {
+                        mag.Lock();
+                    }*/
+                }
             }
         }
     }

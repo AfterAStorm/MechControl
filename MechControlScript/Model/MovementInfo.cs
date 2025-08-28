@@ -24,7 +24,7 @@ namespace IngameScript
     {
         public struct MovementInfo
         {
-            /// <summary>
+            /* /// <summary>
             /// X+ is strafe right
             /// X- is strafe left
             /// Y+ is turn right
@@ -42,42 +42,37 @@ namespace IngameScript
             /// Z+ is forward
             /// Z- is backwards
             /// </summary>
-            public Vector3 Movement { get; set; } // the direction's values, so {0, 0, -.256116456}
-            public double Delta { get; set; } // delta
-
-            /// <summary>
-            /// Is the mech "idle"?
-            /// </summary>
-            public bool Idle { get; set; }
+            public Vector3 Movement { get; set; } // the direction's values, so {0, 0, -.256116456} */
+            public double Delta { get; set; } // delta, time since last tick
 
             /// <summary>
             /// Is the mech "crouching"?
             /// </summary>
             public bool Crouched { get; set; }
 
+            /// <summary>
+            /// Is the mech "jumping"? (holding down space)
+            /// </summary>
             public bool Jumping { get; set; }
+
+            /// <summary>
+            /// Did the mech just jump? (let go of space, reset whenever a normal crouch happens)
+            /// </summary>
             public bool Jumped { get; set; }
 
             /// <summary>
-            /// Is the mech "walking" (takes into account SteeringTakesPriority)
-            /// <para>*true if strafing</para>
+            /// The walk multiplier, Z
             /// </summary>
-            public bool Walking { get; set; }
-
             public float Walk { get; set; }
 
             /// <summary>
-            /// Is the mech "strafing"
+            /// The strafe multiplier, X
             /// </summary>
-            public bool Strafing { get; set; }
-
             public float Strafe { get; set; }
 
             /// <summary>
-            /// Is the mech turning (takes into account SteeringTakesPriority)
+            /// The turn multiplier, Y
             /// </summary>
-            public bool Turning { get; set; }
-
             public float Turn { get; set; }
 
             /// <summary>

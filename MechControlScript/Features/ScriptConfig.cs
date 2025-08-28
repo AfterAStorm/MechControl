@@ -50,7 +50,7 @@ namespace IngameScript
         // - Mech
 
         static float StandingHeight = 1f; // a multiplier applied to some leg types
-        ThrusterMode ThrusterBehavior = ThrusterMode.Override; // set the default thruster behavior, changable with commands. valid: Override, Hover
+        //static ThrusterMode ThrusterBehavior = ThrusterMode.Override; // set the default thruster behavior, changable with commands. valid: Override, Hover
 
         static double StandingLean = 0d; // the offset of where the foot sits when standing (idling)
         static double AccelerationLean = 0d; // the offset of where the foot sits when walking
@@ -129,10 +129,11 @@ namespace IngameScript
             // parse -- the painful part
             SetSection("Controls");
             ReverseTurnControls = GetConfig("ReverseTurnControls").ToBoolean();
+            AutoHalt = GetConfig("AutoHalt").ToBoolean(true);
 
             SetSection("Mech");
             StandingHeight = GetConfig("StandingHeight").ToSingle(.95f);
-            ThrusterBehavior = (ThrusterMode)Enum.Parse(typeof(ThrusterMode), GetConfig("ThrusterBehavior").ToString("Override"), true);
+            //ThrusterBehavior = (ThrusterMode)Enum.Parse(typeof(ThrusterMode), GetConfig("ThrusterBehavior").ToString("Override"), true);
 
             StandingLean = GetConfig("StandingLean").ToDouble(0);
             AccelerationLean = GetConfig("AccelerationLean").ToDouble(0);
@@ -142,7 +143,7 @@ namespace IngameScript
             SetSection("Walking");
             WalkCycleSpeed = GetConfig("WalkSpeed").ToSingle(1f);
             CrouchSpeed = GetConfig("CrouchSpeed").ToSingle(1f);
-            AutoHalt = GetConfig("AutoHalt").ToBoolean(true);
+            //AutoHalt = GetConfig("AutoHalt").ToBoolean(true);
 
             // - Joints
 
@@ -182,20 +183,21 @@ namespace IngameScript
 
             SetSection("Controls");
             SetConfig("ReverseTurnControls", ReverseTurnControls);
+            SetConfig("AutoHalt", AutoHalt);
 
-            SetSection("Mech");
+            //SetSection("Mech");
             //SetConfig("StandingHeight", StandingHeight);
-            SetConfig("ThrusterBehavior", Enum.GetName(typeof(ThrusterMode), ThrusterBehavior));
+            //SetConfig("ThrusterBehavior", Enum.GetName(typeof(ThrusterMode), ThrusterBehavior));
 
             //SetConfig("StandingLean", StandingLean);
             //SetConfig("AccelerationLean", AccelerationLean);
 
             // - Walking
 
-            SetSection("Walking");
-            SetConfig("WalkSpeed", WalkCycleSpeed);
-            SetConfig("CrouchSpeed", CrouchSpeed);
-            SetConfig("AutoHalt", AutoHalt);
+            //SetSection("Walking");
+            //SetConfig("WalkSpeed", WalkCycleSpeed);
+            //SetConfig("CrouchSpeed", CrouchSpeed);
+            // SetConfig("AutoHalt", AutoHalt);
 
             // - Joints
 

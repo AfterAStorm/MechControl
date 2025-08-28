@@ -20,17 +20,26 @@ namespace IngameScript
 {
     partial class Program
     {
-        internal class BlockFinder
+        public class BlockFinder
         {
+
+            public IMyGridTerminalSystem Terminal => terminal;
+            private IMyGridTerminalSystem terminal;
+
+            public BlockFinder(IMyGridTerminalSystem terminal)
+            {
+                this.terminal = terminal;
+            }
+
             /// <summary>
             /// Returns a list of blocks instead of changing a list in parameters
             /// </summary>
             /// <typeparam name="T"></typeparam>
             /// <returns></returns>
-            public static List<T> GetBlocksOfType<T>(Func<T, bool> predicate = null) where T : class
+            public List<T> GetBlocksOfType<T>(Func<T, bool> predicate = null) where T : class
             {
                 List<T> blocks = new List<T>();
-                Singleton.GridTerminalSystem.GetBlocksOfType(blocks, block => (block as IMyTerminalBlock).IsSameConstructAs(Singleton.Me) && (predicate == null || predicate(block)));
+                terminal.GetBlocksOfType(blocks, block => (block as IMyTerminalBlock).IsSameConstructAs(Singleton.Me) && (predicate == null || predicate(block)));
                 return blocks;
             }
         }

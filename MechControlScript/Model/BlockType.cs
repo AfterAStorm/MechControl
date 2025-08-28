@@ -31,10 +31,12 @@ namespace IngameScript
             Quad,
             Strafe,
 
+            Hydraulic,
+
             // Arm
-            Pitch,
-            Yaw,
-            Roll,
+            ArmPitch,
+            ArmYaw,
+            ArmRoll,
             Magnet, // arm landing gear
 
             // Misc
@@ -46,7 +48,11 @@ namespace IngameScript
             GyroscopeStabilization,
             GyroscopeStop, // turn off when gyros in use
 
+            // Thruster
             Thruster,
+            VtolAzimuth,
+            VtolElevation,
+            VtolRoll,
 
             Camera
         }

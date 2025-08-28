@@ -80,8 +80,8 @@ namespace IngameScript
             turnValue = turnOverride != 0 ? turnOverride : (ReverseTurnControls ? moveInput.X : rollInput);
             strafeValue = (ReverseTurnControls ? rollInput : moveInput.X);
 
-            parsedMoveInput = new Vector3(strafeValue, turnValue, -moveInput.Z);
-            parsedVerticalInput = moveInput.Y;
+            parsedMoveInput = new Vector3(strafeValue.AlwaysANumber(0), turnValue.AlwaysANumber(0), -moveInput.Z.AlwaysANumber(0));
+            parsedVerticalInput = moveInput.Y.AlwaysANumber(0);
             Log("parsedVerticalInput", parsedVerticalInput);
 
             Log($"turnValue: {turnValue}");

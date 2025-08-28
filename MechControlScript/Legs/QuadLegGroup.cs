@@ -61,15 +61,16 @@ namespace IngameScript
                 SetAnglesOf(RightQuadJoints, right.QuadDegrees);
             }
 
-            public override void AddBlock(FetchedBlock block)
+            public override bool AddBlock(FetchedBlock block)
             {
-                base.AddBlock(block);
                 switch (block.Type)
                 {
                     case BlockType.Quad:
                         AddLeftRightBlock(LeftQuadJoints, RightQuadJoints, new LegJoint(block), block.Side);
-                        break;
+                        AddAllBlock(block);
+                        return true;
                 }
+                return base.AddBlock(block);
             }
 
         }

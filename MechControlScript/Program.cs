@@ -31,10 +31,13 @@ namespace IngameScript
 
         public static readonly double TicksPerSecond = 1d / 60d;
 
+        public BlockFetcher blockFetcher;
+        public BlockFinder blockFinder;
+
         // Diagnostics //
 
         static IMyTextPanel debugPanel = null;
-        static bool debugMode = false;
+        static bool debugMode = true;
         static bool debugModeClearOnLoop = true;
 
         double[] averageRuntimes = new double[AverageRuntimeSampleSize];
@@ -202,15 +205,29 @@ namespace IngameScript
 
         // Program //
 
+        /*static IMyCameraBlock baseCamera;
+        static Vector3D baseCameraSpot;
+        static Vector3D baseGravity;
+        static MyDetectedEntityType[] ignoreEntities = new MyDetectedEntityType[]
+        {
+            MyDetectedEntityType.CharacterHuman,
+            MyDetectedEntityType.CharacterOther,
+            MyDetectedEntityType.Missile,
+            MyDetectedEntityType.Unknown
+        };*/
+
         public Program()
         {
+            //baseCamera = GridTerminalSystem.GetBlockWithName("Base Camera") as IMyCameraBlock;
             // define singleton
             Singleton = this;
+            blockFinder = new BlockFinder(GridTerminalSystem);
+            blockFetcher = new BlockFetcher(blockFinder);
 
             // load script state
             state = new ScriptState();
-            Load(); // do initial load to not overwrite settings
             Reload(); // reload to handle customdata stuffs
+            Load(); // script state, only matters after initialization anyway
 
             // set runtime update freq.
             Runtime.UpdateFrequency = UpdateFrequency.Update1;
@@ -221,6 +238,8 @@ namespace IngameScript
             // diag
             //if (debugMode)
                 debugPanel = Singleton.GridTerminalSystem.GetBlockWithName(DebugLCD) as IMyTextPanel;
+
+            blockFetcher.Invalidate(); // "reset cache"
 
             // blocks
             FetchInputs(); // cockpits
@@ -254,8 +273,10 @@ namespace IngameScript
             setupWarnings.Clear();
             LoadConfig(); // allow recompile to be used (for pb, not legs)
             Save();
+            Cameras.Reset();
             Load();
             Fetch();
+            IterateHydraulics();
         }
 
         // Main Loop //
@@ -264,7 +285,7 @@ namespace IngameScript
         {
             Log($"Main({updateSource.ToString()})");
             // calculate delta
-            double fakeDelta = Runtime.TimeSinceLastRun.TotalMilliseconds / 1000d + deltaOffset;
+            double fakeDelta = /*Runtime.TimeSinceLastRun.TotalMilliseconds / 1000d*/ (1/60d) + deltaOffset;
 
             // run diagnostics
             double lastRuntime = Runtime.LastRunTimeMs;
@@ -307,7 +328,7 @@ namespace IngameScript
             if (cockpits.Count <= 0)
             {
                 List<IMyShipController> controllers = new List<IMyShipController>();
-                GridTerminalSystem.GetBlocksOfType(controllers);
+                GridTerminalSystem.GetBlocksOfType(controllers, c => c.IsSameConstructAs(Me));
                 if (controllers.Count > 0) // if there is any actual controllers, add it to the warning message
                     Warn("No Cockpits Found!", "Failed to find any MAIN cockpits or remote controls; " +
                         $"try changing [Color=#0000ff77]{(controllers.Count > 1 ? $"one of the {controllers.Count} ship controllers[/Color] to the main cockpit?" : $"{controllers[0].CustomName}[/Color] to the main cockpit?")}");
@@ -328,11 +349,19 @@ namespace IngameScript
             // delta management
             if (!updateSource.HasFlag(UpdateType.Update1))
             {
-                deltaOffset += Runtime.TimeSinceLastRun.TotalMilliseconds / 1000d; // add "fake" offset so it's accurate for real steps
+                deltaOffset = fakeDelta; // add "fake" offset so it's accurate for real steps--just set since deltaOffset is already added
                 lastInstructions = Runtime.CurrentInstructionCount;
                 maxInstructions = Math.Max(lastInstructions, maxInstructions);
                 return;
             }
+
+            /*baseCamera.EnableRaycast = true;
+            var a = baseCamera.Raycast(20);
+            if (!a.IsEmpty() && !ignoreEntities.Contains(a.Type))
+            {
+                baseCameraSpot = a.HitPosition.Value;
+                baseGravity = cockpits[0].GetTotalGravity();
+            }*/
             
             // get delta
             delta = fakeDelta;

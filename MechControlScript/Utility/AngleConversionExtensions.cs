@@ -22,6 +22,33 @@ namespace IngameScript
 {
     public static class AngleConversions
     {
+
+        /// <summary>
+        /// Convert NaN into the default if it is in-fact NaN
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="def"></param>
+        /// <returns></returns>
+        public static double AlwaysANumber(this double x, double def=0)
+        {
+            if (double.IsNaN(x))
+                return def;
+            return x;
+        }
+
+        /// <summary>
+        /// Convert NaN into the default if it is in-fact NaN
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="def"></param>
+        /// <returns></returns>
+        public static float AlwaysANumber(this float x, float def=0)
+        {
+            if (float.IsNaN(x))
+                return def;
+            return x;
+        }
+
         /// <summary>
         /// Clamps a value, shorthand for AngleConversions.Modulo(x, divisor)
         /// C#'s % operator is remainder, so this supports negative numbers

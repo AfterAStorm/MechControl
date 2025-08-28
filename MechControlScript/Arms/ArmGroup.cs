@@ -54,6 +54,27 @@ namespace IngameScript
                 // n/a
             }
 
+            public override bool AddBlock(FetchedBlock block)
+            {
+                base.AddBlock(block);
+                switch (block.Type)
+                {
+                    case BlockType.ArmPitch:
+                        PitchJoints.Add(new ArmJoint(block, ArmJointConfiguration.Parse(block)));
+                        return true;
+                    case BlockType.ArmYaw:
+                        YawJoints.Add(new ArmJoint(block, ArmJointConfiguration.Parse(block)));
+                        return true;
+                    /*case BlockType.Roll:
+                        arm.RollJoints.Add(new ArmJoint(block, jointConfig));
+                        return true;*/
+                    case BlockType.Magnet:
+                        Magnets.Add(block.Block as IMyLandingGear);
+                        return true;
+                }
+                return false;
+            }
+
             public void ToZero()
             {
                 IsZeroing = true;

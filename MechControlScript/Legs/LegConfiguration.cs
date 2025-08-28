@@ -113,7 +113,6 @@ namespace IngameScript
             public int LegType;
             public bool HipsInverted = false, KneesInverted = false, FeetInverted = false, QuadInverted = false; // we define = false because they aren't set anymore (deprecated) TODO: REMOVE
             public double HipOffsets, KneeOffsets, FootOffsets, QuadOffsets, StrafeOffsets;
-            public double XOffset, YOffset, ZOffset;
             public JointVariable VariableXOffset, VariableYOffset, VariableZOffset;
 
             public float? ThighLength = null, CalfLength = null, AnkleLength = null;
@@ -126,10 +125,9 @@ namespace IngameScript
             public double CrouchSpeed;
 
             public bool IndependantStep => IndependantStepEnabled;
+            public bool VtolActive = true;
 
-            public double StandingHeight => Program.StandingHeight;
             public JointVariable VariableStandingHeight, VariableStandingDistance, VariableStrafeDistance;
-            public double Lean => moveInfo.Movement.Z != 0 ? AccelerationLean : StandingLean;
 
             private int defaultValue;
             public bool Default => defaultValue <= 0;
@@ -169,57 +167,38 @@ namespace IngameScript
                     VariableStandingDistance.GetHashCode() * 15 +
                     ThighLength.GetHashCode() * 16 +
                     CalfLength.GetHashCode() * 17 +
-                    AnkleLength.GetHashCode() * 18
+                    AnkleLength.GetHashCode() * 18 +
+                    AnimationSpeed.GetHashCode() * 19 +
+                    CrouchSpeed.GetHashCode() * 20 +
+                    VariableCrouchHeight.GetHashCode() * 21 + // rip order... whatever
+                    VtolActive.GetHashCode() * 22
                 ) % int.MaxValue;
             }
 
             public override string ToCustomDataString()
             {
-                /**
-                 * 
-; Change joint offsets in degrees
-HipOffsets=0
-KneeOffsets=0
-FootOffsets=0
-; How far forwards/backwards and up/down legs step
-; 0.5 is half, 1 is default, 2 is double
-StepLength=1
-StepHeight=1
-; How fast legs crouch
-CrouchSpeed=1
-; Change theoretical apendage lengths
-ThighLength=2.5
-CalfLength=2.5
-
-                 */
-
                 ini.Clear();
                 ini.Set("Leg", "LegType", LegType);
-                ini.SetComment("Leg", "LegType", "1 = Humanoid\n2 = Chicken walker\n3 = Spideroid\n4 = Crab\n5 = Digitigrade");
+                ini.SetComment("Leg", "LegType", "1 = Humanoid\n2 = Chicken walker\n3 = Spideroid\n4 = Crab\n5 = Digitigrade\n6 = Prismatic");
 
-                ini.Set("Leg", "HipOffsets", HipOffsets);
-                //ini.SetComment("Leg", "HipOffsets", "The joints' offsets (in degrees)");
-                ini.Set("Leg", "KneeOffsets", KneeOffsets);
-                ini.Set("Leg", "FootOffsets", FootOffsets);
-                if (LegType > 2)
-                    ini.Set("Leg", "QuadOffsets", QuadOffsets);
-                ini.Set("Leg", "StrafeOffsets", StrafeOffsets);
+                ini.Set("Leg", "StandingHeight", VariableStandingHeight.ToString());
                 /*ini.Set("Leg", "XOffset", XOffset);
                 ini.Set("Leg", "YOffset", YOffset);
                 ini.Set("Leg", "ZOffset", ZOffset);*/
-                ini.Set("Leg", "XOffset", VariableXOffset.ToString());
-                ini.Set("Leg", "YOffset", VariableYOffset.ToString());
-                ini.Set("Leg", "ZOffset", VariableZOffset.ToString());
+                ini.Set("Leg", "StandingLean", VariableXOffset.ToString());//ini.Set("Leg", "XOffset", VariableXOffset.ToString());
+                //ini.Set("Leg", "YOffset", VariableYOffset.ToString());
+                ini.Set("Leg", "StandingWidth", VariableZOffset.ToString());//ini.Set("Leg", "ZOffset", VariableZOffset.ToString());
+
                 // StrafeOffsets?
 
                 //ini.Set("Leg", "StepLength", StepLength);
                 //ini.Set("Leg", "StepHeight", StepHeight);
                 ini.Set("Leg", "StepLength", VariableStepLength.ToString());
                 ini.Set("Leg", "StepHeight", VariableStepHeight.ToString());
-                ini.Set("Leg", "StandingHeight", VariableStandingHeight.ToString());
-                if (LegType > 2)
+                //ini.Set("Leg", "StandingHeight", VariableStandingHeight.ToString());
+                if (LegType > 2 && LegType < 6)
                     ini.Set("Leg", "StandingDistance", VariableStandingDistance.ToString());
-                ini.Set("Leg", "StrafeDistance", VariableStrafeDistance.ToString());
+                ini.Set("Leg", "StrafeWidth", VariableStrafeDistance.ToString());//ini.Set("Leg", "StrafeDistance", VariableStrafeDistance.ToString());
                 ini.Set("Leg", "CrouchHeight", VariableCrouchHeight.ToString());
                 //ini.SetComment("Leg", "StepLength", "How far forwards/backwards and up/down legs step\n0.5 is half, 1 is default, 2 is double");
 
@@ -228,12 +207,22 @@ CalfLength=2.5
                 //ini.Set("Leg", "IndependantStep", IndependantStep);
                 //ini.SetComment("Leg", "WalkSpeed", "How fast legs walk and crouch");
 
+                ini.Set("Leg", "HipOffsets", HipOffsets);
+                ini.SetComment("Leg", "HipOffsets", "Advanced options, change at your discretion");
+                //ini.SetComment("Leg", "HipOffsets", "The joints' offsets (in degrees)");
+                ini.Set("Leg", "KneeOffsets", KneeOffsets);
+                ini.Set("Leg", "FootOffsets", FootOffsets);
+                if (LegType > 2)
+                    ini.Set("Leg", "QuadOffsets", QuadOffsets);
+                ini.Set("Leg", "StrafeOffsets", StrafeOffsets);
+
                 ini.Set("Leg", "ThighLength", FromAutoFloat(ThighLength));
                 ini.Set("Leg", "CalfLength", FromAutoFloat(CalfLength));
-                if (LegType > 2)
+                if (LegType > 2 && LegType < 6)
                     ini.Set("Leg", "AnkleLength", FromAutoFloat(AnkleLength));
                 //ini.SetComment("Leg", "ThighLength", "Change theoretical apendage lengths");
 
+                ini.Set("Leg", "VtolActive", VtolActive);
                 ini.SetSectionComment("Leg", $"Leg (group {Id}) settings. These change all of the joints in the same group.");
                 return ini.ToString();
             }
@@ -271,15 +260,15 @@ CalfLength=2.5
                     /*XOffset = ini.Get("Leg", "XOffset").ToDouble(0),
                     YOffset = ini.Get("Leg", "YOffset").ToDouble(0),
                     ZOffset = ini.Get("Leg", "ZOffset").ToDouble(0),*/
-                    VariableXOffset = new JointVariable(ini.Get("Leg", "XOffset").ToString("0%")),
-                    VariableYOffset = new JointVariable(ini.Get("Leg", "YOffset").ToString("0%")),
-                    VariableZOffset = new JointVariable(ini.Get("Leg", "ZOffset").ToString("0%")),
+                    VariableXOffset = new JointVariable(ini.Get("Leg", "StandingLean").ToString("0%")),//new JointVariable(ini.Get("Leg", "XOffset").ToString("0%")),
+                    //VariableYOffset = new JointVariable(ini.Get("Leg", "YOffset").ToString("0%")),
+                    VariableZOffset = new JointVariable(ini.Get("Leg", "StandingWidth").ToString("0%")),//new JointVariable(ini.Get("Leg", "ZOffset").ToString("0%")),
 
                     /*HipsInverted = ini.Get("Leg", "HipsInverted").ToBoolean(),
                     KneesInverted = ini.Get("Leg", "KneesInverted").ToBoolean(),
                     FeetInverted = ini.Get("Leg", "FeetInverted").ToBoolean(),
                     QuadInverted = ini.Get("Leg", "QuadInverted").ToBoolean(),*/
-                    
+
                     ThighLength = ToAutoFloat(ini.Get("Leg", "ThighLength").ToString("auto")),
                     CalfLength = ToAutoFloat(ini.Get("Leg", "CalfLength").ToString("auto")),
                     AnkleLength = ToAutoFloat(ini.Get("Leg", "AnkleLength").ToString("auto")),
@@ -290,12 +279,14 @@ CalfLength=2.5
                     VariableStepHeight = new JointVariable(ini.Get("Leg", "StepHeight").ToString("20%")),
                     VariableStandingHeight = new JointVariable(ini.Get("Leg", "StandingHeight").ToString("90%")),
                     VariableStandingDistance = new JointVariable(ini.Get("Leg", "StandingDistance").ToString("75%")),
-                    VariableStrafeDistance = new JointVariable(ini.Get("Leg", "StrafeDistance").ToString("25%")),
+                    VariableStrafeDistance = new JointVariable(ini.Get("Leg", "StrafeWidth").ToString("25%")),//new JointVariable(ini.Get("Leg", "StrafeDistance").ToString("25%")),
                     VariableCrouchHeight = new JointVariable(ini.Get("Leg", "CrouchHeight").ToString("20%")),
 
                     AnimationSpeed = ini.Get("Leg", "WalkSpeed").ToDouble(1),
                     CrouchSpeed = ini.Get("Leg", "CrouchSpeed").ToDouble(1),
                     //IndependantStep = ini.Get("Leg", "IndependantStep").ToBoolean(false),
+
+                    VtolActive = ini.Get("Leg", "VtolActive").ToBoolean(true),
 
                     defaultValue = 1
                 };

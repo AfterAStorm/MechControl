@@ -57,7 +57,7 @@ namespace IngameScript
                 return;
             }
 
-            List<IMyMotorStator> allStators = BlockFinder.GetBlocksOfType<IMyMotorStator>();
+            List<IMyMotorStator> allStators = blockFinder.GetBlocksOfType<IMyMotorStator>();
             var stators = allStators.Where(stator => stator.CubeGrid == Me.CubeGrid);
             Dictionary<float, MyTuple<List<IMyMotorStator>, List<IMyMotorStator>>> groups = new Dictionary<float, MyTuple<List<IMyMotorStator>, List<IMyMotorStator>>>(); 
             foreach (var stator in stators)
@@ -144,7 +144,7 @@ namespace IngameScript
             Reload(); // catchup on all configs
             if (!format.Contains("{tag}"))
                 format += " {tag}";
-            List<FetchedBlock> stators = BlockFinder.GetBlocksOfType<IMyMotorStator>().Select(BlockFetcher.ParseBlock).Where(p => p.HasValue).Select(p => p.Value).ToList();
+            List<FetchedBlock> stators = blockFinder.GetBlocksOfType<IMyMotorStator>().Select(BlockFetcher.ParseBlockOne).Where(p => p.HasValue).Select(p => p.Value).ToList();
             stators.ForEach(b =>
             {
                 if (!BlockFetcher.IsLegJoint(b))
@@ -167,7 +167,7 @@ namespace IngameScript
             {
                 var group = pair.Value;
                 group.Configuration.LegType = type;
-                group.AllBlocks.ForEach(b => b.Block.CustomData = group.Configuration.ToCustomDataString());
+                group.ApplyConfiguration();
             }
             Reload();
         }

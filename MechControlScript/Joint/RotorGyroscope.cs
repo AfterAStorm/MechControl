@@ -25,9 +25,9 @@ namespace IngameScript
     {
         public class RotorGyroscope : LegJoint
         {
-            public RotorGyroscope(FetchedBlock block) : base(block)
+            public RotorGyroscope(FetchedBlock block, BlockFinder blockFinder) : base(block)
             {
-                foreach (IMyGyro gyro in BlockFinder.GetBlocksOfType<IMyGyro>((gyro) => gyro.CubeGrid == Stator.TopGrid))
+                foreach (IMyGyro gyro in blockFinder.GetBlocksOfType<IMyGyro>((gyro) => gyro.CubeGrid == Stator.TopGrid))
                 {
                     SubGyros.Add(gyro);
                 }

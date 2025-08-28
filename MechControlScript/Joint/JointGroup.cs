@@ -25,9 +25,20 @@ namespace IngameScript
         public abstract class JointGroup
         {
             public JointConfiguration Configuration = null;
+            public List<FetchedBlock> AllBlocks = new List<FetchedBlock>();
 
             public abstract void SetConfiguration(object config);
             public abstract void ApplyConfiguration();
+
+            protected void AddAllBlock(FetchedBlock block)
+            {
+                AllBlocks.Add(block);
+            }
+
+            public virtual bool AddBlock(FetchedBlock block)
+            {
+                return false;
+            }
         }
     }
 }

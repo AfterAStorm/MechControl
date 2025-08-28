@@ -29,7 +29,8 @@ namespace IngameScript
         void FetchTorsoTwisters()
         {
             torsoTwistStators.Clear();
-            foreach (FetchedBlock block in BlockFinder.GetBlocksOfType<IMyMotorStator>(motor => BlockFetcher.ParseBlock(motor).HasValue).Select(motor => BlockFetcher.ParseBlock(motor)))
+            torsoTwistStators.AddRange(blockFetcher.GetBlocks(BlockType.TorsoTwist).Select(fb => new LegJoint(fb)));
+            /*foreach (FetchedBlock block in blockFinder.GetBlocksOfType<IMyMotorStator>(motor => BlockFetcher.ParseBlockOne(motor).HasValue).Select(motor => BlockFetcher.ParseBlockOne(motor)))
             {
                 switch (block.Type)
                 {
@@ -37,7 +38,7 @@ namespace IngameScript
                         torsoTwistStators.Add(new LegJoint(block));
                         break;
                 }
-            }
+            }*/
         }
 
         /// <summary>

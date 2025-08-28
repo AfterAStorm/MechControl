@@ -32,10 +32,12 @@ namespace IngameScript
         Vector3 lastMovementDirection = Vector3.Zero;
         Vector3 movement = Vector3.Zero;
 
+        public static Vector3 flyingOffset = Vector3.Zero;
+
         public static Vector3D customTarget = Vector3D.Zero;
 
         static bool jumping = false;
-        static double jumpTime = 0;
+        //static double jumpTime = 0;
         static bool crouched = false;
         static bool crouchOverride = false;
 
@@ -61,7 +63,7 @@ namespace IngameScript
         public void FetchLegs()
         {
             var configs = legs.Select((kv) => new KeyValuePair<int, JointConfiguration>(kv.Key, kv.Value.Configuration)).ToDictionary(pair => pair.Key, pair => pair.Value);
-            BlockFetcher.FetchGroups(ref legs, configs, BlockFetcher.IsForLeg, BlockFetcher.CreateLegFromType, LegConfiguration.Parse, BlockFetcher.AddToLeg);
+            blockFetcher.FetchGroups(ref legs, configs, BlockFetcher.IsForLeg, BlockFetcher.CreateLegFromType, LegConfiguration.Parse, BlockFetcher.AddToLeg);
 
             foreach (var leg in legs.Values)
                 leg.Initialize();
@@ -88,7 +90,7 @@ namespace IngameScript
         float Translate(float current, float target, float accel, float decel) 
         {
             float direction = target - current;
-            if (Math.Abs(direction) < .08f)
+            if (Math.Abs(direction) < .04f)
                 return target;
             if (target == 0)
                 return current + direction * DecelerationMultiplier * (float)TicksPerSecond;
@@ -98,10 +100,10 @@ namespace IngameScript
         public void UpdateLegs()
         {
             Log("-- Legs --");
-            crouched = crouchOverride || moveInput.Y < 0;
+            crouched = crouchOverride || parsedVerticalInput < 0;
 
             // delta calculations
-            Vector3 moveDirection = legsEnabled ? parsedMoveInput : Vector3.Zero;//(parsedMoveInput - movement);
+            Vector3 moveDirection = legsEnabled && !thrustersEnabled ? parsedMoveInput : Vector3.Zero;//(parsedMoveInput - movement);
 
             // if key is released, go to 0 by default
             //moveDirection.X = moveDirection.X == 0 ? -movement.X : moveDirection.X;
@@ -129,16 +131,21 @@ namespace IngameScript
             lastMoveInfo.Crouched = moveInfo.Crouched;
             lastMoveInfo.Jumping  = moveInfo.Jumping;
             lastMoveInfo.Jumped   = moveInfo.Jumped;
+            lastMoveInfo.Flying   = moveInfo.Flying;
             lastMoveInfo.Delta    = moveInfo.Delta;
 
-            moveInfo.Walk         = movement.Z; // since -1 is forward, negative it so 1 is forward -- already inverted in parsedMoveInput
-            moveInfo.Turn         = movement.Y;
-            moveInfo.Strafe       = movement.X;
-            moveInfo.Crouched     = parsedVerticalInput < 0;
-            moveInfo.Jumping      = parsedVerticalInput > 0;
-            moveInfo.Jumped       = (moveInfo.Jumped || parsedVerticalInput > 0) && !(parsedVerticalInput < 0);
+            float flyingMultiplier = thrustersEnabled ? 0f : 1f;
+            moveInfo.Walk         = flyingMultiplier * movement.Z; // since -1 is forward, negate it so 1 is forward -- already inverted in parsedMoveInput
+            moveInfo.Turn         = flyingMultiplier * movement.Y;
+            moveInfo.Strafe       = flyingMultiplier * movement.X;
+            //flyingOffset = new Vector3(movement.Z, movement.Y, movement.X);
+            moveInfo.Crouched     = /*parsedVerticalInput < 0*/crouched && (!thrustersEnabled);
+            moveInfo.Jumping      = parsedVerticalInput > 0 && (!thrustersEnabled);
+            moveInfo.Jumped       = (moveInfo.Jumped || parsedVerticalInput > 0) && !(parsedVerticalInput < 0); // if jumping or jumped, keep state--if crouched, reset state
+            moveInfo.Flying       = thrustersEnabled; // parsedVerticalInput > 0 && !moveInfo.Jumping;
             moveInfo.Delta        = 1 / 60f;
             Log($"move info: WALK:{moveInfo.Walk}; TURN:{moveInfo.Turn}; STRAFE:{moveInfo.Strafe}; CROUCHED:{moveInfo.Crouched}");
+            Log($"move cont: JUMP:{moveInfo.Jumping},{moveInfo.Jumped}; FLY:{moveInfo.Flying}");
 
             /// X: Strafe
             /// Y: Turn
@@ -160,135 +167,11 @@ namespace IngameScript
             }
             Log($"animationStepCounter: {animationStepCounter}");
 
-            foreach (var leg in legs.Values)
-            {
-                leg.Update(moveInfo);
-            }
-
-            /*if (controller != null || AutoHalt)
-            {
-                // TODO: fix multipliers to work, currently walking backwards uses decel/acc in reverse
-                movement.X += moveDirection.X * (moveDirection.X > 0 ? AccelerationMultiplier : DecelerationMultiplier) * .3f * (float)delta;
-                movement.Y += moveDirection.Y * (moveDirection.Y > 0 ? AccelerationMultiplier : DecelerationMultiplier) * 1f * (float)delta;
-                movement.Z += moveDirection.Z * (moveDirection.Z > 0 ? AccelerationMultiplier : DecelerationMultiplier) * .3f * (float)delta;
-            }
-
-            jumping = jumpTime > 0;
-            if (moveInput.Y > 0 && !thrustersEnabled)
-            {
-                jumping = false;
-                jumpTime = .5d;
-                crouched = true;
-            }
-            else if (jumpTime > 0)
-            {
-                jumpTime -= delta;
-            }
-
-            Log($"movement: {movement}");
-            Log($"animation step counter (before): {animationStepCounter}");
-
-            float maxComponent = MaxComponentOf(movement);
-            Log($"animation step maxComponent: {maxComponent}");
-
-            // detect when we should start trying to stop between 0 and .5
-            bool isStopping = movement.Length() < 0.4 && (moveDirection.Length() < .4 || parsedMoveInput.Length() == 0) && movement.LengthSquared() > 0;
-            Log($"is stopping?: {isStopping}");
-
-            // calculate delta
-            double animationStepCounterDelta =
-                (!isStopping ?
-                    (movement.LengthSquared() > 0 ? maxComponent : 0) :
-                    AbsMax(MaxComponentOf(lastMovementDirection) * .3f, maxComponent)
-                ) * WalkCycleSpeed * .01; // .01 is constant
-
-            animationStepCounter += animationStepCounterDelta;
-
-            Log($"animation step counter delta: {animationStepCounterDelta}");
-            Log($"animation step counter (after): {animationStepCounter}");
-
-            double animationStepModulo = animationStepCounter.Modulo(1);
-            Log($"animation step (modulo): {animationStepModulo}");
-
-            if (parsedMoveInput != Vector3.Zero)
-                lastMovementDirection = parsedMoveInput;
-
-            if (isStopping)
-            {
-                if ((animationStepModulo).Absolute() < .02 || (animationStepModulo - 1).Absolute() < .02 || (animationStepModulo - .5d).Absolute() < .02) // close to point
-                {
-                    if ((animationStepModulo).Absolute() < .25 || (animationStepModulo - 1).Absolute() < .25) // close to 0/1
-                    {
-                        animationStepCounter = 0;
-                    }
-                    else if ((animationStepModulo - .5d).Absolute() < .25) // cose to .5
-                    {
-                        animationStepCounter = .5;
-                    }
-                    movement *= 0;
-                    animationStepCounterDelta = 0;
-                }
-            }
-
-            turnValue = lastMovementDirection.Y;
-            isTurning = turnValue != 0 && animationStepCounterDelta != 0;
-
-            isWalking = (movement * new Vector3(0, 0, 1)).LengthSquared() > 0; // animationStepCounterDelta.Absolute() > 0;
-            Log($"is turning: {isTurning}");
-            Log($"is crouching: {crouched}");
-            Log($"is walking: {isWalking}");
-            Log($"is flying : {isInFlight}");
-            Log($"is jumping: {jumping}");
-            Animation chosenAnimation;
-            if (isInFlight)
-                chosenAnimation = Animation.Flight;
-            else if (isWalking && (!isTurning || !SteeringTakesPriority))
-                chosenAnimation = crouched ? Animation.CrouchWalk : Animation.Walk;
-            else if (isTurning)
-                chosenAnimation = crouched ? Animation.CrouchTurn : Animation.Turn;
-            else
-                chosenAnimation = crouched ? Animation.Crouch : Animation.Idle;
-
-            lastAnimation = activeAnimation;
-            activeAnimation = chosenAnimation;/*turning ? (crouched ? Animation.CrouchTurn : Animation.Turn) :
-                animationStepCounterDelta.Absolute() > 0 ? (crouched ? Animation.CrouchWalk : Animation.Walk) :
-                (crouched ? Animation.Crouch : Animation.Idle);*/
-            /*Log($"animation: {activeAnimation}");
-
-            // motion
-            moveInfo.Walking = (isWalking && (!isTurning || !SteeringTakesPriority));
-            moveInfo.Turning = !moveInfo.Walking && isTurning;
-            moveInfo.Strafing = (movement.X != 0);
-            moveInfo.Idle = !moveInfo.Walking && !moveInfo.Turning && !moveInfo.Strafing;
-
-            // states
-            moveInfo.Flying = isInFlight;
-            moveInfo.Crouched = crouched;
-
-            // values
-            moveInfo.Direction = lastMovementDirection;
-            moveInfo.Movement = movement;
-            moveInfo.Delta = delta;
-            Log($"moveInfo: Direction={moveInfo.Direction}, Movement={moveInfo.Movement}, Delta={moveInfo.Delta}");
-            Log($"moveInfo: Walking={moveInfo.Walking}, Turning={moveInfo.Turning}, Strafing={moveInfo.Strafing}");
-            Log($"moveInfo: Idle={moveInfo.Idle}; Flying={moveInfo.Flying}, Crouched={moveInfo.Crouched}");
-
             if (legsEnabled)
                 foreach (var leg in legs.Values)
                 {
-                    leg.Animation = activeAnimation;
                     leg.Update(moveInfo);
                 }
-
-            if (inputVisual && debugPanel != null)
-            {
-                debugPanel.ContentType = ContentType.SCRIPT;
-                var frame = debugPanel.DrawFrame();
-
-
-
-                frame.Dispose();
-            }*/
         }
     }
 }

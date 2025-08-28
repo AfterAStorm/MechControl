@@ -37,6 +37,14 @@ namespace IngameScript
             public List<LegJoint> LeftStrafeJoints = new List<LegJoint>();
             public List<LegJoint> RightStrafeJoints = new List<LegJoint>();
 
+            public List<Hydraulic> Hydraulics = new List<Hydraulic>();
+
+            public List<IMyCameraBlock> LeftCameras = new List<IMyCameraBlock>();
+            public List<IMyCameraBlock> RightCameras = new List<IMyCameraBlock>();
+
+            public List<IMyLandingGear> LeftMagnets = new List<IMyLandingGear>();
+            public List<IMyLandingGear> RightMagnets = new List<IMyLandingGear>();
+
             public List<LegJoint> AllJoints = new List<LegJoint>();
 
             protected LegAngles LegAnglesOffset;
@@ -49,7 +57,7 @@ namespace IngameScript
             protected float FindJointLength(List<LegJoint> jointsA, List<LegJoint> jointsB)
             {
                 if (jointsA.Count == 0 || jointsB.Count == 0)
-                    return 1;
+                    return float.NegativeInfinity;
                 float length = float.PositiveInfinity;
                 Vector3I ai, bi;
                 foreach (var a in jointsA)
@@ -59,6 +67,27 @@ namespace IngameScript
                         ai = a.Stator.Top.Position + Base6Directions.GetIntVector(a.Stator.Top.Orientation.Up);
                         bi = b.Stator.Position;
                         length = Math.Min(length, (ai - bi).Length() * GridSize);
+                    }
+                }
+                return length;
+            }
+
+            protected float FindJointLength(List<LegJoint> jointsA, List<IMyPistonBase> jointsB)
+            {
+                if (jointsA.Count == 0 || jointsB.Count == 0)
+                    return float.NegativeInfinity;
+                float length = float.PositiveInfinity;
+                //Vector3I ai, bi;
+                IMyCubeGrid grid;
+                foreach (var a in jointsA)
+                {
+                    foreach (var b in jointsB)
+                    {
+                        float dist = (float)Hydraulic.CountDistance(a.Stator, b, out grid, 1);
+                        length = Math.Min(length, dist * grid.GridSize);
+                        //ai = a.Stator.Top.Position + Base6Directions.GetIntVector(a.Stator.Top.Orientation.Up);
+                        //bi = b.Position;
+                        //length = Math.Min(length, ((ai - bi).Length()) * GridSize);
                     }
                 }
                 return length;
@@ -112,24 +141,104 @@ namespace IngameScript
                 SetAnglesOf(RightStrafeJoints, right.StrafeDegrees);
             }
 
-            public override void AddBlock(FetchedBlock block)
+            /// <summary>
+            /// Update any hydraulics
+            /// Not a part of the base Update method for optionality
+            /// </summary>
+            protected void UpdateHydraulics()
             {
-                base.AddBlock(block);
+                if (Hydraulics.Count == 0)
+                    return; // is checking this faster than the Where enumerator having no elements?
+                foreach (var hy in Hydraulics.Where(h => h.Valid))
+                {
+                    hy.TopPosition = hy.TopStator.WorldMatrix;
+                    hy.BottomPosition = hy.BottomStator.WorldMatrix;
+                    hy.Update();
+                }
+            }
+
+            protected MyTuple<double, double> cameraOffsetTween = new MyTuple<double, double>(0, 0);
+            protected double CameraOffsetTweenMultiplier = 10d;
+
+            /// <summary>
+            /// Update the cameras
+            /// Not a part of the base Update method for optionality
+            /// </summary>
+            protected MyTuple<double, double> UpdateCameras()
+            {
+                Log("Cameras:", LeftCameras.Count, RightCameras.Count);
+                if (LeftCameras.Count > 0 && RightCameras.Count > 0)
+                {
+                    double left = 999999999d;
+                    double right = 999999999d;
+                    MyDetectedEntityInfo hit;
+                    foreach (var camera in LeftCameras)
+                    {
+                        camera.EnableRaycast = true;
+                        hit = camera.Raycast(20);
+                        if (!hit.IsEmpty())
+                        {
+                            left = Math.Min(left, Vector3D.Dot(gravity.Normalized(), hit.HitPosition.Value));
+                        }
+                    }
+                    foreach (var camera in RightCameras)
+                    {
+                        camera.EnableRaycast = true;
+                        hit = camera.Raycast(20);
+                        if (!hit.IsEmpty())
+                        {
+                            right = Math.Min(right, Vector3D.Dot(gravity.Normalized(), hit.HitPosition.Value));
+                        }
+                    }
+
+                    if (left != 999999999d && right != 999999999d)
+                        Cameras.SetGroup(Configuration.Id, left, right);
+                    //var x = Cameras.GetGroup(Configuration.Id);
+                    //Log("Camera Values:", x.Item1, x.Item2);
+                }
+
+                var cameraOffsets = Cameras.CalculateGroup(Configuration.Id);
+                cameraOffsetTween.Item1 += (cameraOffsets.Item1 - cameraOffsetTween.Item1) / CameraOffsetTweenMultiplier;
+                cameraOffsetTween.Item2 += (cameraOffsets.Item2 - cameraOffsetTween.Item2) / CameraOffsetTweenMultiplier;
+                return cameraOffsetTween;
+            }
+
+            public override bool AddBlock(FetchedBlock block)
+            {
                 switch (block.Type)
                 {
                     case BlockType.Hip:
                         AddLeftRightBlock(LeftHipJoints, RightHipJoints, new LegJoint(block), block.Side);
-                        break;
+                        AddAllBlock(block);
+                        return true;
                     case BlockType.Knee:
+                        if (!(block.Block is IMyMotorStator))
+                            return false;
                         AddLeftRightBlock(LeftKneeJoints, RightKneeJoints, new LegJoint(block), block.Side);
-                        break;
+                        AddAllBlock(block);
+                        return true;
                     case BlockType.Foot:
                         AddLeftRightBlock(LeftFootJoints, RightFootJoints, new LegJoint(block), block.Side);
-                        break;
+                        AddAllBlock(block);
+                        return true;
                     case BlockType.Strafe:
                         AddLeftRightBlock(LeftStrafeJoints, RightStrafeJoints, new LegJoint(block), block.Side);
-                        break;
+                        AddAllBlock(block);
+                        return true;
+                    case BlockType.Camera:
+                        AddLeftRightBlock(LeftCameras, RightCameras, block.Block as IMyCameraBlock, block.Side);
+                        AddAllBlock(block);
+                        return true;
+                    case BlockType.Magnet:
+                        AddLeftRightBlock(LeftMagnets, RightMagnets, block.Block as IMyLandingGear, block.Side);
+                        AddAllBlock(block);
+                        return true;
+                    case BlockType.Hydraulic:
+                        Hydraulics.Add(new Hydraulic(block));
+                        AddAllBlock(block);
+                        return true;
                 }
+                return base.AddBlock(block); // no blocks were added
             }
 
         }

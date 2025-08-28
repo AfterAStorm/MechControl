@@ -30,9 +30,11 @@ namespace IngameScript
             public double Maximum => Stator.UpperLimitDeg;
             public bool IsHinge => Stator.BlockDefinition.SubtypeName.Contains("Hinge");
             public bool IsRotor => !IsHinge;
+            public FetchedBlock Source { get; private set; }
 
             public Joint(FetchedBlock block)
             {
+                Source = block;
                 Stator = block.Block as IMyMotorStator;
             }
 
@@ -58,6 +60,18 @@ namespace IngameScript
                     }*/
                     return closestDirection;
                 }
+            }
+
+            public override bool Equals(object obj)
+            {
+                if (!(obj is Joint))
+                    return false;
+                return Stator.Equals((obj as Joint)?.Stator);
+            }
+
+            public override int GetHashCode()
+            {
+                return Stator.GetHashCode();
             }
 
             public float GetRPMFor(double angle)

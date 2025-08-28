@@ -17,12 +17,13 @@ using VRage.Game.ModAPI.Ingame;
 using VRage.Game.ModAPI.Ingame.Utilities;
 using VRage.Game.ObjectBuilders.Definitions;
 using VRageMath;
+using static IngameScript.Program;
 
 namespace IngameScript
 {
     partial class Program
     {
-        public class ScriptState
+        public class ScriptState // don't ask me why this is a class and not just a part of Program... ssshhhh
         {
             public string Serialize()
             {
@@ -30,6 +31,8 @@ namespace IngameScript
                 serializer.Clear();
                 serializer.AddSection("State");
                 serializer.Set("State", "crouched", crouchOverride);
+                serializer.Set("State", "thrustersEnabled", thrustersEnabled);
+                serializer.Set("State", "thrustersMode", (int)thrusterBehavior);
                 return serializer.ToString();
             }
 
@@ -39,6 +42,8 @@ namespace IngameScript
                 serializer.Clear();
                 serializer.TryParse(ini);
                 crouchOverride = serializer.Get("State", "crouched").ToBoolean(false);
+                thrustersEnabled = serializer.Get("State", "thrustersEnabled").ToBoolean(false);
+                thrusterBehavior = (ThrusterMode)serializer.Get("State", "thrustersMode").ToInt32((int)thrusterBehavior);
             }
         }
     }
