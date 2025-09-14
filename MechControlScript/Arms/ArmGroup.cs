@@ -51,28 +51,34 @@ namespace IngameScript
 
             public override void ApplyConfiguration()
             {
-                // n/a
+                //string data = Configuration.ToCustomDataString();
+                foreach (var joint in PitchJoints.Concat(YawJoints))
+                {
+                    joint.Stator.CustomData = /*data + "\n" +*/ joint.Configuration.ToCustomDataString();
+                }
             }
 
             public override bool AddBlock(FetchedBlock block)
             {
-                base.AddBlock(block);
                 switch (block.Type)
                 {
                     case BlockType.ArmPitch:
                         PitchJoints.Add(new ArmJoint(block, ArmJointConfiguration.Parse(block)));
+                        AddAllBlock(block);
                         return true;
                     case BlockType.ArmYaw:
                         YawJoints.Add(new ArmJoint(block, ArmJointConfiguration.Parse(block)));
+                        AddAllBlock(block);
                         return true;
                     /*case BlockType.Roll:
                         arm.RollJoints.Add(new ArmJoint(block, jointConfig));
                         return true;*/
                     case BlockType.Magnet:
                         Magnets.Add(block.Block as IMyLandingGear);
+                        AddAllBlock(block);
                         return true;
                 }
-                return false;
+                return base.AddBlock(block);
             }
 
             public void ToZero()

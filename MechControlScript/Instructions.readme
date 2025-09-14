@@ -4,6 +4,8 @@
 > Created by AfterAStorm
 > Source and wiki can be found at https://github.com/AfterAStorm/MechControl
 
+> Join our Mech Engineers community at discord.gg/BwFmKnqhXw
+
 Quickstart:
     https://github.com/AfterAStorm/MechControl/wiki/Quickstart
 
@@ -18,8 +20,12 @@ Most recent release:
     * Percentage and meter based inverse kinematics
     * General improvements
     * Strafing is real-- it's real!
-    * Add more options
+    * Add "vtol" for thrusters/leg groups
+    * Add prismatic leg group
+    * Add "hydraulics"-- piston support
+    * Add "cameras"-- variable heights for level legs
     * Add (and praise) more clang
+    * It's not compatible with 1.1 or below, switch at your own risk
 
 1.1.0-beta
     * Change how legs calculate angles

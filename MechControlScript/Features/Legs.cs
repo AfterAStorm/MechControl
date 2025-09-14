@@ -36,12 +36,12 @@ namespace IngameScript
 
         public static Vector3D customTarget = Vector3D.Zero;
 
-        static bool jumping = false;
+        //static bool jumping = false;
         //static double jumpTime = 0;
         static bool crouched = false;
-        static bool crouchOverride = false;
+        bool crouchOverride = false;
 
-        bool isTurning, isWalking;
+        //bool isTurning, isWalking;
 
         static double animationStepCounter = 0;
 
@@ -66,7 +66,22 @@ namespace IngameScript
             blockFetcher.FetchGroups(ref legs, configs, BlockFetcher.IsForLeg, BlockFetcher.CreateLegFromType, LegConfiguration.Parse, BlockFetcher.AddToLeg);
 
             foreach (var leg in legs.Values)
+            {
                 leg.Initialize();
+                /*if (!configs.ContainsKey(leg.Configuration.Id))
+                    continue;
+                var last = (LegConfiguration)configs[leg.Configuration.Id];
+                if (leg.Configuration.LegType != last.LegType) // should set defaults?
+                {
+                    if (leg.DefaultConfiguration == null)
+                    {
+                        StaticWarn("leg has no default config", ":(");
+                        continue;
+                    }
+                    leg.DefaultConfiguration.LegType = leg.Configuration.LegType;
+                    leg.Configuration = leg.DefaultConfiguration;
+                }*/
+            }
 
             // fix jump after reload
             if (crouchOverride || crouched)

@@ -57,7 +57,7 @@ namespace IngameScript
             public override void Initialize()
             {
                 base.Initialize();
-                ThighLength = Configuration.ThighLength ?? Math.Max(FindJointLength(LeftHipJoints, LeftKneePistons), FindJointLength(RightHipJoints, RightKneePistons));
+                ThighLength = Configuration.ThighLength ?? Math.Max(FindJointLength(LeftHipJoints, LeftKneePistons), FindJointLength(RightHipJoints, RightKneePistons)).AlwaysANumber(1);
                 CalfLength = RightKneePistons.Count * RightKneePistons[0].HighestPosition;
 
                 float radius = (float)(ThighLength + CalfLength);

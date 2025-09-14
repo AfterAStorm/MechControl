@@ -293,6 +293,10 @@ namespace IngameScript
                     armsEnabled = HandleBoolArgument(armsEnabled, arg);
                     break;
 
+                case "stabilizationcontrol":
+                    stabilizationEnabled = HandleBoolArgument(stabilizationEnabled, arg);
+                    break;
+
                 // Fun //
                 case "limp":
                     ToggleLimp(HandleBoolArgument(isLimp, arg));

@@ -27,15 +27,8 @@ namespace IngameScript
 
             #region # - Properties
 
+            public LegConfiguration DefaultConfiguration;
             public new LegConfiguration Configuration;
-
-            public List<FetchedBlock> LeftPistons = new List<FetchedBlock>();
-            public List<FetchedBlock> RightPistons = new List<FetchedBlock>();
-
-            public List<IMyLandingGear> LeftGears = new List<IMyLandingGear>();
-            public List<IMyLandingGear> RightGears = new List<IMyLandingGear>();
-
-            //public IMyCameraBlock[] InclineCameras; // TODO: use these, give them a purpose!
 
             protected double LastDelta = 1;
             public double AnimationStep = 0; // pff, who needes getters and setters?
@@ -59,9 +52,7 @@ namespace IngameScript
 
             public virtual void Initialize()
             {
-                //AACalculatedThighLength = Configuration.ThighLength > 0 ? Configuration.ThighLength : FindThighLength();
-                //AACalculatedCalfLength = Configuration.CalfLength > 0 ? Configuration.CalfLength : FindCalfLength(); // lower leg, or upper leg for spiders
-                //AACalculatedQuadLength = Configuration.ThighLength > 0 ? Configuration.ThighLength : FindQuadLength(); // lower lower leg, or lower leg for spiders
+
             }
 
             protected virtual void AddLeftRightBlock<T>(List<T> leftBlocks, List<T> rightBlocks, T block, BlockSide side)
@@ -82,19 +73,6 @@ namespace IngameScript
                 string data = Configuration.ToCustomDataString();
                 foreach (var block in AllBlocks)
                     block.Block.CustomData = data;
-            }
-
-            protected virtual void SetAnglesOf(List<LegJoint> leftStators, List<LegJoint> rightStators, double leftAngle, double rightAngle, double offset=0)
-            {
-                // We could split this into ANOTHER method, but i don't believe it's worth it
-                foreach (var motor in leftStators)
-                    motor.SetAngle(leftAngle * motor.Configuration.InversedMultiplier + (-(motor.IsRotor ? offset : -offset) + motor.Configuration.Offset) * (motor.IsHinge ? 1 : -1));
-                //SetJointAngle(motor, leftAngle * motor.Configuration.InversedMultiplier, offset + motor.Configuration.Offset);
-                //motor.Stator.TargetVelocityRPM = (float)MathHelper.Clamp((leftAngle * motor.Configuration.InversedMultiplier).AbsoluteDegrees(motor.Stator.BlockDefinition.SubtypeName.Contains("Hinge")) - motor.Stator.Angle.ToDegrees() - offset - motor.Configuration.Offset, -MaxRPM, MaxRPM);
-                foreach (var motor in rightStators)
-                    motor.SetAngle(rightAngle * motor.Configuration.InversedMultiplier - ((motor.IsRotor ? offset : -offset) + motor.Configuration.Offset) * (motor.IsHinge ? 1 : -1));
-                //SetJointAngle(motor, -rightAngle * motor.Configuration.InversedMultiplier, offset + motor.Configuration.Offset);
-                //motor.Stator.TargetVelocityRPM = (float)MathHelper.Clamp((-rightAngle * motor.Configuration.InversedMultiplier).AbsoluteDegrees(motor.Stator.BlockDefinition.SubtypeName.Contains("Hinge")) - motor.Stator.Angle.ToDegrees() - offset - motor.Configuration.Offset, -MaxRPM, MaxRPM);
             }
 
             protected virtual void SetAnglesOf(List<LegJoint> stators, double angle, double offset=0, bool rotorInvert = false)
@@ -128,7 +106,7 @@ namespace IngameScript
 
             public virtual void Update(MovementInfo info)
             {
-                Log($"- {GetType().Name} (group {Configuration.Id}) -");
+                Log($"- {/*GetType().Name*/"Leg Group"} (group {Configuration.Id}) -");
                 // Animate crouch
                 if (!info.Crouched && !info.Jumping)//!Animation.IsCrouch() && !info.Crouched)
                     CrouchWaitTime = Math.Max(0, CrouchWaitTime - info.Delta * Configuration.CrouchSpeed * CrouchSpeed * (info.Jumped ? 1000f : 1f));//CrouchWaitTime = Math.Max(0, jumping ? 0 : CrouchWaitTime - info.Delta * 2 * Configuration.CrouchSpeed * CrouchSpeed);
@@ -171,45 +149,7 @@ namespace IngameScript
 
             #region Experimental
 
-            /*int leftLegCounter = 0;
-            int rightLegCounter = 0;
-
-            private void HandlePistonGroup(List<FetchedBlock> pistons, List<LegJoint> hips, List<LegJoint> knees, List<LegJoint> feet, ref int counter)
-            {
-                foreach (var piston in pistons)
-                {
-                    var block = piston.Block as IMyPistonBase;
-                    var speed = Math.Abs(block.Velocity) * (piston.Inverted ? -1 : 1);
-
-                    double rpm = 0;
-                    if (piston.Name.ToLower().Contains("h") && hips.Count > 0)
-                        rpm += hips[0].Stator.TargetVelocityRPM;
-                    else if (piston.Name.ToLower().Contains("k") && knees.Count > 0)
-                        rpm += knees[0].Stator.TargetVelocityRPM;
-                    else if (piston.Name.ToLower().Contains("f") && feet.Count > 0)
-                        rpm += feet[0].Stator.TargetVelocityRPM;
-                    if (rpm > 0)
-                    {
-                        counter = MathHelper.Clamp(counter + 1, -15, 15);
-                        if (counter > 0)
-                            block.Velocity = speed;
-                    }
-                    else
-                    {
-                        counter = MathHelper.Clamp(counter - 1, -15, 15);
-                        if (counter < 0)
-                            block.Velocity = speed;
-                        block.Velocity = -speed;
-                    }
-                    block.Enabled = true;//Math.Abs(rpm) > .05;
-                }
-            }*/
-
-            protected void HandlePistons(float multiplier = 1)
-            {
-                //HandlePistonGroup(LeftPistons, AALeftHipStators, AALeftKneeStators, AALeftFootStators, ref leftLegCounter);
-                //HandlePistonGroup(RightPistons, AARightHipStators, AARightKneeStators, AARightFootStators, ref rightLegCounter);
-            }
+            // n/a
 
             #endregion
         }

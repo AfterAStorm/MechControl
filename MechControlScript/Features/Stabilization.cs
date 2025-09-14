@@ -33,6 +33,7 @@ namespace IngameScript
             return Math.Atan2(Vector3.Cross(a, b).Length(), Vector3.Dot(a, b));
         }
 
+        bool stabilizationEnabled = true;
 
         List<Gyroscope> stabilizationGyros = new List<Gyroscope>();
         List<RotorGyroscope> azimuthStators = new List<RotorGyroscope>();
@@ -67,6 +68,7 @@ namespace IngameScript
 
             stabilizationGyros.Clear();
             stabilizationGyros.AddRange(blockFetcher.CachedBlocks.Where(fb => fb.Block is IMyGyro).Select(fb => new Gyroscope(fb)));
+            stabilizationEnabled = azimuthStators.Count > 0 || elevationStators.Count > 0 || rollStators.Count > 0 || stabilizationGyros.Count > 0;
             /*foreach (FetchedBlock block in BlockFinder.GetBlocksOfType<IMyGyro>(gyro => BlockFetcher.ParseBlockOne(gyro).HasValue).Select(gyro => BlockFetcher.ParseBlockOne(gyro)))
                 switch (block.Type)
                 {
@@ -118,6 +120,8 @@ namespace IngameScript
                 Log("No reference for stabilization");
                 return;
             }
+            if (!stabilizationEnabled)
+                return;
             gravity = reference.GetTotalGravity();
             Log("gravity:", gravity);
             if (double.IsNaN(gravity.X))
@@ -165,7 +169,7 @@ namespace IngameScript
             Log($"roll  dir: {rollDirection} for {rollStators.Count} rotors");
             Log($"pitch dir: {pitchDirection} for {elevationStators.Count} rotors");
 
-            float azimuthValue = -movement.Y * ((float)SteeringSensitivity / 60f) * 60f;
+            float azimuthValue = -movement.Y * ((float)SteeringSensitivity / 60f) * (float)Math.PI / 2f;
             bool isTurning = azimuthValue.Absolute() > 0;
             foreach (var stator in azimuthStators)
             {
@@ -177,7 +181,7 @@ namespace IngameScript
                 stator.SetRPM(azimuthValue * (float)stator.Configuration.InversedMultiplier);
             }
 
-            float elevationValue = (float)pitchDirection * 60;
+            float elevationValue = (float)pitchDirection;
             foreach (var stator in elevationStators)
             {
                 if (!stator.Stator.IsSharingInertiaTensor())
@@ -189,7 +193,7 @@ namespace IngameScript
                 // TODO
             }
 
-            float rollValue = (float)rollDirection * 60f;
+            float rollValue = (float)rollDirection;
             foreach (var stator in rollStators)
             {
                 if (!stator.Stator.IsSharingInertiaTensor())
@@ -200,25 +204,39 @@ namespace IngameScript
                 stator.SetRPM(rollValue * (float)stator.Configuration.InversedMultiplier);
             }
 
+            // clamp so when "stable", it can abuse the overriden gyro's frozen state
+            float epsilon = 0.1f;
+            if (Math.Abs(azimuthValue) < epsilon)
+                azimuthValue = 0f;
+            if (Math.Abs(elevationValue) < epsilon)
+                elevationValue = 0f;
+            if (Math.Abs(rollValue) < epsilon)
+                rollValue = 0f;
+
             float totalRotation = Math.Abs(azimuthValue) + Math.Abs(elevationValue) + Math.Abs(rollValue);
             bool isStabilizing = totalRotation > 3f;
             foreach (var gyro in stabilizationGyros)
             {
+                Log($"pitch:", elevationValue * (float)gyro.Configuration.InversedMultiplier);
+                Log($"yaw:", -azimuthValue * (float)gyro.Configuration.InversedMultiplier);
+                Log($"roll:", rollValue * (float)gyro.Configuration.InversedMultiplier);
                 if (gyro.GyroType == BlockType.GyroscopeRoll)
-                    SetAngles(gyro, 0, 0, rollValue * (float)gyro.Configuration.InversedMultiplier);
-                    //gyro.Gyro.Roll = rollValue * (float)gyro.Configuration.InversedMultiplier;
+                    gyro.SetOverrides(reference, 0, 0, rollValue * (float)gyro.Configuration.InversedMultiplier); //SetAngles(gyro, 0, 0, rollValue * (float)gyro.Configuration.InversedMultiplier);
+                //gyro.Gyro.Roll = rollValue * (float)gyro.Configuration.InversedMultiplier;
                 else if (gyro.GyroType == BlockType.GyroscopeAzimuth)
-                    SetAngles(gyro, -azimuthValue * (float)gyro.Configuration.InversedMultiplier, 0, 0);
+                    gyro.SetOverrides(reference, 0, -azimuthValue * (float)gyro.Configuration.InversedMultiplier, 0); //SetAngles(gyro, -azimuthValue * (float)gyro.Configuration.InversedMultiplier, 0, 0);
                 //gyro.Gyro.Yaw = -azimuthValue * (float)gyro.Configuration.InversedMultiplier;
                 else if (gyro.GyroType == BlockType.GyroscopeElevation)
-                    SetAngles(gyro, 0, elevationValue * (float)gyro.Configuration.InversedMultiplier, 0);
+                    gyro.SetOverrides(reference, elevationValue * (float)gyro.Configuration.InversedMultiplier, 0, 0); //SetAngles(gyro, 0, elevationValue * (float)gyro.Configuration.InversedMultiplier, 0);
                 //gyro.Gyro.Pitch = elevationValue * (float)gyro.Configuration.InversedMultiplier;
 
+
                 else if (gyro.GyroType == BlockType.GyroscopeStabilization)
-                    SetAngles(gyro,
+                    gyro.SetOverrides(reference, elevationValue * (float)gyro.Configuration.InversedMultiplier, -azimuthValue * (float)gyro.Configuration.InversedMultiplier, rollValue * (float)gyro.Configuration.InversedMultiplier);
+                    /*SetAngles(gyro,
                         -azimuthValue * (float)gyro.Configuration.InversedMultiplier,
                         elevationValue * (float)gyro.Configuration.InversedMultiplier,
-                        rollValue * (float)gyro.Configuration.InversedMultiplier);
+                        rollValue * (float)gyro.Configuration.InversedMultiplier);*/
 
                 if (gyro.GyroType == BlockType.GyroscopeAzimuth && !isTurning)
                     gyro.Gyro.Enabled = true;

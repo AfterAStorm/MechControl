@@ -24,6 +24,27 @@ namespace IngameScript
 	{
         public class HumanoidLegGroup : TriLegGroup
         {
+
+            public new LegConfiguration DefaultConfiguration = new LegConfiguration()
+            {
+                VariableStandingHeight = new JointVariable(JointVariableType.Percentage, 90f),
+                VariableXOffset = new JointVariable(JointVariableType.Percentage, 0),
+                VariableZOffset = new JointVariable(JointVariableType.Percentage, 0),
+                VariableStepLength = new JointVariable(JointVariableType.Percentage, 30f),
+                VariableStepHeight = new JointVariable(JointVariableType.Percentage, 10f),
+                VariableStrafeDistance = new JointVariable(JointVariableType.Percentage, 25f),
+                VariableCrouchHeight = new JointVariable(JointVariableType.Percentage, 10f),
+                AnimationSpeed = 1f,
+                CrouchSpeed = 1f,
+
+                HipOffsets = 0,
+                KneeOffsets = 0,
+                FootOffsets = 0,
+                QuadOffsets = 0,
+                StrafeOffsets = 0,
+                VtolActive = true
+            };
+
             protected virtual LegAngles LegAnglesMultiplier => LegAngles.One;
             protected virtual LegAngles LeftAnglesMultiplier => new LegAngles(-1, 1, 1, 0, 1);
             protected virtual LegAngles RightAnglesMultiplier => new LegAngles(1, 1, 1, 0, 1);
@@ -180,7 +201,7 @@ namespace IngameScript
                 /*if (Hydraulics.Count == 0)
                     return; // save perf
                             // TODO: cache groups and use "getter" Func to get leg angles instead of creating new objects every iteration?
-                /*List<HydraulicGroup> leftHydraulics = new List<HydraulicGroup>()
+                List<HydraulicGroup> leftHydraulics = new List<HydraulicGroup>()
                 {
                     new HydraulicGroup(LeftHipJoints[0].Stator, leftAnglesFinal.HipRadians),
                     new HydraulicGroup(LeftKneeJoints[0].Stator, leftAnglesFinal.KneeRadians),
@@ -191,17 +212,17 @@ namespace IngameScript
                     new HydraulicGroup(RightHipJoints[0].Stator, rightAnglesFinal.HipRadians),
                     new HydraulicGroup(RightKneeJoints[0].Stator, rightAnglesFinal.KneeRadians),
                     new HydraulicGroup(RightFootJoints[0].Stator, rightAnglesFinal.FeetRadians),
-                };*/
+                }; //* /
 
-                /*Log("has hydraulics!");
-                /*foreach (var hy in Hydraulics.Where(h => h.Valid))
+                Log("has hydraulics!");
+                foreach (var hy in Hydraulics.Where(h => h.Valid))
                 {
                     Log($"Update {hy.Source.Name}");
                     Log($"Update {hy.TopStator.CustomName} {hy.BottomStator.CustomName}");
-                    //HydraulicGroup group;
-                    hy.TopPosition = hy.TopStator.WorldMatrix;
-                    hy.BottomPosition = hy.BottomStator.WorldMatrix;
-                    /*for (int index = 0; index < leftHydraulics.Count; index++)
+                    hy.TopPosition = hy.TopStator.Top.WorldMatrix;
+                    hy.BottomPosition = hy.BottomStator.Top.WorldMatrix;
+                    HydraulicGroup group;
+                    for (int index = 0; index < leftHydraulics.Count; index++)
                     {
                         group = leftHydraulics[index];
                         if (group.Grid.Equals(hy.TopGrid))
@@ -225,10 +246,10 @@ namespace IngameScript
                             Log($"found bottom grid! {hy.Source.Name} {index}");
                             HandleHydraulic(hy, rightHydraulics, index, false);
                         }
-                    }*/
+                    }
                     /*Log("distance:", Vector3D.Distance(hy.TopPosition.Translation, hy.BottomPosition.Translation), Math.Abs(Vector3D.Dot(Base6Directions.GetIntVector(hy.TopStator.Top.Orientation.Up), hy.TopPosition.Translation) - Vector3D.Dot(Base6Directions.GetIntVector(hy.TopStator.Top.Orientation.Up), hy.BottomPosition.Translation)));
-                    Log("dist:", hy.BottomStator.CustomName, hy.BottomDistance, hy.TopStator.CustomName, hy.TopDistance, "inter:", hy.IntermediateDistance);*/
-                    /*hy.Update();
+                    Log("dist:", hy.BottomStator.CustomName, hy.BottomDistance, hy.TopStator.CustomName, hy.TopDistance, "inter:", hy.IntermediateDistance);* /
+                    hy.Update();
                     // assume grids
                     // bottom = KR --> FR
                     // top = HR --> KR
@@ -245,8 +266,8 @@ namespace IngameScript
                     Log("pos:", pos2.Translation - hy.TopStator.WorldMatrix.Translation);
                     Log("pos1 - pos2:", Vector3D.Distance(pos1.Translation, pos2.Translation));
                     double distance = Vector3D.Distance(pos1.Translation, pos2.Translation) - 1.5d;
-                    hy.Piston.MoveToPosition((float)distance, 10f);*/
-                //}*/
+                    hy.Piston.MoveToPosition((float)distance, 10f);* /
+                } //*/
             }
 
             /*void HandleHydraulic(Hydraulic hy, List<HydraulicGroup> groups, int index, bool top)
@@ -280,12 +301,12 @@ namespace IngameScript
                             hy.BottomPosition = statorPos;
                     }
                 }
-            }*/
+            }
 
             MatrixD GetRotatedPosition(MatrixD position, MatrixD pivot, double angle, Vector3D axis) // radians
             {
                 return position * MatrixD.Invert(pivot) * MatrixD.CreateFromAxisAngle(axis, angle) * pivot; //pivot * MatrixD.CreateFromAxisAngle(axis, angle) * inverted * position; //Vector3D.Transform(position, transform);
-            }
+            }*/
         }
     }
 }

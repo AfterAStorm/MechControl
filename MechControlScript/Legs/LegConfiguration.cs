@@ -124,7 +124,7 @@ namespace IngameScript
             public double AnimationSpeed;// => WalkCycleSpeed;
             public double CrouchSpeed;
 
-            public bool IndependantStep => IndependantStepEnabled;
+            public bool IndependantStep => IndependentStepEnabled;
             public bool VtolActive = true;
 
             public JointVariable VariableStandingHeight, VariableStandingDistance, VariableStrafeDistance;

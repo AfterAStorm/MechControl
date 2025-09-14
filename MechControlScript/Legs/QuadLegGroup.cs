@@ -43,7 +43,7 @@ namespace IngameScript
 
                 // calculate lengths
                 // we assume the left/right legs are both the same length.. at least for easy sake
-                AnkleLength = Configuration.AnkleLength ?? Math.Max(FindJointLength(LeftFootJoints, LeftQuadJoints), FindJointLength(RightFootJoints, RightQuadJoints));
+                AnkleLength = Configuration.AnkleLength ?? Math.Max(FindJointLength(LeftFootJoints, LeftQuadJoints), FindJointLength(RightFootJoints, RightQuadJoints)).AlwaysANumber(1);
 
             }
 

@@ -37,7 +37,7 @@ namespace IngameScript
         // Diagnostics //
 
         static IMyTextPanel debugPanel = null;
-        static bool debugMode = true;
+        static bool debugMode = false;
         static bool debugModeClearOnLoop = true;
 
         double[] averageRuntimes = new double[AverageRuntimeSampleSize];
@@ -46,7 +46,7 @@ namespace IngameScript
         int lastInstructions = 0;
         int maxInstructions = 0;
 
-        bool inputVisual = false;
+        //bool inputVisual = false; // TODO: figure out what this is for, i forgot :p
 
         // Logging //
 
@@ -225,9 +225,9 @@ namespace IngameScript
             blockFetcher = new BlockFetcher(blockFinder);
 
             // load script state
-            state = new ScriptState();
-            Reload(); // reload to handle customdata stuffs
+            state = new ScriptState(this);
             Load(); // script state, only matters after initialization anyway
+            Reload(); // reload to handle customdata stuffs
 
             // set runtime update freq.
             Runtime.UpdateFrequency = UpdateFrequency.Update1;

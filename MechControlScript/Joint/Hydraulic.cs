@@ -57,6 +57,8 @@ namespace IngameScript
 
             public IMyMotorStator TopStator; // the 2 reference points
             public IMyMotorStator BottomStator;
+            public bool TopIsHinge;
+            public bool BottomIsHinge;
 
             public IMyCubeGrid TopGrid; // grids the stators attach to, not the TopGrid, but the "leg appendage"/etc.
             public IMyCubeGrid BottomGrid;
@@ -101,6 +103,9 @@ namespace IngameScript
 
                 TopStator = connectedStators[0];
                 BottomStator = connectedStators[1];
+
+                TopIsHinge = TopStator.BlockDefinition.SubtypeName.Contains("Hinge");
+                BottomIsHinge = BottomStator.BlockDefinition.SubtypeName.Contains("Hinge");
 
                 TopDistance = CountDistance(TopStator, first, out TopGrid) * TopGrid.GridSize;
                 BottomDistance = CountDistance(BottomStator, last, out BottomGrid) * BottomGrid.GridSize;
@@ -179,7 +184,7 @@ namespace IngameScript
 
                 float positionDistance = (float)len;// (Math.Abs(Vector3.Dot(BottomPosition.Translation - TopPosition.Translation, axis)));
                     //(float)Vector3D.Distance(TopPosition.Translation + Vector3D.TransformNormal(localTop, TopPosition), BottomPosition.Translation + Vector3D.Transform(localBottom, BottomPosition) /*- bottomTop.Translation * and*/);
-                Log("positionDistance:", positionDistance);
+                Log("positionDistance:", positionDistance, "IntermediateDistance", IntermediateDistance, "TopDistance", TopDistance, "BottomDistance", BottomDistance);
                 float distance = (float)(positionDistance - (IntermediateDistance + TopDistance + BottomDistance + .064f * TopStator.CubeGrid.GridSize * Pistons.Count));
                 float perDistance = distance / Pistons.Count;
                 foreach (var piston in Pistons)
@@ -216,7 +221,7 @@ namespace IngameScript
 
         }
 
-        /*public class HydraulicGroup
+        public class HydraulicGroup
         {
             public IMyMotorStator Reference; // just one... all we need it for is rotation
 
@@ -233,6 +238,6 @@ namespace IngameScript
                 Grid = reference.TopGrid;
                 Target = (target.Modulo(360) - reference.Angle + 540).Modulo(360) - 180;//target - reference.Angle; // get the difference (to rotate the fake subgrid)
             }
-        }*/
+        }
     }
 }

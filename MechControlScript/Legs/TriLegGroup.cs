@@ -64,8 +64,37 @@ namespace IngameScript
                 {
                     foreach (var b in jointsB)
                     {
-                        ai = a.Stator.Top.Position + Base6Directions.GetIntVector(a.Stator.Top.Orientation.Up);
-                        bi = b.Stator.Position;
+                        // TODO: test all options :)
+                        // account for all rotor arrangements, since it doesn't technically have to all be one way
+                        if (a.Stator.Top.CubeGrid.Equals(b.Stator.CubeGrid))
+                        {
+                            // top --> stator
+                            ai = a.Stator.Top.Position + Base6Directions.GetIntVector(a.Stator.Top.Orientation.Up);
+                            bi = b.Stator.Position;
+                        }
+                        else if (a.Stator.CubeGrid.Equals(b.Stator.CubeGrid))
+                        {
+                            // stator --> stator
+                            ai = a.Stator.Position;// + Base6Directions.GetIntVector(a.Stator.Orientation.Up);
+                            bi = b.Stator.Position;
+                        }
+                        else if (a.Stator.CubeGrid.Equals(b.Stator.Top.CubeGrid))
+                        {
+                            // stator --> top
+                            ai = a.Stator.Position;// + Base6Directions.GetIntVector(a.Stator.Top.Orientation.Up);
+                            bi = b.Stator.Top.Position;
+                        }
+                        else if (a.Stator.Top.CubeGrid.Equals(b.Stator.Top.CubeGrid))
+                        {
+                            // top --> top
+                            ai = a.Stator.Top.Position + Base6Directions.GetIntVector(a.Stator.Top.Orientation.Up);
+                            bi = b.Stator.Top.Position;
+                        }
+                        else
+                        {
+                            ai = Vector3I.Zero;
+                            bi = Vector3I.Zero;
+                        }
                         length = Math.Min(length, (ai - bi).Length() * GridSize);
                     }
                 }
@@ -113,8 +142,8 @@ namespace IngameScript
 
                 // calculate lengths
                 // we assume the left/right legs are both the same length.. at least for easy sake
-                ThighLength = Configuration.ThighLength ?? Math.Max(FindJointLength(LeftHipJoints, LeftKneeJoints), FindJointLength(RightHipJoints, RightKneeJoints));
-                CalfLength  = Configuration.CalfLength ?? Math.Max(FindJointLength(LeftKneeJoints, LeftFootJoints), FindJointLength(RightKneeJoints, RightFootJoints));
+                ThighLength = Configuration.ThighLength ?? Math.Max(FindJointLength(LeftHipJoints, LeftKneeJoints), FindJointLength(RightHipJoints, RightKneeJoints)).AlwaysANumber(1);
+                CalfLength  = Configuration.CalfLength ?? Math.Max(FindJointLength(LeftKneeJoints, LeftFootJoints), FindJointLength(RightKneeJoints, RightFootJoints)).AlwaysANumber(1);
 
             }
 

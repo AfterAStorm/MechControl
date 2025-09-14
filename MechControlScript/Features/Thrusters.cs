@@ -26,12 +26,12 @@ namespace IngameScript
         List<Joint> azimuthVtolStators = new List<Joint>();
         List<Joint> elevationVtolStators = new List<Joint>();
         List<Joint> rollVtolStators = new List<Joint>();
-        static ThrusterMode thrusterBehavior = ThrusterMode.Override;
+        ThrusterMode thrusterBehavior = ThrusterMode.Override;
         Vector3 vectorMovement = Vector3.Zero;
 
-        static bool thrustersEnabled = false;
+        bool thrustersEnabled = false;
         bool thrustersOnMainGrid = false;
-        static bool thrustersVtol = false;
+        bool thrustersVtol = false;
 
         public void FetchThrusters()
         {

@@ -65,7 +65,7 @@ namespace IngameScript
 
         static float AccelerationMultiplier = 1f;   // how fast the mech accelerates, 1f is normal, .5f is half speed, 2f is double speed
         static float DecelerationMultiplier = 1f; // how fast the mech decelerates, same as above
-        static bool IndependantStepEnabled = false;
+        static bool IndependentStepEnabled = false;
 
         /*static float MaxRPM = float.MaxValue; // 60f is the max speed for rotors
                                               // *Configure motor limits in the blocks themselves!* // */
@@ -150,7 +150,7 @@ namespace IngameScript
             SetSection("Joints");
             AccelerationMultiplier = GetConfig("AccelerationMultiplier").ToSingle(1f);
             DecelerationMultiplier = GetConfig("DecelerationMultiplier").ToSingle(1.5f);
-            IndependantStepEnabled = GetConfig("IndependantStep").ToBoolean();
+            IndependentStepEnabled = GetConfig("IndependentStep").ToBoolean();
 
             //MaxRPM = GetConfig("MaxRPM").ToSingle(3600f);
 
@@ -160,7 +160,7 @@ namespace IngameScript
             // - Stablization / Steering
 
             SetSection("Stabilization");
-            SteeringSensitivity = GetConfig("SteeringSensitivity").ToDouble(5);
+            SteeringSensitivity = GetConfig("TurnSpeed"/*"SteeringSensitivity"*/).ToDouble(5);
             SteeringTakesPriority = GetConfig("SteeringTakesPriority").ToBoolean(false);
             YawThreshold = GetConfig("YawThreshold").ToDouble();
             PitchThreshold = GetConfig("PitchThreshold").ToDouble(5);
@@ -204,7 +204,7 @@ namespace IngameScript
             SetSection("Joints");
             SetConfig("AccelerationMultiplier", AccelerationMultiplier);
             SetConfig("DecelerationMultiplier", DecelerationMultiplier);
-            SetConfig("IndependantStep", IndependantStepEnabled);
+            SetConfig("IndependentStep", IndependentStepEnabled);
 
             //SetConfig("MaxRPM", MaxRPM); // OBSOLETE
 
@@ -214,7 +214,7 @@ namespace IngameScript
             // - Stablization / Steering
 
             SetSection("Stabilization");
-            SetConfig("SteeringSensitivity", SteeringSensitivity);
+            SetConfig("TurnSpeed"/*"SteeringSensitivity"*/, SteeringSensitivity);
             SetConfig("SteeringTakesPriority", SteeringTakesPriority);
 
             // - Blocks

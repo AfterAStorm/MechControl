@@ -25,6 +25,21 @@ namespace IngameScript
     {
         public class SpideroidLegGroup : QuadLegGroup
         {
+
+            public new LegConfiguration DefaultConfiguration = new LegConfiguration()
+            {
+                VariableStandingHeight = new JointVariable(JointVariableType.Percentage, 0f),
+                VariableXOffset = new JointVariable(JointVariableType.Percentage, 0),
+                VariableZOffset = new JointVariable(JointVariableType.Percentage, 0),
+                VariableStepLength = new JointVariable(JointVariableType.Percentage, 30f),
+                VariableStepHeight = new JointVariable(JointVariableType.Percentage, 40f),
+                VariableStandingDistance = new JointVariable(JointVariableType.Percentage, 75f),
+                VariableStrafeDistance = new JointVariable(JointVariableType.Percentage, 25f),
+                VariableCrouchHeight = new JointVariable(JointVariableType.Percentage, 20f),
+                AnimationSpeed = 1f,
+                CrouchSpeed = 1f
+            };
+
             //public override double AnimationSpeedMultiplier => -1;
             //protected void LegAngles LegAnglesOffset => new LegAngles(0, 90, 0, 0);
             protected virtual LegAngles LocalLegAnglesOffset => new LegAngles(0, 90, 0, 0);

@@ -24,7 +24,7 @@ namespace IngameScript
     {
         public static Dictionary<int, ArmGroup> arms = new Dictionary<int, ArmGroup>();
 
-        static bool armsEnabled = true;
+        bool armsEnabled = true;
         static double armPitch = 0;
         static double armYaw = 0;
 

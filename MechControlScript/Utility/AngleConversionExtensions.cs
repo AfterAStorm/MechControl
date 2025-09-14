@@ -37,7 +37,7 @@ namespace IngameScript
         }
 
         /// <summary>
-        /// Convert NaN into the default if it is in-fact NaN
+        /// Convert NaN/Inf into the default if it is in-fact NaN or +-Inf
         /// </summary>
         /// <param name="x"></param>
         /// <param name="def"></param>
@@ -45,6 +45,8 @@ namespace IngameScript
         public static float AlwaysANumber(this float x, float def=0)
         {
             if (float.IsNaN(x))
+                return def;
+            if (float.IsInfinity(x) || float.IsNegativeInfinity(x))
                 return def;
             return x;
         }

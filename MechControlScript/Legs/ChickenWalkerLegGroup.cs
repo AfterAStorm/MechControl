@@ -24,6 +24,27 @@ namespace IngameScript
     {
         public class ChickenWalkerLegGroup : HumanoidLegGroup
         {
+
+            public new LegConfiguration DefaultConfiguration = new LegConfiguration()
+            {
+                VariableStandingHeight = new JointVariable(JointVariableType.Percentage, 90f),
+                VariableXOffset = new JointVariable(JointVariableType.Percentage, 0),
+                VariableZOffset = new JointVariable(JointVariableType.Percentage, 0),
+                VariableStepLength = new JointVariable(JointVariableType.Percentage, 30f),
+                VariableStepHeight = new JointVariable(JointVariableType.Percentage, 10f),
+                VariableStrafeDistance = new JointVariable(JointVariableType.Percentage, 25f),
+                VariableCrouchHeight = new JointVariable(JointVariableType.Percentage, 10f),
+                AnimationSpeed = 1f,
+                CrouchSpeed = 1f,
+
+                HipOffsets = 0,
+                KneeOffsets = 0,
+                FootOffsets = 0,
+                QuadOffsets = 0,
+                StrafeOffsets = 0,
+                VtolActive = true
+            };
+
             public override double AnimationDirectionMultiplier => -1;
 
             protected override LegAngles LegAnglesMultiplier => LegAngles.MinusOne;
