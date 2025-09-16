@@ -16,6 +16,11 @@ Configuring:
 
 Most recent release:
 
+2.1.0-beta
+    * WalkSpeed -> StepSpeed (not backwards compatible, sorry!)
+    * Fix prismatic legs REQUIRING a right knee piston to work (fix crash)
+    * Add prismatic leg warnings for pistons
+
 2.0.0-beta
     * Percentage and meter based inverse kinematics
     * General improvements

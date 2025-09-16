@@ -58,7 +58,15 @@ namespace IngameScript
             {
                 base.Initialize();
                 ThighLength = Configuration.ThighLength ?? Math.Max(FindJointLength(LeftHipJoints, LeftKneePistons), FindJointLength(RightHipJoints, RightKneePistons)).AlwaysANumber(1);
-                CalfLength = RightKneePistons.Count * RightKneePistons[0].HighestPosition;
+
+                if (RightKneePistons.Count != LeftKneePistons.Count)
+                {
+                    StaticWarn("Invalid Pistons", $"Prismatic group {Configuration.Id} left/right pistons don't have the same count");
+                }
+                else if (RightKneePistons.Count == 0)
+                    StaticWarn("Invalid Pistons", $"Prismatic group {Configuration.Id} legs need pistons for knees");
+
+                CalfLength = RightKneePistons.Count > 0 ? RightKneePistons.Count * RightKneePistons[0].HighestPosition : 1f;
 
                 float radius = (float)(ThighLength + CalfLength);
 
@@ -133,8 +141,8 @@ namespace IngameScript
                     x = customTarget.X;
                     y = customTarget.Y;
                 }
-                float pistonOffset = RightKneePistons.Count * 1 * RightKneePistons[0].CubeGrid.GridSize + 0.0315f * RightKneePistons.Count;
-                Log($"min: {RightKneePistons[0].LowestPosition}");
+                float pistonOffset = RightKneePistons.Count > 0 ? RightKneePistons.Count * 1 * RightKneePistons[0].CubeGrid.GridSize + 0.0315f * RightKneePistons.Count : 0;
+                
                 y = Math.Sqrt(Math.Pow(y, 2) + Math.Pow(x, 2) + Math.Pow(z, 2));
                 foreach (var piston in LeftKneePistons)
                 {

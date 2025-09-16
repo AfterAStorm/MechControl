@@ -202,7 +202,7 @@ namespace IngameScript
                 ini.Set("Leg", "CrouchHeight", VariableCrouchHeight.ToString());
                 //ini.SetComment("Leg", "StepLength", "How far forwards/backwards and up/down legs step\n0.5 is half, 1 is default, 2 is double");
 
-                ini.Set("Leg", "WalkSpeed", AnimationSpeed);
+                ini.Set("Leg", "StepSpeed", AnimationSpeed);
                 ini.Set("Leg", "CrouchSpeed", CrouchSpeed);
                 //ini.Set("Leg", "IndependantStep", IndependantStep);
                 //ini.SetComment("Leg", "WalkSpeed", "How fast legs walk and crouch");
@@ -282,7 +282,7 @@ namespace IngameScript
                     VariableStrafeDistance = new JointVariable(ini.Get("Leg", "StrafeWidth").ToString("25%")),//new JointVariable(ini.Get("Leg", "StrafeDistance").ToString("25%")),
                     VariableCrouchHeight = new JointVariable(ini.Get("Leg", "CrouchHeight").ToString("20%")),
 
-                    AnimationSpeed = ini.Get("Leg", "WalkSpeed").ToDouble(1),
+                    AnimationSpeed = ini.Get("Leg", "StepSpeed").ToDouble(1),
                     CrouchSpeed = ini.Get("Leg", "CrouchSpeed").ToDouble(1),
                     //IndependantStep = ini.Get("Leg", "IndependantStep").ToBoolean(false),
 
