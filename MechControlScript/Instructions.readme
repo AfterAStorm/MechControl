@@ -16,6 +16,9 @@ Configuring:
 
 Most recent release:
 
+2.1.1-beta
+    * Ignore non-connected lengths
+
 2.1.0-beta
     * WalkSpeed -> StepSpeed (not backwards compatible, sorry!)
     * Fix prismatic legs REQUIRING a right knee piston to work (fix crash)

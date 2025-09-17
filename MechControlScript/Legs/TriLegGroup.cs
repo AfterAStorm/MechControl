@@ -92,8 +92,9 @@ namespace IngameScript
                         }
                         else
                         {
-                            ai = Vector3I.Zero;
-                            bi = Vector3I.Zero;
+                            //ai = Vector3I.Zero;
+                            //bi = Vector3I.Zero;
+                            continue; // not on same grid, hmmmmm
                         }
                         length = Math.Min(length, (ai - bi).Length() * GridSize);
                     }
