@@ -207,8 +207,8 @@ namespace IngameScript
                 Log("Quad:", rightAngles.QuadDegrees);
 
                 SetAngles(
-                    flyingAngles * LeftAnglesMultiplier  + LegAnglesMultiplier * LeftAnglesMultiplier  * leftAngles ,
-                    flyingAngles * RightAnglesMultiplier + LegAnglesMultiplier * RightAnglesMultiplier * rightAngles
+                    flyingAngles * LeftAnglesMultiplier  + LegAnglesOffset * LeftAnglesMultiplier  * leftAngles ,
+                    flyingAngles * RightAnglesMultiplier + LegAnglesOffset * RightAnglesMultiplier * rightAngles
                 );
                 UpdateHydraulics();
             }
