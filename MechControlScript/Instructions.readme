@@ -16,6 +16,9 @@ Configuring:
 
 Most recent release:
 
+2.1.2-beta
+    * Fix digitigrade angles calculations
+
 2.1.1-beta
     * Ignore non-connected lengths
 
