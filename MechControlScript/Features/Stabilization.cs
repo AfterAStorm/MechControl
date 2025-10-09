@@ -124,7 +124,7 @@ namespace IngameScript
                 return;
             gravity = reference.GetTotalGravity();
             Log("gravity:", gravity);
-            if (double.IsNaN(gravity.X))
+            if (double.IsNaN(gravity.X) || gravity.LengthSquared() == 0) // why can it be 0,0,0? AAAAAAAAAAAAAAAAAAAA
             {
                 Log("Not in gravity well or invalid world reference");
                 return;
