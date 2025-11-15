@@ -28,4 +28,10 @@
       <AdditionalFiles Include="thumb.png" />
     </ItemGroup>
 
+    <Import Project="..\..\BuildTools\BuildToolsAPI\BuildToolsAPI.projitems" Label="Shared" />
+
+    <Import Project="..\MechControlShared\MechControlShared.projitems" Label="Shared" />
+
+    <Import Project="..\MechControlAPI\MechControlAPI.projitems" Label="Shared" />
+
 </Project>

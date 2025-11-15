@@ -24,13 +24,15 @@ namespace IngameScript
     {
         #region Properties
 
+        IMyIntergridCommunicationSystem IGC;
+
         #endregion
 
         #region Constructor
 
         public MechAPI(MyGridProgram program)
         {
-
+            IGC = program.IGC;
         }
 
         #endregion

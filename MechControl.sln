@@ -40,6 +40,9 @@ Global
 		MechControlShared\MechControlShared.projitems*{62aeab34-e7d8-47e5-8a7e-a82695fce299}*SharedItemsImports = 5
 		MechControlAPI\MechControlAPI.projitems*{8a3cdcc5-4b55-4d87-a415-698a0e1ff06f}*SharedItemsImports = 13
 		..\BuildTools\BuildToolsAPI\BuildToolsAPI.projitems*{c3a966d6-3d3b-4034-9831-fd7b6c912223}*SharedItemsImports = 13
+		..\BuildTools\BuildToolsAPI\BuildToolsAPI.projitems*{e42847c2-222b-428f-9ef9-c624d065c7a1}*SharedItemsImports = 5
+		MechControlAPI\MechControlAPI.projitems*{e42847c2-222b-428f-9ef9-c624d065c7a1}*SharedItemsImports = 5
+		MechControlShared\MechControlShared.projitems*{e42847c2-222b-428f-9ef9-c624d065c7a1}*SharedItemsImports = 5
 		MechControlShared\MechControlShared.projitems*{fadd4d9a-7cfd-45a3-b4a9-046547dfe1e4}*SharedItemsImports = 13
 	EndGlobalSection
 EndGlobal
