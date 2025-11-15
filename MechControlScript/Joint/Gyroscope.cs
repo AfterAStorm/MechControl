@@ -46,28 +46,7 @@ namespace IngameScript
                 };
             }
 
-            Vector3D GetEulerAngles(MatrixD m)
-            {
-                // Assumes standard SE convention: Forward = -Z, Up = Y, Right = X
-                double yaw, pitch, roll;
-
-                if (Math.Abs(m.M13) < 0.999999) // Not straight up/down
-                {
-                    pitch = Math.Asin(-m.M13);
-                    yaw = Math.Atan2(m.M12, m.M11);
-                    roll = Math.Atan2(m.M23, m.M33);
-                }
-                else
-                {
-                    // Gimbal lock
-                    pitch = Math.Asin(-m.M13);
-                    yaw = Math.Atan2(-m.M21, m.M22);
-                    roll = 0;
-                }
-
-                return new Vector3D(pitch, yaw, roll);
-            }
-
+            // TODO: replace with MyMath.QuaternionToEuler?
             Vector3D QuaternionToEuler(Quaternion q)
             {
                 // Normalize for safety
@@ -80,7 +59,7 @@ namespace IngameScript
 
                 // Yaw (Y-axis rotation)
                 double siny = 2 * (q.W * q.Y - q.Z * q.X);
-                siny = MathHelper.Clamp(siny, -1, 1);  // protect against floating point
+                siny = MathHelper.Clamp(siny, -1, 1); // protect against floating point
                 double yaw = Math.Asin(siny);
 
                 // Roll (Z-axis rotation)
@@ -134,9 +113,29 @@ namespace IngameScript
             {
                 if (!Gyro.GyroOverride)
                     Gyro.GyroOverride = true;
-                Gyro.Pitch = pitch * (float)(30f / (2f * Math.PI));
-                Gyro.Yaw = yaw * (float)(30f / (2f * Math.PI));
-                Gyro.Roll = roll * (float)(30f / (2f * Math.PI));
+
+                if (Math.Abs(Gyro.Pitch - pitch) > 2)
+                {
+                    Gyro.Pitch = pitch;
+                }
+                else if (pitch == 0 && Gyro.Pitch != 0)
+                    Gyro.Pitch = 0;
+                if (Math.Abs(Gyro.Yaw - yaw) > 2)
+                {
+                    Gyro.Yaw = yaw;
+                }
+                else if (yaw == 0 && Gyro.Yaw != 0)
+                    Gyro.Yaw = 0;
+                if (Math.Abs(Gyro.Roll - roll) > 2)
+                {
+                    Gyro.Roll = roll;
+                }
+                else if (roll == 0 && Gyro.Roll != 0)
+                    Gyro.Roll = 0;
+
+                //Gyro.Pitch = pitch;// * (float)(30f / (2f * Math.PI));
+                //Gyro.Yaw = yaw;// * (float)(30f / (2f * Math.PI));
+                //Gyro.Roll = roll;// * (float)(30f / (2f * Math.PI));
             }
         }
     }

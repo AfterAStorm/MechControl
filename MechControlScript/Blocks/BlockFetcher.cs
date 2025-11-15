@@ -144,6 +144,7 @@ namespace IngameScript
                 { "f" , new BlockRequirements(BlockType.Foot, true, true, "Stator") },
                 { "q" , new BlockRequirements(BlockType.Quad, true, true, "Stator") },
                 { "s" , new BlockRequirements(BlockType.Strafe, true, true, "Stator") },
+                { "t" , new BlockRequirements(BlockType.Turn, true, true, "Stator") },
 
                 // arms
                 { "ay", new BlockRequirements(BlockType.ArmYaw, false, false, "Stator") },

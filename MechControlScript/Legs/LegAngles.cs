@@ -27,29 +27,32 @@ namespace IngameScript
         /// </summary>
         public struct LegAngles
         {
-            public static LegAngles Zero = new LegAngles(0, 0, 0, 0, 0);
-            public static LegAngles One = new LegAngles(1, 1, 1, 1, 1);
-            public static LegAngles MinusOne = new LegAngles(-1, -1, -1, -1, -1);
+            public static LegAngles Zero = new LegAngles(0, 0, 0, 0, 0, 0);
+            public static LegAngles One = new LegAngles(1, 1, 1, 1, 1, 1);
+            public static LegAngles MinusOne = new LegAngles(-1, -1, -1, -1, -1, -1);
 
             public double HipDegrees;
             public double KneeDegrees;
             public double FeetDegrees;
             public double QuadDegrees;
             public double StrafeDegrees;
+            public double TurnDegrees;
 
             public double HipRadians => HipDegrees.ToRadians();
             public double KneeRadians => KneeDegrees.ToRadians();
             public double FeetRadians => FeetDegrees.ToRadians();
             public double QuadRadians => QuadDegrees.ToRadians();
             public double StrafeRadians => StrafeDegrees.ToRadians();
+            public double TurnRadians => TurnDegrees.ToRadians();
 
-            public LegAngles(double hip, double knee, double feet, double quad, double strafe = 0)
+            public LegAngles(double hip, double knee, double feet, double quad, double strafe = 0, double turn = 0)
             {
                 HipDegrees = hip;
                 KneeDegrees = knee;
                 FeetDegrees = feet;
                 QuadDegrees = quad;
                 StrafeDegrees = strafe;
+                TurnDegrees = turn;
             }
 
             public LegAngles(double hip, double knee, double feet)
@@ -59,8 +62,9 @@ namespace IngameScript
                 FeetDegrees = feet;
                 QuadDegrees = 0;
                 StrafeDegrees = 0;
+                TurnDegrees = 0;
             }
-
+            
             public void Shift()
             {
                 QuadDegrees = FeetDegrees;
@@ -69,8 +73,8 @@ namespace IngameScript
                 HipDegrees = 0;
             }
 
-            public static LegAngles operator +(LegAngles left, LegAngles right) => new LegAngles(left.HipDegrees + right.HipDegrees, left.KneeDegrees + right.KneeDegrees, left.FeetDegrees + right.FeetDegrees, left.QuadDegrees + right.QuadDegrees, left.StrafeDegrees + right.StrafeDegrees);
-            public static LegAngles operator *(LegAngles left, LegAngles right) => new LegAngles(left.HipDegrees * right.HipDegrees, left.KneeDegrees * right.KneeDegrees, left.FeetDegrees * right.FeetDegrees, left.QuadDegrees * right.QuadDegrees, left.StrafeDegrees * right.StrafeDegrees);
+            public static LegAngles operator +(LegAngles left, LegAngles right) => new LegAngles(left.HipDegrees + right.HipDegrees, left.KneeDegrees + right.KneeDegrees, left.FeetDegrees + right.FeetDegrees, left.QuadDegrees + right.QuadDegrees, left.StrafeDegrees + right.StrafeDegrees, left.TurnDegrees + right.TurnDegrees);
+            public static LegAngles operator *(LegAngles left, LegAngles right) => new LegAngles(left.HipDegrees * right.HipDegrees, left.KneeDegrees * right.KneeDegrees, left.FeetDegrees * right.FeetDegrees, left.QuadDegrees * right.QuadDegrees, left.StrafeDegrees * right.StrafeDegrees, left.TurnDegrees * right.TurnDegrees);
         }
     }
 }

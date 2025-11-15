@@ -41,13 +41,14 @@ namespace IngameScript
             if (tuple.Item1 == 0 || tuple.Item2 == 0)
                 return tuple;
 
-            double min = 99999999999d;
-            double max = 0;
+            double min = double.MaxValue;
+            double max = double.MinValue;
             foreach (var cam in legCameras.Values)
             {
                 min = MathHelperD.Min(min, MathHelperD.Min(cam.Item1, cam.Item2));
                 max = MathHelperD.Max(max, MathHelperD.Max(cam.Item1, cam.Item2));
             }
+            Program.Log("CalculateGroup", group, max, min);
 
             double difference = (max - min);
 

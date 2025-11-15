@@ -221,7 +221,7 @@ namespace IngameScript
 
         }
 
-        public class HydraulicGroup
+        /*public class HydraulicGroup
         {
             public IMyMotorStator Reference; // just one... all we need it for is rotation
 
@@ -238,6 +238,6 @@ namespace IngameScript
                 Grid = reference.TopGrid;
                 Target = (target.Modulo(360) - reference.Angle + 540).Modulo(360) - 180;//target - reference.Angle; // get the difference (to rotate the fake subgrid)
             }
-        }
+        }*/
     }
 }

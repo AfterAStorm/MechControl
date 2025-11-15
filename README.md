@@ -30,7 +30,7 @@ Need help setting up? Goto the [wiki](https://github.com/AfterAStorm/MechControl
 
 ## Credits
 
-Me, AfterAStorm, would not be creating this masterpiece if it weren't for the great people over at the [Mech Engineers discord](https://discord.gg/xYA3NPAhqf).
+Me, AfterAStorm, would not be creating this masterpiece if it weren't for the great people over at the [Mech Engineers discord](https://discord.gg/BwFmKnqhXw).
 
 If you want to meet more like-minded mech builders, it's worth a visit!
 
@@ -38,8 +38,8 @@ If you want to meet more like-minded mech builders, it's worth a visit!
 
 **All contributions are welcome!**
 
-> Beware: While still in the BETA stage, I, AfterAStorm, will NOT be using seperate branches until full release.
+> Beware: While still in the BETA stage, I, AfterAStorm, will *NOT be using seperate branches until full release.
 
-A lot of C# norms when it comes to classes or naming are ignored because it's a space engineers script, not a NASA ship controller
+A lot of C# norms, especially when it comes to classes or naming, are ignored because it's a space engineers script, not a NASA ship controller
 
 Comments are always useful, especially for the folks trying to learn!

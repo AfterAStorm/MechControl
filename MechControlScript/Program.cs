@@ -27,12 +27,16 @@ namespace IngameScript
         // Script //
 
         public static Program Singleton { get; private set; }
-        public const string Version = "2.1.3-beta"; // major.minor.patch
+        public const string Version = "2.2.0-beta"; // major.minor.patch
 
         public static readonly double TicksPerSecond = 1d / 60d;
 
         public BlockFetcher blockFetcher;
         public BlockFinder blockFinder;
+
+        //#if DEBUG
+        public BuildTools buildTools;
+        //#endif
 
         // Diagnostics //
 
@@ -221,6 +225,9 @@ namespace IngameScript
             //baseCamera = GridTerminalSystem.GetBlockWithName("Base Camera") as IMyCameraBlock;
             // define singleton
             Singleton = this;
+            //#if DEBUG
+            buildTools = new BuildTools(this);
+            //#endif
             blockFinder = new BlockFinder(GridTerminalSystem);
             blockFetcher = new BlockFetcher(blockFinder);
 
@@ -277,6 +284,7 @@ namespace IngameScript
             Load();
             Fetch();
             IterateHydraulics();
+            buildTools.RemoveAll();
         }
 
         // Main Loop //
@@ -369,6 +377,9 @@ namespace IngameScript
 
             // perform routines
             Log("---- MAIN LOOP ----");
+            //#if DEBUG
+            //Singleton.buildTools.RemoveAll();
+            //#endif
             if (debugModeClearOnLoop && debugPanel != null)
                 debugPanel.WriteText("", false);
 

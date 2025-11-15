@@ -26,6 +26,7 @@ namespace IngameScript
         public static Dictionary<int, LegGroup> legs = new Dictionary<int, LegGroup>();
 
         bool legsEnabled = true;
+        bool useLegDefaults = true;
 
         static MovementInfo moveInfo = new MovementInfo();
         static MovementInfo lastMoveInfo = new MovementInfo();
@@ -35,6 +36,7 @@ namespace IngameScript
         public static Vector3 flyingOffset = Vector3.Zero;
 
         public static Vector3D customTarget = Vector3D.Zero;
+        public static double customAnimationStep = -1;
 
         //static bool jumping = false;
         //static double jumpTime = 0;
@@ -68,19 +70,21 @@ namespace IngameScript
             foreach (var leg in legs.Values)
             {
                 leg.Initialize();
-                /*if (!configs.ContainsKey(leg.Configuration.Id))
+                if (!useLegDefaults || !configs.ContainsKey(leg.Configuration.Id))
                     continue;
                 var last = (LegConfiguration)configs[leg.Configuration.Id];
                 if (leg.Configuration.LegType != last.LegType) // should set defaults?
                 {
                     if (leg.DefaultConfiguration == null)
                     {
-                        StaticWarn("leg has no default config", ":(");
+                        StaticWarn("leg has no default config", $"going from {last.LegType} to {leg.Configuration.LegType}");
                         continue;
                     }
                     leg.DefaultConfiguration.LegType = leg.Configuration.LegType;
                     leg.Configuration = leg.DefaultConfiguration;
-                }*/
+                    leg.ApplyConfiguration();
+                    leg.Initialize();
+                }
             }
 
             // fix jump after reload
@@ -162,6 +166,11 @@ namespace IngameScript
             Log($"move info: WALK:{moveInfo.Walk}; TURN:{moveInfo.Turn}; STRAFE:{moveInfo.Strafe}; CROUCHED:{moveInfo.Crouched}");
             Log($"move cont: JUMP:{moveInfo.Jumping},{moveInfo.Jumped}; FLY:{moveInfo.Flying}");
 
+            if (customAnimationStep != -1d)
+            {
+                moveInfo.Walk = 1f;
+            }
+            
             /// X: Strafe
             /// Y: Turn
             /// Z: Forward

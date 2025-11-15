@@ -16,6 +16,15 @@ Configuring:
 
 Most recent release:
 
+2.2.0-beta
+    * Add Turn joints (TR & TL)
+    * Add magnet support (ML & MR)
+      * Prepare for clang, and use a bind to unlock all to jump/be smoother!
+    * TurnSpeed is now in RPM (rotors & gyroscopes)
+    * Stabilization is now "more correct" in calculation and execution
+    * Cameras should be more "correct"-- still a work in progress, stay tuned!
+    * Added per-leg type defaults whenever leg type changes
+
 2.1.3-beta
     * Fix crash when gravity vector is 0, 0, 0
 

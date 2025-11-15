@@ -24,6 +24,27 @@ namespace IngameScript
 	{
         public class PrismaticLegGroup : TriLegGroup
         {
+            public override LegConfiguration DefaultConfiguration { get; set; } = new LegConfiguration()
+            {
+                VariableStandingHeight = new JointVariable(JointVariableType.Percentage, 90f),
+                VariableXOffset = new JointVariable(JointVariableType.Percentage, 0),
+                VariableZOffset = new JointVariable(JointVariableType.Percentage, 0),
+                VariableStepLength = new JointVariable(JointVariableType.Percentage, 30f),
+                VariableStepHeight = new JointVariable(JointVariableType.Percentage, 20f),
+                VariableTurnLength = new JointVariable(JointVariableType.Percentage, 15f),
+                VariableStrafeDistance = new JointVariable(JointVariableType.Percentage, 25f),
+                VariableCrouchHeight = new JointVariable(JointVariableType.Percentage, 10f),
+                AnimationSpeed = 1f,
+                CrouchSpeed = 1f,
+
+                HipOffsets = 0,
+                KneeOffsets = 0,
+                FootOffsets = 0,
+                QuadOffsets = 0,
+                StrafeOffsets = 0,
+                VtolActive = true
+            };
+
             protected virtual LegAngles LegAnglesMultiplier => LegAngles.One;
             protected virtual LegAngles LeftAnglesMultiplier => new LegAngles(-1, 1, 1, 0, 1);
             protected virtual LegAngles RightAnglesMultiplier => new LegAngles(1, 1, 1, 0, 1);
@@ -31,15 +52,9 @@ namespace IngameScript
             protected List<IMyPistonBase> LeftKneePistons = new List<IMyPistonBase>();
             protected List<IMyPistonBase> RightKneePistons = new List<IMyPistonBase>();
 
-            float XOffset;
-            float YOffset;
-            float ZOffset;
+            float XOffset, YOffset, ZOffset;
 
-            float StrafeDistance;
-            float StandingHeight;
-            float StepLength;
-            float StepHeight;
-            float CrouchHeight;
+            float StrafeDistance, StandingHeight, StepLength, StepHeight, CrouchHeight, TurnAngle;
 
             public override bool AddBlock(FetchedBlock block)
             {
@@ -76,6 +91,8 @@ namespace IngameScript
 
                 StandingHeight = Configuration.VariableStandingHeight.GetMetersOf(GridSize, 0, radius);
 
+                TurnAngle = Configuration.VariableTurnLength.GetMetersOf(1f, 0f, 90f);
+
                 if (StandingHeight > radius)
                 {
                     StaticWarn("Out of Bounds: Standing Height", $"The standing height of leg group {Configuration.Id} is out of bounds, current/maximum: {StandingHeight:f3}m/{radius:f3}m");
@@ -105,7 +122,6 @@ namespace IngameScript
             }
 
             private double x, y, z;
-            private Vector3D max;
 
             public override void Update(MovementInfo info)
             {
@@ -155,8 +171,8 @@ namespace IngameScript
                 double strafe = Math.Asin(-z / len);
 
                 leftAngles.StrafeDegrees = strafe.ToDegrees();
+                leftAngles.TurnDegrees = info.Turn * -TurnAngle * Math.Sin(AnimationStep * Math.PI * 2);
 
-                max = Vector3D.Max(max, new Vector3D(x, y, z));
                 Log("Left  Target:");
                 Log("X:", x);
                 Log("Y:", y);
@@ -192,6 +208,7 @@ namespace IngameScript
                 strafe = Math.Asin(-z / len);
 
                 rightAngles.StrafeDegrees = strafe.ToDegrees();
+                rightAngles.TurnDegrees = -info.Turn * TurnAngle * Math.Sin(AnimationStepOffset * Math.PI * 2);
 
                 Log("Right Target:");
                 Log("X:", x);

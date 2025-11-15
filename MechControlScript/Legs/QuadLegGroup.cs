@@ -51,7 +51,7 @@ namespace IngameScript
             {
                 base.Update(info);
                 Log("# L/R Quads  :", LeftQuadJoints.Count, "/", RightQuadJoints.Count);
-                Log("Ankle Length :", AnkleLength, "meters", Configuration.AnkleLength);
+                Log("Ankle Length :", AnkleLength, "meters (set ", Configuration.AnkleLength?.ToString() ?? "auto", ")");
             }
 
             protected override void SetAngles(LegAngles left, LegAngles right)

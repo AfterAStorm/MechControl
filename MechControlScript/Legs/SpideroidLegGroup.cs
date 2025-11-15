@@ -26,13 +26,14 @@ namespace IngameScript
         public class SpideroidLegGroup : QuadLegGroup
         {
 
-            public new LegConfiguration DefaultConfiguration = new LegConfiguration()
+            public override LegConfiguration DefaultConfiguration { get; set; } = new LegConfiguration()
             {
                 VariableStandingHeight = new JointVariable(JointVariableType.Percentage, 0f),
                 VariableXOffset = new JointVariable(JointVariableType.Percentage, 0),
                 VariableZOffset = new JointVariable(JointVariableType.Percentage, 0),
                 VariableStepLength = new JointVariable(JointVariableType.Percentage, 30f),
                 VariableStepHeight = new JointVariable(JointVariableType.Percentage, 40f),
+                VariableTurnLength = new JointVariable(JointVariableType.Percentage, 30f),
                 VariableStandingDistance = new JointVariable(JointVariableType.Percentage, 75f),
                 VariableStrafeDistance = new JointVariable(JointVariableType.Percentage, 25f),
                 VariableCrouchHeight = new JointVariable(JointVariableType.Percentage, 20f),
@@ -48,6 +49,7 @@ namespace IngameScript
             protected float StandingDistance;
             protected float StrafeDistance;
             protected float StepLength;
+            protected float TurnLength;
             protected float StepHeight;
             protected float CrouchHeight;
             protected float Radius;
@@ -91,6 +93,8 @@ namespace IngameScript
                 StrafeDistance = Configuration.VariableStrafeDistance.GetMetersOf(GridSize, 0, remainingRadius);
                 CrouchHeight = Configuration.VariableCrouchHeight.GetMetersOf(GridSize, 0, maxLength);
 
+                TurnLength = Configuration.VariableTurnLength.GetMetersOf(GridSize, 0, maxLength);
+
                 if (StepLength > maxLength)
                 {
                     StaticWarn("Out of Bounds: Step Length", $"The step length of leg group {Configuration.Id} is out of bounds, current/maximum: {StepLength:f3}m/{maxLength:f3}m");
@@ -131,10 +135,10 @@ namespace IngameScript
 
                 // left
                 x = XOffset * AnimationDirectionMultiplier
-                    + AnimationDirectionMultiplier * Math.Sin(2 * AnimationStep * Math.PI) * StepLength * AbsMax(-info.Walk, info.Turn) * (AbsMax(info.Walk, info.Turn) == info.Turn ? -1 : 1);
+                    + AnimationDirectionMultiplier * Math.Sin(2 * AnimationStep * Math.PI) * MathHelper.Lerp(StepLength, TurnLength, info.Turn.Absolute()) * AbsMax(-info.Walk, info.Turn) * (AbsMax(info.Walk, info.Turn) == info.Turn ? -1 : 1);
 
                 y = YOffset
-                    - cameraOffsets.Item1
+                    - MathHelper.Clamp(cameraOffsets.Item1, -StandingHeight, StandingHeight)
                     + StandingHeight
                     - CrouchHeight * CrouchWaitTime
                     - Math.Max(-Math.Sin(2 * AnimationStep * Math.PI + Math.PI / 2d), 0) * StepHeight * Math.Abs(AbsMax(info.Walk, AbsMax(info.Strafe, info.Turn)));
@@ -166,10 +170,10 @@ namespace IngameScript
 
                 // right
                 x = XOffset * AnimationDirectionMultiplier
-                    + AnimationDirectionMultiplier * Math.Sin(2 * AnimationStepOffset * Math.PI) * StepLength * AbsMax(info.Walk, info.Turn) * (AbsMax(info.Walk, info.Turn) == info.Turn ? 1 : -1);
+                    + AnimationDirectionMultiplier * Math.Sin(2 * AnimationStepOffset * Math.PI) * MathHelper.Lerp(StepLength, TurnLength, info.Turn.Absolute()) * AbsMax(info.Walk, info.Turn) * (AbsMax(info.Walk, info.Turn) == info.Turn ? 1 : -1);
 
                 y = YOffset
-                    - cameraOffsets.Item2
+                    - MathHelper.Clamp(cameraOffsets.Item2, -StandingHeight, StandingHeight)
                     + StandingHeight
                     - CrouchHeight * CrouchWaitTime
                     - Math.Max(-Math.Sin(2 * AnimationStepOffset * Math.PI + Math.PI / 2d), 0) * StepHeight * Math.Abs(AbsMax(info.Walk, AbsMax(info.Strafe, info.Turn)));
@@ -201,40 +205,8 @@ namespace IngameScript
                     LegAnglesOffset + LocalLegAnglesOffset + leftAngles,
                     LegAnglesOffset * new LegAngles(-1, 1, 1, 1, 1) + LocalLegAnglesOffset + rightAngles
                 );
+                UpdateMagnets(info, true);
                 UpdateHydraulics();
-
-                foreach (var mag in LeftMagnets)
-                {
-                    mag.AutoLock = false;
-                    /*if ((AnimationStep > .5d && AnimationStep < .75d) || (AnimationStep > 0d && AnimationStep < 0.25d))
-                    {
-                        mag.Unlock();
-                    }
-                    else
-                    {
-                        mag.Lock();
-                    }*/
-                    mag.Unlock();
-                }
-                foreach (var mag in RightMagnets)
-                {
-                    mag.AutoLock = false;
-                    mag.Unlock();
-                    /*if ((new Random()).NextDouble() > 0.5)
-                    {
-                        mag.Lock();
-                    }
-                    else mag.Unlock();*/
-                    /*if ((AnimationStepOffset > .5d && AnimationStepOffset < .75d) || (AnimationStepOffset > 0d && AnimationStepOffset < 0.25d))
-                    {
-                        mag.ResetAutoLock();
-                        mag.Unlock();
-                    }
-                    else
-                    {
-                        mag.Lock();
-                    }*/
-                }
             }
         }
     }

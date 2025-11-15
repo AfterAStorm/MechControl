@@ -48,38 +48,9 @@ namespace IngameScript
             elevationStators.AddRange(blockFetcher.GetBlocks(BlockType.GyroscopeElevation).Where(fb => fb.Block is IMyMotorStator).Select(fb => new RotorGyroscope(fb, blockFinder)));
             rollStators.Clear();
             rollStators.AddRange(blockFetcher.GetBlocks(BlockType.GyroscopeRoll).Where(fb => fb.Block is IMyMotorStator).Select(fb => new RotorGyroscope(fb, blockFinder)));
-            /*foreach (FetchedBlock block in BlockFinder.GetBlocksOfType<IMyMotorStator>(motor => BlockFetcher.ParseBlockOne(motor).HasValue).Select(motor => BlockFetcher.ParseBlockOne(motor)))
-            {
-                switch (block.Type)
-                {
-                    case BlockType.GyroscopeAzimuth:
-                        azimuthStators.Add(new RotorGyroscope(block));
-                        break;
-                    case BlockType.GyroscopeElevation:
-                        elevationStators.Add(new RotorGyroscope(block));
-                        break;
-                    case BlockType.GyroscopeRoll:
-                        if (block.Side != BlockSide.Right)
-                            return; // since r is keyword, we have to look for "g" then block side "r" :/
-                        rollStators.Add(new RotorGyroscope(block));
-                        break;
-                }
-            }*/
-
             stabilizationGyros.Clear();
             stabilizationGyros.AddRange(blockFetcher.CachedBlocks.Where(fb => fb.Block is IMyGyro).Select(fb => new Gyroscope(fb)));
             stabilizationEnabled = azimuthStators.Count > 0 || elevationStators.Count > 0 || rollStators.Count > 0 || stabilizationGyros.Count > 0;
-            /*foreach (FetchedBlock block in BlockFinder.GetBlocksOfType<IMyGyro>(gyro => BlockFetcher.ParseBlockOne(gyro).HasValue).Select(gyro => BlockFetcher.ParseBlockOne(gyro)))
-                switch (block.Type)
-                {
-                    case BlockType.GyroscopeAzimuth:
-                    case BlockType.GyroscopeElevation:
-                    case BlockType.GyroscopeRoll:
-                    case BlockType.GyroscopeStabilization:
-                    case BlockType.GyroscopeStop:
-                        stabilizationGyros.Add(new Gyroscope(block));
-                        break;
-                }*/
         }
 
         void SetAngles(Gyroscope gyroBlock, float yaw, float pitch, float roll)
@@ -129,47 +100,52 @@ namespace IngameScript
                 Log("Not in gravity well or invalid world reference");
                 return;
             }
-            Vector3D up = reference.WorldMatrix.Up;
-            Vector3D forward = reference.WorldMatrix.Forward.Normalized();
-            Vector3D back = reference.WorldMatrix.Backward;
-            Vector3D right = reference.WorldMatrix.Right;
 
-            /*Vector3D gravityAlignedRight = Vector3D.Cross(gravity.Normalized(), -forward).Normalized();
-            Vector3D gravityAlignedForward = Vector3D.Cross(gravity.Normalized(), gravityAlignedRight).Normalized();
-            Vector3D gravityAlignedDown = Vector3D.Cross(gravityAlignedRight, forward).Normalized();
+            // new stuff
 
-            double pitchDot = -Vector3D.Dot(gravityAlignedDown, gravityAlignedForward);
-            double rollDot = -Vector3D.Dot(up, gravityAlignedRight);
+            Vector3D gravityNormal = gravity.Normalized();
+            Quaternion currentRot = Quaternion.CreateFromRotationMatrix(reference.WorldMatrix);
 
-            double pitch = Vector3D.Angle(forward, gravityAlignedForward) * Math.Sign(pitchDot);
-            double roll = Vector3D.Angle(right, gravityAlignedRight) * Math.Sign(rollDot);*/
+            // make the forward vector flat with the gravity
+            Vector3D forwardProjection = Vector3D.Reject(reference.WorldMatrix.Forward, gravityNormal);
 
-            //Vector3D plane = forward - (Vector3D.Dot(forward, gravity) / gravity.Length()) * (gravity / gravity.Length());
-            double pitch = AngleBetween(forward, ProjectOnPlane(forward, gravity.Normalized())); //Math.Atan2(Vector3D.Cross(forward, plane).Normalize(), Vector3.Dot(forward, plane));
-            Vector3D plane = right - (Vector3D.Dot(right, gravity) / gravity.Length()) * (gravity / gravity.Length());
-            double roll = Math.Atan2(Vector3D.Cross(right, plane).Normalize(), Vector3.Dot(right, plane)) * Math.Sign(Vector3.Dot(right, gravity));
+            // normalize it for reasons
+            forwardProjection.Normalize();
 
-            pitch *= Math.Sign(forward.Dot(gravity.Normalized()));
+            // get the difference between the target rotation and the current rotation, yaw isn't accounted for since it's only forward and up, not right
+            Quaternion idealRotation = Quaternion.Inverse(currentRot) * Quaternion.CreateFromForwardUp(forwardProjection, -gravityNormal); // target - current?
 
-            Log($"pitch?: {pitch} >< {forward.Dot(gravity.Normalized())}");
-            Log($"roll? : {roll}");
+            Vector3D eulerOffsets = MyMath.QuaternionToEuler(idealRotation); // pitch, roll, yaw? nope, PYR
 
+            Log("offsets:");
+            Log("x (pitch):", $"{eulerOffsets.X:f2}", $"{MathHelper.ToDegrees(eulerOffsets.X):f2}");
+            // always |x| < 1e-8 (ish) since yaw is cut out at the Reject-- there really is no definitive "yaw" unless you get the planet's matrix?
+            Log("y (yaw  ):", $"{eulerOffsets.Y:f2}", $"{MathHelper.ToDegrees(eulerOffsets.Y):f2}");
+            Log("z (roll ):", $"{eulerOffsets.Z:f2}", $"{MathHelper.ToDegrees(eulerOffsets.Z):f2}");
 
-            /*Vector3D crossed = gravity.Normalized().Cross(forward);
-            Vector3D rollCrossed = gravity.Normalized().Cross(up);
-            double rollDirection = (rollCrossed.Y) * 6;
-            Log($"crossed:");
-            Log($"{rollCrossed.X}");
-            Log($"{rollCrossed.Y}");
-            Log($"{rollCrossed.Z}");*/
+            var velocities = reference.GetShipVelocities();
+            var angularVelocities = Vector3D.TransformNormal(velocities.AngularVelocity, MatrixD.Transpose(reference.WorldMatrix));
+            Log("grid velocity (relative to reference):");
+            Log("x (pitch):", $"{angularVelocities.X:f2}", $"{MathHelper.ToDegrees(angularVelocities.X):f2}");
+            Log("y (yaw  ):", $"{angularVelocities.Y:f2}", $"{MathHelper.ToDegrees(angularVelocities.Y):f2}");
+            Log("z (roll ):", $"{angularVelocities.Z:f2}", $"{MathHelper.ToDegrees(angularVelocities.Z):f2}");
 
-            double pitchDirection = pitch * 2;
-            double rollDirection = roll * 2;
+            /*while (eulerOffsets.X > Math.PI) // sure.. why not
+                eulerOffsets.X -= 2 * Math.PI;
+            while (eulerOffsets.X < -Math.PI)
+                eulerOffsets.X += 2 * Math.PI;
+            while (eulerOffsets.Z > Math.PI) // oh boy, i love math
+                eulerOffsets.Z -= 2 * Math.PI;
+            while (eulerOffsets.Z < -Math.PI)
+                eulerOffsets.Z += 2 * Math.PI;*/
 
-            Log($"roll  dir: {rollDirection} for {rollStators.Count} rotors");
-            Log($"pitch dir: {pitchDirection} for {elevationStators.Count} rotors");
+            double pitchSpeed = -eulerOffsets.X * (60 / (Math.PI * 2)) * 30; // convert RAD/S to RPM, then apply speed multiplier
+            double rollSpeed  = eulerOffsets.Z * (60 / (Math.PI * 2)) * 30;
 
-            float azimuthValue = -movement.Y * ((float)SteeringSensitivity / 60f) * (float)Math.PI / 2f;
+            Log($"roll  dir: {rollSpeed} for {rollStators.Count} rotors");
+            Log($"pitch dir: {pitchSpeed} for {elevationStators.Count} rotors");
+
+            float azimuthValue = -movement.Y * ((float)SteeringSensitivity);
             bool isTurning = azimuthValue.Absolute() > 0;
             foreach (var stator in azimuthStators)
             {
@@ -181,7 +157,7 @@ namespace IngameScript
                 stator.SetRPM(azimuthValue * (float)stator.Configuration.InversedMultiplier);
             }
 
-            float elevationValue = (float)pitchDirection;
+            float elevationValue = (float)pitchSpeed;
             foreach (var stator in elevationStators)
             {
                 if (!stator.Stator.IsSharingInertiaTensor())
@@ -193,7 +169,7 @@ namespace IngameScript
                 // TODO
             }
 
-            float rollValue = (float)rollDirection;
+            float rollValue = (float)rollSpeed;
             foreach (var stator in rollStators)
             {
                 if (!stator.Stator.IsSharingInertiaTensor())
@@ -215,11 +191,14 @@ namespace IngameScript
 
             float totalRotation = Math.Abs(azimuthValue) + Math.Abs(elevationValue) + Math.Abs(rollValue);
             bool isStabilizing = totalRotation > 3f;
+            /*elevationValue /= Math.Abs(angularVelocities.X) <= 1 ? 1f : Math.Abs((float)angularVelocities.X);
+            azimuthValue /= Math.Abs(angularVelocities.Y) <= 1 ? 1f : Math.Abs((float)angularVelocities.Y); // add some "dampening" (not dampening)
+            rollValue /= Math.Abs(angularVelocities.Z) <= 1 ? 1f : Math.Abs((float)angularVelocities.Z);*/
             foreach (var gyro in stabilizationGyros)
             {
-                Log($"pitch:", elevationValue * (float)gyro.Configuration.InversedMultiplier);
+                /*Log($"pitch:", -elevationValue * (float)gyro.Configuration.InversedMultiplier);
                 Log($"yaw:", -azimuthValue * (float)gyro.Configuration.InversedMultiplier);
-                Log($"roll:", rollValue * (float)gyro.Configuration.InversedMultiplier);
+                Log($"roll:", rollValue * (float)gyro.Configuration.InversedMultiplier);*/
                 if (gyro.GyroType == BlockType.GyroscopeRoll)
                     gyro.SetOverrides(reference, 0, 0, rollValue * (float)gyro.Configuration.InversedMultiplier); //SetAngles(gyro, 0, 0, rollValue * (float)gyro.Configuration.InversedMultiplier);
                 //gyro.Gyro.Roll = rollValue * (float)gyro.Configuration.InversedMultiplier;
@@ -227,12 +206,12 @@ namespace IngameScript
                     gyro.SetOverrides(reference, 0, -azimuthValue * (float)gyro.Configuration.InversedMultiplier, 0); //SetAngles(gyro, -azimuthValue * (float)gyro.Configuration.InversedMultiplier, 0, 0);
                 //gyro.Gyro.Yaw = -azimuthValue * (float)gyro.Configuration.InversedMultiplier;
                 else if (gyro.GyroType == BlockType.GyroscopeElevation)
-                    gyro.SetOverrides(reference, elevationValue * (float)gyro.Configuration.InversedMultiplier, 0, 0); //SetAngles(gyro, 0, elevationValue * (float)gyro.Configuration.InversedMultiplier, 0);
+                    gyro.SetOverrides(reference, -elevationValue * (float)gyro.Configuration.InversedMultiplier, 0, 0); //SetAngles(gyro, 0, elevationValue * (float)gyro.Configuration.InversedMultiplier, 0);
                 //gyro.Gyro.Pitch = elevationValue * (float)gyro.Configuration.InversedMultiplier;
 
 
                 else if (gyro.GyroType == BlockType.GyroscopeStabilization)
-                    gyro.SetOverrides(reference, elevationValue * (float)gyro.Configuration.InversedMultiplier, -azimuthValue * (float)gyro.Configuration.InversedMultiplier, rollValue * (float)gyro.Configuration.InversedMultiplier);
+                    gyro.SetOverrides(reference, -elevationValue * (float)gyro.Configuration.InversedMultiplier, -azimuthValue * (float)gyro.Configuration.InversedMultiplier, rollValue * (float)gyro.Configuration.InversedMultiplier);
                     /*SetAngles(gyro,
                         -azimuthValue * (float)gyro.Configuration.InversedMultiplier,
                         elevationValue * (float)gyro.Configuration.InversedMultiplier,

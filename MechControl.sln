@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MechControlScriptAddon", "M
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "MechControlShared", "MechControlShared\MechControlShared.shproj", "{FADD4D9A-7CFD-45A3-B4A9-046547DFE1E4}"
 EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "BuildToolsAPI", "..\BuildTools\BuildToolsAPI\BuildToolsAPI.shproj", "{C3A966D6-3D3B-4034-9831-FD7B6C912223}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -29,10 +31,15 @@ Global
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {5A7411BA-6EED-4DBA-B762-EFF24A133ABA}
+	EndGlobalSection
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		..\BuildTools\BuildToolsAPI\BuildToolsAPI.projitems*{62aeab34-e7d8-47e5-8a7e-a82695fce299}*SharedItemsImports = 5
 		MechControlAPI\MechControlAPI.projitems*{62aeab34-e7d8-47e5-8a7e-a82695fce299}*SharedItemsImports = 5
 		MechControlShared\MechControlShared.projitems*{62aeab34-e7d8-47e5-8a7e-a82695fce299}*SharedItemsImports = 5
 		MechControlAPI\MechControlAPI.projitems*{8a3cdcc5-4b55-4d87-a415-698a0e1ff06f}*SharedItemsImports = 13
+		..\BuildTools\BuildToolsAPI\BuildToolsAPI.projitems*{c3a966d6-3d3b-4034-9831-fd7b6c912223}*SharedItemsImports = 13
 		MechControlShared\MechControlShared.projitems*{fadd4d9a-7cfd-45a3-b4a9-046547dfe1e4}*SharedItemsImports = 13
 	EndGlobalSection
 EndGlobal

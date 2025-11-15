@@ -27,7 +27,7 @@ namespace IngameScript
 
             #region # - Properties
 
-            public LegConfiguration DefaultConfiguration;
+            public virtual LegConfiguration DefaultConfiguration { get; set; }
             public new LegConfiguration Configuration;
 
             protected double LastDelta = 1;
@@ -114,6 +114,12 @@ namespace IngameScript
                     CrouchWaitTime = Math.Min(1, CrouchWaitTime + info.Delta * Configuration.CrouchSpeed * CrouchSpeed);
 
                 // normal mode
+                if (customAnimationStep != -1d) // allow testing!
+                {
+                    AnimationStep = customAnimationStep;
+                    AnimationStepOffset = OffsetLegs ? (AnimationStep + .5).Modulo(1) : AnimationStep;
+                    return;
+                }
                 if (!Configuration.IndependantStep)
                 {
                     AnimationStep = (animationStepCounter * Configuration.AnimationSpeed * WalkCycleSpeed + (animationStepCounter > 0 ? IdOffset : 0)).Modulo(1);

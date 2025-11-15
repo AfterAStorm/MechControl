@@ -111,7 +111,8 @@ namespace IngameScript
             }
 
             /// <summary>
-            /// Calculate leg angles for a 2 jointed leg, such as humanoid
+            /// Calculate leg angles for a 3 jointed leg, such as spider
+            /// It's secretly a sideways 2 jointed leg, :p
             /// </summary>
             /// <remarks>The quad angle is always returned as zero</remarks>
             /// <param name="thighLength"></param>

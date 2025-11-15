@@ -37,6 +37,9 @@ namespace IngameScript
             public List<LegJoint> LeftStrafeJoints = new List<LegJoint>();
             public List<LegJoint> RightStrafeJoints = new List<LegJoint>();
 
+            public List<LegJoint> LeftTurnJoints = new List<LegJoint>();
+            public List<LegJoint> RightTurnJoints = new List<LegJoint>();
+
             public List<Hydraulic> Hydraulics = new List<Hydraulic>();
 
             public List<IMyCameraBlock> LeftCameras = new List<IMyCameraBlock>();
@@ -60,17 +63,33 @@ namespace IngameScript
                     return float.NegativeInfinity;
                 float length = float.PositiveInfinity;
                 Vector3I ai, bi;
-                foreach (var a in jointsA)
+                Vector3I diri = Vector3I.Zero;
+                foreach (var a in jointsA) // thanks @beal for finding the pesking random crash when .Top is null :D
                 {
+                    if (a.Stator == null) // not sure if these are technically needed, but... it's probably fine
+                        continue;
                     foreach (var b in jointsB)
                     {
+                        if (b.Stator == null)
+                            continue;
                         // TODO: test all options :)
                         // account for all rotor arrangements, since it doesn't technically have to all be one way
-                        if (a.Stator.Top.CubeGrid.Equals(b.Stator.CubeGrid))
+                        if (a.Stator.Top != null && a.Stator.Top.CubeGrid.Equals(b.Stator.CubeGrid))
                         {
                             // top --> stator
                             ai = a.Stator.Top.Position + Base6Directions.GetIntVector(a.Stator.Top.Orientation.Up);
                             bi = b.Stator.Position;
+                            //(b.Stator.CubeGrid.WorldMatrix.GetOrientation() * b.Stator.WorldMatrix).Up;
+                            diri = a.IsRotor ? Base6Directions.GetIntVector(a.Stator.Top.Orientation.Forward) : Base6Directions.GetIntVector(a.Stator.Top.Orientation.Left);
+                            //#if DEBUG
+                            /*Singleton.buildTools.Log("woah diff!");
+                            Singleton.buildTools.Log($"{ai} to {bi} dot {diri} {Vector3I.Dot(ai - bi, diri)}");
+                            Singleton.buildTools.DrawPoint(a.Stator.Top.CubeGrid.GridIntegerToWorld(ai), Color.Green);
+                            Singleton.buildTools.DrawPoint(b.Stator.CubeGrid.GridIntegerToWorld(bi), Color.Red);
+                            Singleton.buildTools.DrawLine(a.Stator.Top.WorldMatrix.Translation, a.Stator.Top.WorldMatrix.Translation + Vector3D.TransformNormal((Vector3D)diri, a.Stator.Top.WorldMatrix), Color.Blue);*/
+                            //#endif
+                            length = Math.Min(length, Math.Abs(Vector3I.Dot(ai - bi, diri)) * GridSize);
+                            continue;
                         }
                         else if (a.Stator.CubeGrid.Equals(b.Stator.CubeGrid))
                         {
@@ -78,13 +97,13 @@ namespace IngameScript
                             ai = a.Stator.Position;// + Base6Directions.GetIntVector(a.Stator.Orientation.Up);
                             bi = b.Stator.Position;
                         }
-                        else if (a.Stator.CubeGrid.Equals(b.Stator.Top.CubeGrid))
+                        else if (b.Stator.Top != null && a.Stator.CubeGrid.Equals(b.Stator.Top.CubeGrid))
                         {
                             // stator --> top
                             ai = a.Stator.Position;// + Base6Directions.GetIntVector(a.Stator.Top.Orientation.Up);
                             bi = b.Stator.Top.Position;
                         }
-                        else if (a.Stator.Top.CubeGrid.Equals(b.Stator.Top.CubeGrid))
+                        else if (a.Stator.Top != null && b.Stator.Top != null && a.Stator.Top.CubeGrid.Equals(b.Stator.Top.CubeGrid) == true)
                         {
                             // top --> top
                             ai = a.Stator.Top.Position + Base6Directions.GetIntVector(a.Stator.Top.Orientation.Up);
@@ -96,6 +115,8 @@ namespace IngameScript
                             //bi = Vector3I.Zero;
                             continue; // not on same grid, hmmmmm
                         }
+                        Singleton.buildTools.Log("woah!");
+                        //length = Math.Min(length, Math.Abs(Vector3I.Dot(ai - bi, diri)) * GridSize);
                         length = Math.Min(length, (ai - bi).Length() * GridSize);
                     }
                 }
@@ -121,6 +142,11 @@ namespace IngameScript
                     }
                 }
                 return length;
+            }
+
+            protected bool AreAnyJointsHinges(IEnumerable<LegJoint> joints)
+            {
+                return joints.Any(j => j.IsHinge);
             }
 
             public override void Initialize()
@@ -155,8 +181,9 @@ namespace IngameScript
                 Log("# L/R Knees  :", LeftKneeJoints.Count, "/", RightKneeJoints.Count);
                 Log("# L/R Feet   :", LeftFootJoints.Count, "/", RightFootJoints.Count);
                 Log("# L/R Strafe :", LeftStrafeJoints.Count, "/", RightStrafeJoints.Count);
-                Log("Thigh Length :", ThighLength, "meters", Configuration.ThighLength);
-                Log("Calf  Length :", CalfLength, "meters", Configuration.CalfLength);
+                Log("# L/R Turn   :", LeftTurnJoints.Count, "/", RightTurnJoints.Count);
+                Log("Thigh Length :", ThighLength, "meters (set", Configuration.ThighLength?.ToString() ?? "auto", ")");
+                Log("Calf  Length :", CalfLength, "meters (set", Configuration.CalfLength?.ToString() ?? "auto", ")");
             }
 
             protected override void SetAngles(LegAngles left, LegAngles right)
@@ -169,6 +196,33 @@ namespace IngameScript
                 SetAnglesOf(RightFootJoints, right.FeetDegrees);
                 SetAnglesOf(LeftStrafeJoints, left.StrafeDegrees);
                 SetAnglesOf(RightStrafeJoints, right.StrafeDegrees);
+                SetAnglesOf(LeftTurnJoints, left.TurnDegrees);
+                SetAnglesOf(RightTurnJoints, right.TurnDegrees);
+            }
+
+            protected void UpdateMagnets(MovementInfo info, bool inversed=false)
+            {
+                // left leg starts lifting at 0.25
+                // left leg lands at 0.75
+
+                // (we use Offset, since then it just follows previous)
+                // right leg starts lifting at 0.75
+                // right leg lands at 0.25
+                bool leftDown = /*!info.Jumped &&*/ ((info.Walk == 0 && info.Turn == 0 && info.Strafe == 0) || (AnimationStep > .25d && AnimationStep < .75d ? !inversed : inversed));
+                bool rightDown = /*!info.Jumped &&*/ ((info.Walk == 0 && info.Turn == 0 && info.Strafe == 0) || (AnimationStepOffset > .25d && AnimationStepOffset < .75d ? !inversed : inversed));
+
+                foreach (var mag in LeftMagnets)
+                {
+                    mag.AutoLock = leftDown;
+                    if (!leftDown && mag.IsLocked)
+                        mag.Unlock();
+                }
+                foreach (var mag in RightMagnets)
+                {
+                    mag.AutoLock = rightDown;
+                    if (!rightDown && mag.IsLocked)
+                        mag.Unlock();
+                }
             }
 
             /// <summary>
@@ -190,17 +244,20 @@ namespace IngameScript
             protected MyTuple<double, double> cameraOffsetTween = new MyTuple<double, double>(0, 0);
             protected double CameraOffsetTweenMultiplier = 10d;
 
+            protected double normalangle;
+
             /// <summary>
             /// Update the cameras
             /// Not a part of the base Update method for optionality
             /// </summary>
             protected MyTuple<double, double> UpdateCameras()
             {
+                var grav = gravity.Normalized();
                 Log("Cameras:", LeftCameras.Count, RightCameras.Count);
                 if (LeftCameras.Count > 0 && RightCameras.Count > 0)
                 {
-                    double left = 999999999d;
-                    double right = 999999999d;
+                    double left = double.PositiveInfinity;
+                    double right = double.PositiveInfinity;
                     MyDetectedEntityInfo hit;
                     foreach (var camera in LeftCameras)
                     {
@@ -208,7 +265,12 @@ namespace IngameScript
                         hit = camera.Raycast(20);
                         if (!hit.IsEmpty())
                         {
-                            left = Math.Min(left, Vector3D.Dot(gravity.Normalized(), hit.HitPosition.Value));
+                            #if DEBUG
+                            //Singleton.buildTools.DrawPoint(hit.HitPosition.Value, Color.Wheat, 0.1f);
+                            #endif
+                            var dot = Vector3D.Dot(grav, hit.HitPosition.Value);
+                            if (!double.IsNaN(dot))
+                                left = Math.Min(left, dot);
                         }
                     }
                     foreach (var camera in RightCameras)
@@ -217,14 +279,47 @@ namespace IngameScript
                         hit = camera.Raycast(20);
                         if (!hit.IsEmpty())
                         {
-                            right = Math.Min(right, Vector3D.Dot(gravity.Normalized(), hit.HitPosition.Value));
+                            #if DEBUG
+                            //Singleton.buildTools.DrawPoint(hit.HitPosition.Value, Color.Wheat, 0.1f);
+                            #endif
+                            double dot = Vector3D.Dot(grav, hit.HitPosition.Value);
+                            if (!double.IsNaN(dot))
+                                right = Math.Min(right, dot);
                         }
                     }
 
-                    if (left != 999999999d && right != 999999999d)
+                    // level
+                    /*bool valid = true;
+                    hit = RightCameras[0].Raycast(20);
+                    valid = !hit.IsEmpty();
+
+                    if (valid)
+                    {
+                        Vector3D a = hit.HitPosition.Value;
+                        hit = RightCameras[1].Raycast(20);
+                        if (!hit.IsEmpty())
+                        {
+                            Vector3D b = hit.HitPosition.Value;
+
+                            double dotA = Vector3D.Dot(grav, a);
+                            double dotB = Vector3D.Dot(grav, b);
+
+                            double c = Vector3D.Distance(RightCameras[0].GetPosition(), RightCameras[1].GetPosition());
+                            normalangle = Math.Asin(Math.Abs(dotA - dotB) / c);
+                        }
+                    }*/
+                    /*Log("a:", a);
+                    Log("b:", b);
+                    Log("da:", dotA);
+                    Log("db:", dotB);
+                    Log("da-db:", Math.Abs(dotA - dotB));
+                    Log("c:", c);*/
+                    Log("Normal Angle:", normalangle);
+
+                    if (!double.IsPositiveInfinity(left) && !double.IsPositiveInfinity(right))
                         Cameras.SetGroup(Configuration.Id, left, right);
-                    //var x = Cameras.GetGroup(Configuration.Id);
-                    //Log("Camera Values:", x.Item1, x.Item2);
+                    var x = Cameras.GetGroup(Configuration.Id);
+                    Log("Camera Values:", x.Item1, x.Item2);
                 }
 
                 var cameraOffsets = Cameras.CalculateGroup(Configuration.Id);
@@ -253,6 +348,10 @@ namespace IngameScript
                         return true;
                     case BlockType.Strafe:
                         AddLeftRightBlock(LeftStrafeJoints, RightStrafeJoints, new LegJoint(block), block.Side);
+                        AddAllBlock(block);
+                        return true;
+                    case BlockType.Turn:
+                        AddLeftRightBlock(LeftTurnJoints, RightTurnJoints, new LegJoint(block), block.Side);
                         AddAllBlock(block);
                         return true;
                     case BlockType.Camera:

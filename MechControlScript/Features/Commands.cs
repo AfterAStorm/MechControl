@@ -41,7 +41,7 @@ namespace IngameScript
 
         double HandleDoubleArgument(double current, string arg)
         {
-            if (string.IsNullOrEmpty(arg))
+            if (string.IsNullOrEmpty(arg) || arg.Length <= 1)
                 return current;
             switch (arg.Substring(0, 1))
             {
@@ -60,7 +60,7 @@ namespace IngameScript
 
         float HandleFloatArgument(float current, string arg)
         {
-            if (string.IsNullOrEmpty(arg))
+            if (string.IsNullOrEmpty(arg) || arg.Length <= 1)
                 return current;
             switch (arg.Substring(0, 1))
             {
@@ -80,7 +80,7 @@ namespace IngameScript
 
         int HandleIntArgument(int current, string arg)
         {
-            if (string.IsNullOrEmpty(arg))
+            if (string.IsNullOrEmpty(arg) || arg.Length <= 1)
                 return current;
             switch (arg.Substring(0, 1))
             {
@@ -93,7 +93,7 @@ namespace IngameScript
 
         JointVariable HandleVariable(JointVariable current, string arg)
         {
-            if (string.IsNullOrEmpty(arg))
+            if (string.IsNullOrEmpty(arg) || arg.Length <= 1)
                 return current;
             JointVariable replace = new JointVariable(arg.Substring(1));//arg.Trim('=', '+', '-'));
             if (replace.Type != current.Type) // if not same type, just do a =
@@ -132,10 +132,24 @@ namespace IngameScript
                     debugMode = !debugMode;
                     break;
 
+                case "debugstep":
+                    customAnimationStep = HandleDoubleArgument(customAnimationStep, arg);
+                    break;
+
+                case "debugtarget":
+                    if (arguments.Length < 4)
+                        return; // requires [3]
+                    customTarget = new Vector3D(TryParseFloat(arguments[1]), TryParseFloat(arguments[2]), TryParseFloat(arguments[3]));
+                    break;
+
                 // Setup & Utilities //
                 case "setup":
                     setupMode = HandleBoolArgument(setupMode, arg);
                     lastSetupModeTick = GetUnixTime();
+                    break;
+
+                case "defaults":
+                    useLegDefaults = HandleBoolArgument(useLegDefaults, arg);
                     break;
 
                 case "autorename":
@@ -161,7 +175,7 @@ namespace IngameScript
                 case "walk":
                     // if already moving, halt
                     if ((movementOverride * Vector3.Forward).LengthSquared() != 0)
-                        movementOverride *= Vector3.Zero;//Vector3.One - Vector3.Forward; // halt
+                        break;//movementOverride *= Vector3.Zero;//Vector3.One - Vector3.Forward; // halt
                     else
                         switch (arg == null ? "" : arg.ToLower().Trim())
                         {
@@ -300,14 +314,6 @@ namespace IngameScript
                 // Fun //
                 case "limp":
                     ToggleLimp(HandleBoolArgument(isLimp, arg));
-                    break;
-
-                // Test Leg //
-                case "ik":
-                    double testLegX = TryParseFloat(arguments[1]);
-                    double testLegY = TryParseFloat(arguments[2]);
-                    double testLegZ = TryParseFloat(arguments[3]);
-                    customTarget = new Vector3D(testLegX, testLegY, testLegZ);
                     break;
             }
         }

@@ -127,7 +127,7 @@ namespace IngameScript
             public bool IndependantStep => IndependentStepEnabled;
             public bool VtolActive = true;
 
-            public JointVariable VariableStandingHeight, VariableStandingDistance, VariableStrafeDistance;
+            public JointVariable VariableStandingHeight, VariableStandingDistance, VariableStrafeDistance, VariableTurnLength;
 
             private int defaultValue;
             public bool Default => defaultValue <= 0;
@@ -171,7 +171,8 @@ namespace IngameScript
                     AnimationSpeed.GetHashCode() * 19 +
                     CrouchSpeed.GetHashCode() * 20 +
                     VariableCrouchHeight.GetHashCode() * 21 + // rip order... whatever
-                    VtolActive.GetHashCode() * 22
+                    VtolActive.GetHashCode() * 22 +
+                    VariableTurnLength.GetHashCode() * 23
                 ) % int.MaxValue;
             }
 
@@ -198,6 +199,7 @@ namespace IngameScript
                 //ini.Set("Leg", "StandingHeight", VariableStandingHeight.ToString());
                 if (LegType > 2 && LegType < 6)
                     ini.Set("Leg", "StandingDistance", VariableStandingDistance.ToString());
+                ini.Set("Leg", "TurnLength", VariableTurnLength.ToString());
                 ini.Set("Leg", "StrafeWidth", VariableStrafeDistance.ToString());//ini.Set("Leg", "StrafeDistance", VariableStrafeDistance.ToString());
                 ini.Set("Leg", "CrouchHeight", VariableCrouchHeight.ToString());
                 //ini.SetComment("Leg", "StepLength", "How far forwards/backwards and up/down legs step\n0.5 is half, 1 is default, 2 is double");
@@ -279,6 +281,7 @@ namespace IngameScript
                     VariableStepHeight = new JointVariable(ini.Get("Leg", "StepHeight").ToString("20%")),
                     VariableStandingHeight = new JointVariable(ini.Get("Leg", "StandingHeight").ToString("90%")),
                     VariableStandingDistance = new JointVariable(ini.Get("Leg", "StandingDistance").ToString("75%")),
+                    VariableTurnLength = new JointVariable(ini.Get("Leg", "TurnLength").ToString("15%")),
                     VariableStrafeDistance = new JointVariable(ini.Get("Leg", "StrafeWidth").ToString("25%")),//new JointVariable(ini.Get("Leg", "StrafeDistance").ToString("25%")),
                     VariableCrouchHeight = new JointVariable(ini.Get("Leg", "CrouchHeight").ToString("20%")),
 

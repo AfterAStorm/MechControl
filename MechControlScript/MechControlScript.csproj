@@ -19,7 +19,7 @@
         <PrivateAssets>all</PrivateAssets>
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       </PackageReference>
-      <PackageReference Include="Mal.Mdk2.PbPackager" Version="2.1.5">
+      <PackageReference Include="Mal.Mdk2.PbPackager" Version="2.1.7">
         <PrivateAssets>all</PrivateAssets>
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       </PackageReference>
@@ -37,5 +37,7 @@
     <Import Project="..\MechControlShared\MechControlShared.projitems" Label="Shared" />
 
     <Import Project="..\MechControlAPI\MechControlAPI.projitems" Label="Shared" />
+
+    <Import Project="..\..\BuildTools\BuildToolsAPI\BuildToolsAPI.projitems" Label="Shared" />
 
 </Project>
