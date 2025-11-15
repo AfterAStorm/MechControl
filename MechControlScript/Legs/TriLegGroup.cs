@@ -88,8 +88,12 @@ namespace IngameScript
                             Singleton.buildTools.DrawPoint(b.Stator.CubeGrid.GridIntegerToWorld(bi), Color.Red);
                             Singleton.buildTools.DrawLine(a.Stator.Top.WorldMatrix.Translation, a.Stator.Top.WorldMatrix.Translation + Vector3D.TransformNormal((Vector3D)diri, a.Stator.Top.WorldMatrix), Color.Blue);*/
                             //#endif
-                            length = Math.Min(length, Math.Abs(Vector3I.Dot(ai - bi, diri)) * GridSize);
-                            continue;
+                            float dot = Math.Abs(Vector3I.Dot(ai - bi, diri));
+                            if (dot > 0)
+                            {
+                                length = Math.Min(length, dot * GridSize);
+                                continue;
+                            }
                         }
                         else if (a.Stator.CubeGrid.Equals(b.Stator.CubeGrid))
                         {

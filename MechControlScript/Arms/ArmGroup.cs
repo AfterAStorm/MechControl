@@ -33,7 +33,7 @@ namespace IngameScript
             public List<ArmJoint> YawJoints = new List<ArmJoint>();
             //public List<ArmJoint> RollJoints = new List<ArmJoint>();
 
-            public List<IMyLandingGear> Magnets = new List<IMyLandingGear>();
+            //public List<IMyLandingGear> Magnets = new List<IMyLandingGear>();
 
             public bool IsZeroing = false;
             public double Pitch => armPitch;
@@ -73,10 +73,10 @@ namespace IngameScript
                     /*case BlockType.Roll:
                         arm.RollJoints.Add(new ArmJoint(block, jointConfig));
                         return true;*/
-                    case BlockType.Magnet:
+                    /*case BlockType.Magnet:
                         Magnets.Add(block.Block as IMyLandingGear);
                         AddAllBlock(block);
-                        return true;
+                        return true;*/
                 }
                 return base.AddBlock(block);
             }

@@ -645,9 +645,9 @@ namespace IngameScript
                     /*case BlockType.Roll:
                         arm.RollJoints.Add(new ArmJoint(block, jointConfig));
                         break;*/
-                    case BlockType.Magnet:
+                    /*case BlockType.Magnet:
                         arm.Magnets.Add(block.Block as IMyLandingGear);
-                        break;
+                        break;*/
                     default:
                         return;
                 }

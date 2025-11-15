@@ -16,6 +16,10 @@ Configuring:
 
 Most recent release:
 
+2.2.1-beta
+    * Fix experimental leg length finding
+    * Fix stabilization gyros constantly changing angle and not gyro-ing
+
 2.2.0-beta
     * Add Turn joints (TR & TL)
     * Add magnet support (ML & MR)

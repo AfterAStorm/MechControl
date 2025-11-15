@@ -109,8 +109,37 @@ namespace IngameScript
                 SetOverrides(-rot.X, rot.Y, rot.Z);
             }
 
+            /// <summary>
+            /// Space Engineers JANK
+            /// </summary>
+            /// <param name="value"></param>
+            /// <returns></returns>
+            private float RPMToRadians(float value)
+            {
+                return value * ((float)Math.PI / 30f);
+            }
+
+            /*/// <summary>
+            /// Space Engineers JANK
+            /// </summary>
+            /// <param name="value"></param>
+            /// <returns></returns>
+            private float RadiansToRPM(float value)
+            {
+                return value * (30f / (float)Math.PI);
+            }*/
+
+            private float ConvertAngle(float value)
+            {
+                float clamp = Gyro.CubeGrid.GridSizeEnum == MyCubeSize.Large ? 30f : 60f;
+                return RPMToRadians(MathHelper.Clamp(value, -clamp, clamp));
+            }
+
             public void SetOverrides(float pitch, float yaw, float roll) // PYR, radians to target rotation
             {
+                pitch = ConvertAngle(pitch);
+                yaw = ConvertAngle(yaw);
+                roll = ConvertAngle(roll);
                 if (!Gyro.GyroOverride)
                     Gyro.GyroOverride = true;
 
