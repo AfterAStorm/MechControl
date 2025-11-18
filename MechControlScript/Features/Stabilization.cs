@@ -91,10 +91,10 @@ namespace IngameScript
                 Log("No reference for stabilization");
                 return;
             }
-            if (!stabilizationEnabled)
-                return;
             gravity = reference.GetTotalGravity();
             Log("gravity:", gravity);
+            if (!stabilizationEnabled)
+                return;
             if (double.IsNaN(gravity.X) || gravity.LengthSquared() == 0) // why can it be 0,0,0? AAAAAAAAAAAAAAAAAAAA
             {
                 Log("Not in gravity well or invalid world reference");

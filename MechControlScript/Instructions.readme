@@ -16,6 +16,9 @@ Configuring:
 
 Most recent release:
 
+2.2.2-beta
+    * Fix camera gravity requirements
+
 2.2.1-beta
     * Fix experimental leg length finding
     * Fix stabilization gyros constantly changing angle and not gyro-ing

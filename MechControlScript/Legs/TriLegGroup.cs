@@ -257,38 +257,47 @@ namespace IngameScript
             protected MyTuple<double, double> UpdateCameras()
             {
                 var grav = gravity.Normalized();
+                Log("Camera gravity:", grav);
                 Log("Cameras:", LeftCameras.Count, RightCameras.Count);
                 if (LeftCameras.Count > 0 && RightCameras.Count > 0)
                 {
                     double left = double.PositiveInfinity;
                     double right = double.PositiveInfinity;
-                    MyDetectedEntityInfo hit;
-                    foreach (var camera in LeftCameras)
+                    foreach (var cam in LeftCameras.Concat(RightCameras))
+                        cam.EnableRaycast = true;
+                    // this is not ideal, it should Cameras.SetGroup by side, not by left/right
+                    // but... this works and isn't *that* bad... right?
+                    bool canScan = LeftCameras.Any(c => c.CanScan(20)) && RightCameras.Any(c => c.CanScan(20));
+                    if (canScan)
                     {
-                        camera.EnableRaycast = true;
-                        hit = camera.Raycast(20);
-                        if (!hit.IsEmpty())
+                        MyDetectedEntityInfo hit;
+                        foreach (var camera in LeftCameras)
                         {
-                            #if DEBUG
-                            //Singleton.buildTools.DrawPoint(hit.HitPosition.Value, Color.Wheat, 0.1f);
-                            #endif
-                            var dot = Vector3D.Dot(grav, hit.HitPosition.Value);
-                            if (!double.IsNaN(dot))
-                                left = Math.Min(left, dot);
+                            camera.EnableRaycast = true;
+                            hit = camera.Raycast(20);
+                            if (!hit.IsEmpty())
+                            {
+                                #if DEBUG
+                                //Singleton.buildTools.DrawPoint(hit.HitPosition.Value, Color.Wheat, 0.1f);
+                                #endif
+                                var dot = Vector3D.Dot(grav, hit.HitPosition.Value);
+                                if (!double.IsNaN(dot))
+                                    left = Math.Min(left, dot);
+                            }
                         }
-                    }
-                    foreach (var camera in RightCameras)
-                    {
-                        camera.EnableRaycast = true;
-                        hit = camera.Raycast(20);
-                        if (!hit.IsEmpty())
+                        foreach (var camera in RightCameras)
                         {
-                            #if DEBUG
-                            //Singleton.buildTools.DrawPoint(hit.HitPosition.Value, Color.Wheat, 0.1f);
-                            #endif
-                            double dot = Vector3D.Dot(grav, hit.HitPosition.Value);
-                            if (!double.IsNaN(dot))
-                                right = Math.Min(right, dot);
+                            camera.EnableRaycast = true;
+                            hit = camera.Raycast(20);
+                            if (!hit.IsEmpty())
+                            {
+                                #if DEBUG
+                                //Singleton.buildTools.DrawPoint(hit.HitPosition.Value, Color.Wheat, 0.1f);
+                                #endif
+                                double dot = Vector3D.Dot(grav, hit.HitPosition.Value);
+                                if (!double.IsNaN(dot))
+                                    right = Math.Min(right, dot);
+                            }
                         }
                     }
 
