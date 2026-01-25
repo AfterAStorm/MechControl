@@ -16,6 +16,10 @@ Configuring:
 
 Most recent release:
 
+2.3.1-beta
+    * Fix digitigrade joints (line up w/ humanoid)
+    * Fix autotype/autoname breaking with block fetching changes
+
 2.3.0-beta
     * Make walk command idempotent
     * Add strafe command

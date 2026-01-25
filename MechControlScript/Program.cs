@@ -27,7 +27,7 @@ namespace IngameScript
         // Script //
 
         public static Program Singleton { get; private set; }
-        public const string Version = "2.3.0-beta"; // major.minor.patch
+        public const string Version = "2.3.1-beta"; // major.minor.patch
 
         public static readonly double TicksPerSecond = 10d / 60d;
 

@@ -48,7 +48,7 @@ namespace IngameScript
 
             protected virtual LegAngles LegAnglesMultiplier => LegAngles.One;
             protected virtual LegAngles LeftAnglesMultiplier => new LegAngles(-1, 1, 1, 1, 1, 1);
-            protected virtual LegAngles RightAnglesMultiplier => new LegAngles(1, 1, 1, 1, -1, 1);
+            protected virtual LegAngles RightAnglesMultiplier => new LegAngles(1, 1, 1, 1, 1, -1);
 
             float Radius, RadiusAnkle;
 
@@ -158,7 +158,7 @@ namespace IngameScript
                 double len = Math.Sqrt(Math.Pow(y, 2) + Math.Pow(z, 2));
                 double strafe = Math.Asin(-z / len);
                 leftAngles.StrafeDegrees = strafe.ToDegrees();
-                leftAngles.TurnDegrees = info.Turn * TurnAngle * Math.Sin(AnimationStep * Math.PI * 2);
+                leftAngles.TurnDegrees = info.Turn * -TurnAngle * Math.Sin(AnimationStep * Math.PI * 2);
 
                 Log("Left  Target:");
                 Log("X:", x);
@@ -210,7 +210,7 @@ namespace IngameScript
                 len = Math.Sqrt(Math.Pow(y, 2) + Math.Pow(z, 2));
                 strafe = Math.Asin(-z / len);
                 rightAngles.StrafeDegrees = strafe.ToDegrees();
-                rightAngles.TurnDegrees = info.Turn * TurnAngle * Math.Sin(AnimationStep * Math.PI * 2);
+                rightAngles.TurnDegrees = -info.Turn * TurnAngle * Math.Sin(AnimationStepOffset * Math.PI * 2);
 
                 /*
                 double a = Math.Sqrt(Math.Pow(fakeX, 2) + Math.Pow(fakeY, 2));

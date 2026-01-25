@@ -141,7 +141,7 @@ namespace IngameScript
 
         public void AutoRenameBlocks(string format)
         {
-            Reload(); // catchup on all configs
+            //Reload(); // catchup on all configs
             if (!format.Contains("{tag}"))
                 format += " {tag}";
             List<FetchedBlock> stators = blockFinder.GetBlocksOfType<IMyMotorStator>().SelectMany(blockFetcher.ParseBlock).ToList();
@@ -162,7 +162,7 @@ namespace IngameScript
 
         public void AutoRetype(int type)
         {
-            Reload(); // catchup on all configs
+            //Reload(); // catchup on all configs
             foreach (var pair in legs)
             {
                 var group = pair.Value;
