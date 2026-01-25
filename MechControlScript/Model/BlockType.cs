@@ -53,7 +53,11 @@ namespace IngameScript
             Thruster,
             VtolAzimuth,
             VtolElevation,
-            VtolRoll,
+
+            VtolTurn,
+            VtolForward,
+            VtolStrafe,
+            VtolVertical,
 
             Camera
         }

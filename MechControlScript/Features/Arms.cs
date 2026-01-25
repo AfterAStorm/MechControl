@@ -31,7 +31,20 @@ namespace IngameScript
         public void FetchArms()
         {
             var configs = arms.Select((kv) => new KeyValuePair<int, JointConfiguration>(kv.Key, kv.Value.Configuration)).ToDictionary(pair => pair.Key, pair => pair.Value);
-            blockFetcher.FetchGroups(ref arms, configs, BlockFetcher.IsForArm, BlockFetcher.CreateArmFromType, ArmConfiguration.Parse, BlockFetcher.AddToArm);
+            blockFetcher.FetchGroups(ref arms, configs, BlockFetcher.CreateArmFromType, ArmConfiguration.Parse);
+        }
+
+        void ToggleArmsEnabled(bool enabled)
+        {
+            if (armsEnabled && !enabled)
+                foreach (var group in arms.Values)
+                {
+                    foreach (var joint in group.PitchJoints.Concat(group.YawJoints))
+                    {
+                        joint.SetRPM(0);
+                    }
+                }
+            armsEnabled = enabled;
         }
 
         public void UpdateArms()
@@ -42,7 +55,8 @@ namespace IngameScript
 
             if (armsEnabled)
                 foreach (var arm in arms.Values)
-                    arm.Update();
+                    if (arm.Enabled)
+                        arm.Update();
         }
     }
 }

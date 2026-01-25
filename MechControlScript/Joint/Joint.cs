@@ -26,10 +26,15 @@ namespace IngameScript
         {
             public IMyMotorStator Stator;
 
-            public double Minimum => Stator.LowerLimitDeg;
-            public double Maximum => Stator.UpperLimitDeg;
+            public float Minimum => Stator.LowerLimitDeg;
+            public float Maximum => Stator.UpperLimitDeg;
+            public float MinimumRad => Stator.LowerLimitRad;
+            public float MaximumRad => Stator.UpperLimitRad;
             public bool IsHinge => Stator.BlockDefinition.SubtypeName.Contains("Hinge");
             public bool IsRotor => !IsHinge;
+
+            public float InvertedMultiplier => Source.Inverted ? -1f : 1f;
+
             public FetchedBlock Source { get; private set; }
 
             public Joint(FetchedBlock block)

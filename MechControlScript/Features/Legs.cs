@@ -27,6 +27,7 @@ namespace IngameScript
 
         bool legsEnabled = true;
         bool useLegDefaults = true;
+        //bool legsThrustersDisabled = false; // toggled debounce whenever thrusters are enabled
 
         static MovementInfo moveInfo = new MovementInfo();
         static MovementInfo lastMoveInfo = new MovementInfo();
@@ -47,6 +48,23 @@ namespace IngameScript
 
         static double animationStepCounter = 0;
 
+        void ToggleLegsEnabled(bool enabled)
+        {
+            if (legsEnabled && !enabled)
+                foreach (var group in legs.Values)
+                {
+                    var trigroup = group as TriLegGroup;
+                    if (trigroup != null)
+                    {
+                        foreach (var joint in trigroup.AllJoints)
+                        {
+                            joint.SetRPM(0);
+                        }
+                    }
+                }
+            legsEnabled = enabled;
+        }
+
         float MaxComponentOf(Vector3 vector)
         {
             float maxComponent = vector.X;
@@ -65,7 +83,7 @@ namespace IngameScript
         public void FetchLegs()
         {
             var configs = legs.Select((kv) => new KeyValuePair<int, JointConfiguration>(kv.Key, kv.Value.Configuration)).ToDictionary(pair => pair.Key, pair => pair.Value);
-            blockFetcher.FetchGroups(ref legs, configs, BlockFetcher.IsForLeg, BlockFetcher.CreateLegFromType, LegConfiguration.Parse, BlockFetcher.AddToLeg);
+            blockFetcher.FetchGroups(ref legs, configs, BlockFetcher.CreateLegFromType, LegConfiguration.Parse);
 
             foreach (var leg in legs.Values)
             {
@@ -106,14 +124,19 @@ namespace IngameScript
             return accel; // otherwise return accel rate
         }
 
-        float Translate(float current, float target, float accel, float decel) 
+        float ClampAnyway(float x, float a, float b)
+        {
+            return MathHelper.Clamp(x, Math.Min(a, b), Math.Max(a, b));
+        }
+
+        float Translate(float current, float target, float accel, float decel, float delta) 
         {
             float direction = target - current;
             if (Math.Abs(direction) < .04f)
                 return target;
             if (target == 0)
-                return current + direction * DecelerationMultiplier * (float)TicksPerSecond;
-            return current + direction * AccelerationMultiplier * (float)TicksPerSecond;
+                return ClampAnyway(current + Math.Sign(direction) * DecelerationMultiplier * delta, current, target);
+            return ClampAnyway(current + Math.Sign(direction) * AccelerationMultiplier * delta, current, target);
         }
 
         public void UpdateLegs()
@@ -136,9 +159,9 @@ namespace IngameScript
                     movement.X + GetDirectionMultiplier(moveDirection.X, movement.X, AccelerationMultiplier, DecelerationMultiplier) * .5f * (float)delta, -1f, 1f);
                 movement.Y = MathHelper.Clamp(
                     movement.Y + GetDirectionMultiplier(moveDirection.Y, movement.Y, AccelerationMultiplier, DecelerationMultiplier) * .5f * (float)delta, -1f, 1f);*/
-                movement.X = Translate(movement.X, moveDirection.X, AccelerationMultiplier, DecelerationMultiplier);
-                movement.Y = Translate(movement.Y, moveDirection.Y, AccelerationMultiplier, DecelerationMultiplier);
-                movement.Z = Translate(movement.Z, moveDirection.Z, AccelerationMultiplier, DecelerationMultiplier);
+                movement.X = Translate(movement.X, moveDirection.X, AccelerationMultiplier, DecelerationMultiplier, (float)delta);
+                movement.Y = Translate(movement.Y, moveDirection.Y, AccelerationMultiplier, DecelerationMultiplier, (float)delta);
+                movement.Z = Translate(movement.Z, moveDirection.Z, AccelerationMultiplier, DecelerationMultiplier, (float)delta);
                 /*movement.Z = MathHelper.Clamp(
                     movement.Z + GetDirectionMultiplier(moveDirection.Z, movement.Z, AccelerationMultiplier, DecelerationMultiplier) * .5f * (float)delta, -1f, 1f);*/
             }
@@ -162,7 +185,7 @@ namespace IngameScript
             moveInfo.Jumping      = parsedVerticalInput > 0 && (!thrustersEnabled);
             moveInfo.Jumped       = (moveInfo.Jumped || parsedVerticalInput > 0) && !(parsedVerticalInput < 0); // if jumping or jumped, keep state--if crouched, reset state
             moveInfo.Flying       = thrustersEnabled; // parsedVerticalInput > 0 && !moveInfo.Jumping;
-            moveInfo.Delta        = 1 / 60f;
+            moveInfo.Delta        = delta;
             Log($"move info: WALK:{moveInfo.Walk}; TURN:{moveInfo.Turn}; STRAFE:{moveInfo.Strafe}; CROUCHED:{moveInfo.Crouched}");
             Log($"move cont: JUMP:{moveInfo.Jumping},{moveInfo.Jumped}; FLY:{moveInfo.Flying}");
 
@@ -191,11 +214,17 @@ namespace IngameScript
             }
             Log($"animationStepCounter: {animationStepCounter}");
 
-            if (legsEnabled)
+            // crazy logic for neat boolean tricks!
+            if (legsEnabled)// && !legsThrustersDisabled)
                 foreach (var leg in legs.Values)
                 {
+                    if (!leg.Enabled)
+                        continue;
+                    //if (thrustersEnabled)
+                    //    leg.ToggleEnabled(false, false);
                     leg.Update(moveInfo);
                 }
+            //legsThrustersDisabled = thrustersEnabled;
         }
     }
 }

@@ -48,8 +48,6 @@ namespace IngameScript
             public List<IMyLandingGear> LeftMagnets = new List<IMyLandingGear>();
             public List<IMyLandingGear> RightMagnets = new List<IMyLandingGear>();
 
-            public List<LegJoint> AllJoints = new List<LegJoint>();
-
             protected LegAngles LegAnglesOffset;
 
             public float GridSize { protected set; get; }
@@ -119,7 +117,6 @@ namespace IngameScript
                             //bi = Vector3I.Zero;
                             continue; // not on same grid, hmmmmm
                         }
-                        Singleton.buildTools.Log("woah!");
                         //length = Math.Min(length, Math.Abs(Vector3I.Dot(ai - bi, diri)) * GridSize);
                         length = Math.Min(length, (ai - bi).Length() * GridSize);
                     }
@@ -212,18 +209,26 @@ namespace IngameScript
                 // (we use Offset, since then it just follows previous)
                 // right leg starts lifting at 0.75
                 // right leg lands at 0.25
+                if (!magnetsEnabled)
+                    return;
                 bool leftDown = /*!info.Jumped &&*/ ((info.Walk == 0 && info.Turn == 0 && info.Strafe == 0) || (AnimationStep > .25d && AnimationStep < .75d ? !inversed : inversed));
                 bool rightDown = /*!info.Jumped &&*/ ((info.Walk == 0 && info.Turn == 0 && info.Strafe == 0) || (AnimationStepOffset > .25d && AnimationStepOffset < .75d ? !inversed : inversed));
 
                 foreach (var mag in LeftMagnets)
                 {
-                    mag.AutoLock = leftDown;
+                    if (!mag.IsWorking)
+                        continue;
+                    if (mag.AutoLock != leftDown)
+                        mag.AutoLock = leftDown;
                     if (!leftDown && mag.IsLocked)
                         mag.Unlock();
                 }
                 foreach (var mag in RightMagnets)
                 {
-                    mag.AutoLock = rightDown;
+                    if (!mag.IsWorking)
+                        continue;
+                    if (mag.AutoLock != rightDown)
+                        mag.AutoLock = rightDown;
                     if (!rightDown && mag.IsLocked)
                         mag.Unlock();
                 }

@@ -63,11 +63,15 @@ namespace IngameScript
                 switch (block.Type)
                 {
                     case BlockType.ArmPitch:
-                        PitchJoints.Add(new ArmJoint(block, ArmJointConfiguration.Parse(block)));
+                        var joint = new ArmJoint(block, ArmJointConfiguration.Parse(block));
+                        PitchJoints.Add(joint);
+                        AllJoints.Add(joint);
                         AddAllBlock(block);
                         return true;
                     case BlockType.ArmYaw:
-                        YawJoints.Add(new ArmJoint(block, ArmJointConfiguration.Parse(block)));
+                        var yjoint = new ArmJoint(block, ArmJointConfiguration.Parse(block));
+                        YawJoints.Add(yjoint);
+                        AllJoints.Add(yjoint);
                         AddAllBlock(block);
                         return true;
                     /*case BlockType.Roll:
@@ -93,7 +97,7 @@ namespace IngameScript
                     IsZeroing = false;
                 foreach (var joint in PitchJoints)
                 {
-                    if (joint.Stator.RotorLock)
+                    if (joint.Stator.RotorLock || !Enabled)
                         continue;
                     if (IsZeroing)
                         joint.SetAngle(joint.Configuration.Offset);
@@ -103,7 +107,7 @@ namespace IngameScript
                 }
                 foreach (var joint in YawJoints)
                 {
-                    if (joint.Stator.RotorLock)
+                    if (joint.Stator.RotorLock || !Enabled)
                         continue;
                     if (IsZeroing)
                         joint.SetAngle(joint.Configuration.Offset);
@@ -116,7 +120,7 @@ namespace IngameScript
                     bool done = true;
                     foreach (var joint in PitchJoints.Concat(YawJoints))
                     {
-                        if (joint.Stator.RotorLock)
+                        if (joint.Stator.RotorLock || !Enabled)
                             continue;
                         if ((joint.Stator.Angle - joint.Configuration.Offset).Absolute() > .1)
                         {

@@ -47,7 +47,7 @@ namespace IngameScript
             }
 
             // TODO: replace with MyMath.QuaternionToEuler?
-            Vector3D QuaternionToEuler(Quaternion q)
+            public static Vector3D QuaternionToEuler(Quaternion q)
             {
                 // Normalize for safety
                 q.Normalize();

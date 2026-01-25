@@ -88,7 +88,7 @@ namespace IngameScript
 
         // -- Diagnostics
 
-        bool ShowStats = true;
+        bool ShowStats => debugMode;
         string DebugLCD = "MCS_Debug";
         const int AverageRuntimeSampleSize = 15;
 
@@ -173,8 +173,8 @@ namespace IngameScript
             RemoteControlName = GetConfig("RemoteControlName").ToString("auto");
 
             // - Debug
-            SetSection("Diagnostics");
-            ShowStats = GetConfig("ShowStats").ToBoolean();
+            //SetSection("Diagnostics");
+            //ShowStats = GetConfig("ShowStats").ToBoolean();
         }
 
         void SaveConfig()
@@ -224,8 +224,8 @@ namespace IngameScript
             SetConfig("RemoteControlName", RemoteControlName);
 
             // - Diagnostics
-            SetSection("Diagnostics");
-            SetConfig("ShowStats", ShowStats);
+            //SetSection("Diagnostics");
+            //SetConfig("ShowStats", ShowStats);
 
             Me.CustomData = configIni.ToString();
         }

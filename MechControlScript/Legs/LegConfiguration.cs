@@ -200,7 +200,7 @@ namespace IngameScript
                 if (LegType > 2 && LegType < 6)
                     ini.Set("Leg", "StandingDistance", VariableStandingDistance.ToString());
                 ini.Set("Leg", "TurnLength", VariableTurnLength.ToString());
-                ini.Set("Leg", "StrafeWidth", VariableStrafeDistance.ToString());//ini.Set("Leg", "StrafeDistance", VariableStrafeDistance.ToString());
+                ini.Set("Leg", "StrafeLength", VariableStrafeDistance.ToString());//ini.Set("Leg", "StrafeDistance", VariableStrafeDistance.ToString());
                 ini.Set("Leg", "CrouchHeight", VariableCrouchHeight.ToString());
                 //ini.SetComment("Leg", "StepLength", "How far forwards/backwards and up/down legs step\n0.5 is half, 1 is default, 2 is double");
 
@@ -282,7 +282,7 @@ namespace IngameScript
                     VariableStandingHeight = new JointVariable(ini.Get("Leg", "StandingHeight").ToString("90%")),
                     VariableStandingDistance = new JointVariable(ini.Get("Leg", "StandingDistance").ToString("75%")),
                     VariableTurnLength = new JointVariable(ini.Get("Leg", "TurnLength").ToString("15%")),
-                    VariableStrafeDistance = new JointVariable(ini.Get("Leg", "StrafeWidth").ToString("25%")),//new JointVariable(ini.Get("Leg", "StrafeDistance").ToString("25%")),
+                    VariableStrafeDistance = new JointVariable(ini.Get("Leg", "StrafeLength").ToString("25%")),//new JointVariable(ini.Get("Leg", "StrafeDistance").ToString("25%")),
                     VariableCrouchHeight = new JointVariable(ini.Get("Leg", "CrouchHeight").ToString("20%")),
 
                     AnimationSpeed = ini.Get("Leg", "StepSpeed").ToDouble(1),

@@ -27,7 +27,9 @@ namespace IngameScript
 
         void HandleSetup()
         {
-            if (setupMode && (GetUnixTime() - lastSetupModeTick > .2d)) // every 2/10ths of a second
+            if (fetchTask != null)
+                lastSetupModeTick = GetUnixTime();
+            if (setupMode && (GetUnixTime() - lastSetupModeTick > .5d)) // every 5/10ths of a second
             {
                 lastSetupModeTick = GetUnixTime();
                 Reload();

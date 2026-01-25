@@ -104,8 +104,51 @@ namespace IngameScript
             {
                 default: return current;
                 case "=": return replace;
-                case "+": return new JointVariable(current.Type, replace.Value + current.Value);
-                case "-": return new JointVariable(current.Type, replace.Value - current.Value);
+                case "+": return new JointVariable(current.Type, current.Value + replace.Value);
+                case "-": return new JointVariable(current.Type, current.Value - replace.Value);
+            }
+        }
+
+        void HandleJointGroupToggle<T>(string[] arguments, Dictionary<int, T> groups) where T : JointGroup
+        {
+            if (arguments.Length <= 1)
+            {
+                foreach (var agroup in groups.Values)
+                {
+                    agroup.ToggleEnabled(!agroup.Enabled); // default toggle
+                }
+                return;
+            }
+            int id = TryParseInt(arguments[1]);
+            if (id <= 0)
+            {
+                if (arguments[1].ToLowerInvariant().Equals("all"))
+                {
+                    foreach (var allgroup in groups.Values)
+                    {
+                        allgroup.ToggleEnabled(HandleBoolArgument(allgroup.Enabled, arguments.Length == 3 ? arguments[2] : null));
+                    }
+                }
+                else
+                {
+                    // old system
+                    foreach (var agroup in groups.Values)
+                    {
+                        agroup.ToggleEnabled(HandleBoolArgument(agroup.Enabled, arguments.Length >= 2 ? arguments[1] : null));
+                    }
+                }
+                return;
+            }
+            if (!groups.ContainsKey(id))
+                return;
+            var group = groups[id];
+            if (arguments.Length == 3) // <id> <toggle>
+            {
+                group.ToggleEnabled(HandleBoolArgument(group.Enabled, arguments[2]));
+            }
+            else if (arguments.Length == 2) // <id>
+            {
+                group.ToggleEnabled(!group.Enabled);
             }
         }
 
@@ -174,8 +217,8 @@ namespace IngameScript
 
                 case "walk":
                     // if already moving, halt
-                    if ((movementOverride * Vector3.Forward).LengthSquared() != 0)
-                        break;//movementOverride *= Vector3.Zero;//Vector3.One - Vector3.Forward; // halt
+                    /*if ((movementOverride * Vector3.Forward).LengthSquared() != 0)
+                        break; // movementOverride *= Vector3.Zero;//Vector3.One - Vector3.Forward; // halt
                     else
                         switch (arg == null ? "" : arg.ToLower().Trim())
                         {
@@ -189,23 +232,89 @@ namespace IngameScript
                                 movementOverride.Z = Vector3.Backward.Z;
                                 break;
 
-                        }
+                        }*/
+                    switch (arguments.Length > 1 ? arguments[1]?.ToLower().Trim() : "toggle")
+                    {
+                        default:
+                        case "toggle":
+                            if ((movementOverride * Vector3.Forward).LengthSquared() != 0)
+                                movementOverride *= (Vector3.UnitX + Vector3.UnitY);//Vector3.One - Vector3.Forward; // halt
+                            else if (arguments.Length > 2)
+                            {
+                                switch (arguments[2])
+                                {
+                                    case "forwards":
+                                    case "forward":
+                                        movementOverride.Z = -1;
+                                        break;
+                                    case "backwards":
+                                    case "backward":
+                                        movementOverride.Z = 1;
+                                        break;
+                                }
+                            }
+                            else
+                                movementOverride.Z = -1;
+                            break;
+                        case "forwards":
+                        case "forward":
+                            movementOverride.Z = -1;
+                            break;
+                        case "backwards":
+                        case "backward":
+                            movementOverride.Z = 1;
+                            break;
+                        case "halt":
+                            movementOverride.Z = 0;
+                            break;
+                    }
+                    break;
+
+                case "strafe":
+                    switch (arg?.ToLower().Trim())
+                    {
+                        case "left":
+                            movementOverride.X = -1;
+                            break;
+                        case "right":
+                            movementOverride.X = 1;
+                            break;
+                        default:
+                        case "halt":
+                            movementOverride.X = 0;
+                            break;
+                    }
                     break;
 
                 case "halt":
                     movementOverride = Vector3.Zero;
+                    turnOverride = 0;
                     break;
 
                 case "turn":
-                    turnOverride = HandleFloatArgument(turnOverride, arg);
+                    switch (arg?.ToLower().Trim())
+                    {
+                        case "left":
+                            turnOverride = -1;
+                            break;
+                        case "right":
+                            turnOverride = 1;
+                            break;
+                        case "halt":
+                            turnOverride = 0;
+                            break;
+                        default:
+                            turnOverride = HandleFloatArgument(turnOverride, arg);
+                            break;
+                    }
                     break;
 
                 case "thrusters":
-                    thrustersEnabled = HandleBoolArgument(thrustersEnabled, arg);
+                    ToggleThrustersEnabled(HandleBoolArgument(thrustersEnabled, arg));
                     break;
 
                 case "vtol":
-                    thrustersVtol = HandleBoolArgument(thrustersVtol, arg);
+                    ToggleVtolEnabled(HandleBoolArgument(thrustersVtol, arg));
                     break;
 
                 case "hover":
@@ -264,7 +373,7 @@ namespace IngameScript
                         group.Configuration.VariableCrouchHeight = HandleVariable(group.Configuration.VariableCrouchHeight, arg);
                     ReinitializeLegs();
                     break;
-                case "strafedistance":
+                case "strafelength":
                     foreach (var group in legs.Values)
                         group.Configuration.VariableStrafeDistance = HandleVariable(group.Configuration.VariableStrafeDistance, arg);
                     ReinitializeLegs();
@@ -294,21 +403,27 @@ namespace IngameScript
                     targetTorsoTwistAngle = HandleDoubleArgument(torsoTwistStators.Average(j => j.Stator.Angle).ToDegrees(), arg).Modulo(360);
                     break;
 
-                case "arm":
+                case "armsreset":
                     foreach (var arm in arms.Values)
-                        arm.ToZero();
+                        arm.ToZero(); // TODO: select legs with 1 / 2 / all
                     break;
 
-                case "legcontrol":
-                    legsEnabled = HandleBoolArgument(legsEnabled, arg);
+                case "legs"://control":
+                    HandleJointGroupToggle(arguments, legs);
+                    //ToggleLegsEnabled(HandleBoolArgument(legsEnabled, arg));
                     break;
 
-                case "armcontrol":
-                    armsEnabled = HandleBoolArgument(armsEnabled, arg);
+                case "arms"://control":
+                    HandleJointGroupToggle(arguments, arms);
+                    //ToggleArmsEnabled(HandleBoolArgument(armsEnabled, arg));
                     break;
 
-                case "stabilizationcontrol":
-                    stabilizationEnabled = HandleBoolArgument(stabilizationEnabled, arg);
+                case "stabilization"://control":
+                    ToggleStabilizationEnabled(HandleBoolArgument(stabilizationEnabled, arg));
+                    break;
+
+                case "magnets":
+                    ToggleMagnetsEnabled(HandleBoolArgument(magnetsEnabled, arg));
                     break;
 
                 // Fun //

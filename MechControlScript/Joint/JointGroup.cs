@@ -27,8 +27,25 @@ namespace IngameScript
             public JointConfiguration Configuration = null;
             public List<FetchedBlock> AllBlocks = new List<FetchedBlock>();
 
+            public List<Joint> AllJoints = new List<Joint>();
+
+            public bool Enabled = true;
+
             public abstract void SetConfiguration(object config);
             public abstract void ApplyConfiguration();
+
+            public void ToggleEnabled(bool enabled, bool set=true)
+            {
+                if (Enabled && !enabled)
+                {
+                    foreach (var joint in AllJoints)
+                    {
+                        joint.SetRPM(0);
+                    }
+                }
+                if (set)
+                    Enabled = enabled;
+            }
 
             protected void AddAllBlock(FetchedBlock block)
             {

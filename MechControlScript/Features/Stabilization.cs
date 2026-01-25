@@ -79,6 +79,22 @@ namespace IngameScript
             }
         }
 
+        void ToggleStabilizationEnabled(bool enabled)
+        {
+            if (stabilizationEnabled && !enabled)
+            {
+                foreach (var stator in azimuthStators.Concat(elevationStators).Concat(rollStators))
+                {
+                    stator.SetRPM(0);
+                }
+                foreach (var gyro in stabilizationGyros)
+                {
+                    gyro.SetOverrides(0, 0, 0);
+                }
+            }
+            stabilizationEnabled = enabled;
+        }
+
         public static Vector3D gravity = Vector3D.Zero;
 
         void UpdateStabilization()
@@ -103,19 +119,79 @@ namespace IngameScript
 
             // new stuff
 
+            //Singleton.buildTools.DrawVector(reference.WorldMatrix.Translation, reference.WorldMatrix.Translation + reference.WorldMatrix.Forward * 2f, Color.Red, 0.02f);
+            //Singleton.buildTools.DrawVector(reference.WorldMatrix.Translation, reference.WorldMatrix.Translation + reference.WorldMatrix.Up * 2f, Color.Green, 0.02f);
+
             Vector3D gravityNormal = gravity.Normalized();
-            Quaternion currentRot = Quaternion.CreateFromRotationMatrix(reference.WorldMatrix);
+            Singleton.buildTools.DrawVector(reference.WorldMatrix.Translation, reference.WorldMatrix.Translation + gravityNormal * 2f, Color.White, 0.02f);
+            QuaternionD currentRot = QuaternionD.CreateFromRotationMatrix(reference.WorldMatrix);
 
             // make the forward vector flat with the gravity
             Vector3D forwardProjection = Vector3D.Reject(reference.WorldMatrix.Forward, gravityNormal);
+            Singleton.buildTools.DrawVector(reference.WorldMatrix.Translation, reference.WorldMatrix.Translation + forwardProjection * 2f, Color.Blue, 0.02f);
 
             // normalize it for reasons
-            forwardProjection.Normalize();
+            Vector3D forwardProjectionNormal = forwardProjection.Normalized();
 
             // get the difference between the target rotation and the current rotation, yaw isn't accounted for since it's only forward and up, not right
-            Quaternion idealRotation = Quaternion.Inverse(currentRot) * Quaternion.CreateFromForwardUp(forwardProjection, -gravityNormal); // target - current?
+            QuaternionD targetRotation = QuaternionD.CreateFromForwardUp(forwardProjectionNormal, -gravityNormal);
+            QuaternionD idealRotation = QuaternionD.Inverse(currentRot) * targetRotation; // target - current?
 
-            Vector3D eulerOffsets = MyMath.QuaternionToEuler(idealRotation); // pitch, roll, yaw? nope, PYR
+
+            Vector3D targetDirection = QuaternionD.Inverse(targetRotation) * reference.WorldMatrix.Forward;
+            Vector3D currentDirection = QuaternionD.Inverse(currentRot) * forwardProjection;
+
+            double desiredPitch = Math.Asin(targetDirection.Y / 1);
+            double desiredRoll = Math.Asin((0-currentDirection.X) / 1);
+            Log("desiredPitch:", desiredPitch);
+
+            Vector3D currentUp = Vector3D.Transform(Vector3D.Up, currentRot);
+            Vector3D targetUp = Vector3D.Transform(Vector3D.Up, targetRotation);
+            double upVersus = Vector3D.Dot(Vector3D.Up, targetUp - currentUp);
+            Log("currentUp vs targetUp:", upVersus);
+
+            Vector3D currentFwd = Vector3D.Transform(Vector3D.Forward, currentRot);
+            Vector3D targetFwd = Vector3D.Transform(Vector3D.Forward, targetRotation);
+            double fwdVersus = Vector3D.Dot(Vector3D.Forward, targetFwd - currentFwd);
+            Log("currentFwd vs targetFwd:", fwdVersus);
+
+            Vector3D eulerOffsets = MyMath.QuaternionToEuler(Quaternion.FromVector4(idealRotation.ToVector4()));/*new Vector3D(
+                desiredPitch,
+                0,
+                desiredRoll
+            );*/
+            eulerOffsets.X = -desiredPitch;
+            if (Math.Abs(desiredPitch) > Math.PI / 2)
+            {
+                eulerOffsets.Z = 0; // correct pitch first
+            }
+
+            /*if (upVersus > Math.PI / 4 && fwdVersus < Math.PI / 4)
+            {
+                // flip
+                double pitch = eulerOffsets.X;
+                eulerOffsets.X = eulerOffsets.Z;
+                eulerOffsets.Z = pitch;
+            }*/
+
+            //Vector3D.Transform(axis * angle, QuaternionD.Conjugate(currentRot)); //axis * angle;//MyMath.QuaternionToEuler(idealRotation); // pitch, roll, yaw? nope, PYR
+            Singleton.buildTools.DrawVector(reference.WorldMatrix.Translation, reference.WorldMatrix.Translation + currentRot * eulerOffsets * 0.5f, Color.Orange, 0.02f);
+
+            QuaternionD visualized = currentRot;
+            Vector3D qright = Vector3D.Transform(Vector3D.Right, visualized);
+            Vector3D qforward = Vector3D.Transform(Vector3D.Forward, visualized);
+            Vector3D qup = Vector3D.Transform(Vector3D.Up, visualized);
+            //Singleton.buildTools.DrawVector(reference.WorldMatrix.Translation, reference.WorldMatrix.Translation + qright * 3f, Color.Red, 0.02f);
+            //Singleton.buildTools.DrawVector(reference.WorldMatrix.Translation, reference.WorldMatrix.Translation + qforward * 3f, Color.Blue, 0.02f);
+            //Singleton.buildTools.DrawVector(reference.WorldMatrix.Translation, reference.WorldMatrix.Translation + qup * 3f, Color.Green, 0.02f);
+
+            visualized = targetRotation;
+            qright = Vector3D.Transform(Vector3D.Right, visualized);
+            qforward = Vector3D.Transform(Vector3D.Forward, visualized);
+            qup = Vector3D.Transform(Vector3D.Up, visualized);
+            //Singleton.buildTools.DrawVector(reference.WorldMatrix.Translation, reference.WorldMatrix.Translation + qright * 3f, Color.DarkRed, 0.02f);
+            //Singleton.buildTools.DrawVector(reference.WorldMatrix.Translation, reference.WorldMatrix.Translation + qforward * 3f, Color.DarkBlue, 0.02f);
+            //Singleton.buildTools.DrawVector(reference.WorldMatrix.Translation, reference.WorldMatrix.Translation + qup * 3f, Color.DarkGreen, 0.02f);
 
             Log("offsets:");
             Log("x (pitch):", $"{eulerOffsets.X:f2}", $"{MathHelper.ToDegrees(eulerOffsets.X):f2}");
@@ -139,13 +215,15 @@ namespace IngameScript
             while (eulerOffsets.Z < -Math.PI)
                 eulerOffsets.Z += 2 * Math.PI;*/
 
-            double pitchSpeed = -eulerOffsets.X * (60 / (Math.PI * 2)) * 30; // convert RAD/S to RPM, then apply speed multiplier
-            double rollSpeed  = eulerOffsets.Z * (60 / (Math.PI * 2)) * 30;
+            double pitchSpeed = -eulerOffsets.X * (60 / (Math.PI * 2)) * 30 - angularVelocities.X * (60 / (Math.PI * 2)); // convert RAD/S to RPM, then apply speed multiplier
+            double rollSpeed  = eulerOffsets.Z * (60 / (Math.PI * 2)) * 30 - angularVelocities.Z * (60 / (Math.PI * 2));
 
             Log($"roll  dir: {rollSpeed} for {rollStators.Count} rotors");
             Log($"pitch dir: {pitchSpeed} for {elevationStators.Count} rotors");
 
-            float azimuthValue = -movement.Y * ((float)SteeringSensitivity);
+            float moveInputY = parsedMoveInput.Y != 0 && movement.Y == 0 ? -parsedMoveInput.Y : -movement.Y;
+            float azimuthValue = moveInputY * ((float)SteeringSensitivity);
+            Log("azimuthValue", azimuthValue, "movement is", moveInputY, "*", SteeringSensitivity);
             bool isTurning = azimuthValue.Absolute() > 0;
             foreach (var stator in azimuthStators)
             {
@@ -158,6 +236,7 @@ namespace IngameScript
             }
 
             float elevationValue = (float)pitchSpeed;
+            Log("elevationValue", elevationValue);
             foreach (var stator in elevationStators)
             {
                 if (!stator.Stator.IsSharingInertiaTensor())
@@ -170,6 +249,7 @@ namespace IngameScript
             }
 
             float rollValue = (float)rollSpeed;
+            Log("rollValue", rollValue);
             foreach (var stator in rollStators)
             {
                 if (!stator.Stator.IsSharingInertiaTensor())

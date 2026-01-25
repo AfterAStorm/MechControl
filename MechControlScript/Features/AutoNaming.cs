@@ -144,7 +144,7 @@ namespace IngameScript
             Reload(); // catchup on all configs
             if (!format.Contains("{tag}"))
                 format += " {tag}";
-            List<FetchedBlock> stators = blockFinder.GetBlocksOfType<IMyMotorStator>().Select(BlockFetcher.ParseBlockOne).Where(p => p.HasValue).Select(p => p.Value).ToList();
+            List<FetchedBlock> stators = blockFinder.GetBlocksOfType<IMyMotorStator>().SelectMany(blockFetcher.ParseBlock).ToList();
             stators.ForEach(b =>
             {
                 if (!BlockFetcher.IsLegJoint(b))

@@ -16,6 +16,15 @@ Configuring:
 
 Most recent release:
 
+2.3.0-beta
+    * Make walk command idempotent
+    * Add strafe command
+    * Allow individual toggling of legs & arms
+    * Upgrade vtol system
+    * Tinker with stabilization (part 3)
+    * StrafeWidth/StrafeDistance -> StrafeLength
+    * Remove ShowStats (a part of debug mode now)
+
 2.2.2-beta
     * Fix camera gravity requirements
 

@@ -15,7 +15,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="Mal.Mdk2.PbAnalyzers" Version="2.1.13">
+      <PackageReference Include="Mal.Mdk2.PbAnalyzers" Version="2.1.14">
         <PrivateAssets>all</PrivateAssets>
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       </PackageReference>
@@ -39,5 +39,9 @@
     <Import Project="..\MechControlAPI\MechControlAPI.projitems" Label="Shared" />
 
     <Import Project="..\..\BuildTools\BuildToolsAPI\BuildToolsAPI.projitems" Label="Shared" />
+
+    <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+      <Exec Command="..\after_build.bat" />
+    </Target>
 
 </Project>

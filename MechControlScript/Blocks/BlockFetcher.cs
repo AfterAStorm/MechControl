@@ -28,8 +28,19 @@ namespace IngameScript
             private static readonly System.Text.RegularExpressions.Regex NamePattern = new System.Text.RegularExpressions.Regex(@"^([^0-9-+]*)([0-9]+)?([-+]{1})$");
 
             public List<FetchedBlock> CachedBlocks = new List<FetchedBlock>();
+            private List<IMyTerminalBlock> allBlocks = new List<IMyTerminalBlock>();
 
             static int parsedId;
+
+            /// <summary>
+            /// The current block the block fetcher is checking during Invalidate(ion)
+            /// </summary>
+            public int CurrentBlock { get; private set; }
+
+            /// <summary>
+            /// The total blocks on the grid
+            /// </summary>
+            public int TotalBlocks { get; private set; }
 
             private BlockFinder finder;
 
@@ -103,6 +114,7 @@ namespace IngameScript
 
                 public bool IsValidType(object type) // isn't it strange that structs have methods? aren't they supposed to be *data containers*?!
                 {
+                    // MAKE SURE THIS IS ALWAYS IN SYNC WITH ParseBlock FIRST REDUNDANCY CHECK!
                     foreach (var validType in ValidTypes)
                     {
                         switch (validType)
@@ -137,6 +149,13 @@ namespace IngameScript
                 }
             }
 
+            private static readonly string[] blockTypes = new string[]
+            {
+                "Stator", "Piston", "Thrust", "Gyro", "Camera", "Piston", "Magnet"
+            };
+
+            //BlockRequirements anyBlockRequirement = new BlockRequirements(BlockType.Hip, false, false, blockTypes);
+
             private static readonly Dictionary<string, BlockRequirements> blockRequirements = new Dictionary<string, BlockRequirements>() {
                 // legs
                 { "h" , new BlockRequirements(BlockType.Hip,  true, true, "Stator") },
@@ -147,15 +166,20 @@ namespace IngameScript
                 { "t" , new BlockRequirements(BlockType.Turn, true, true, "Stator") },
 
                 // arms
-                { "ay", new BlockRequirements(BlockType.ArmYaw, false, false, "Stator") },
-                { "ap", new BlockRequirements(BlockType.ArmPitch, false, false, "Stator") },
-                { "ar", new BlockRequirements(BlockType.ArmRoll, false, false, "Stator") },
+                { "ay", new BlockRequirements(BlockType.ArmYaw, false, true, "Stator") },
+                { "ap", new BlockRequirements(BlockType.ArmPitch, false, true, "Stator") },
+                { "ar", new BlockRequirements(BlockType.ArmRoll, false, true, "Stator") },
 
                 // thrusters
                 { "th", new BlockRequirements(BlockType.Thruster, false, false, "Thrust") },
+
+                { "vp", new BlockRequirements(BlockType.VtolElevation, false, false, "Stator") }, // mouse
                 { "vy", new BlockRequirements(BlockType.VtolAzimuth, false, false, "Stator") },
-                { "vp", new BlockRequirements(BlockType.VtolElevation, false, false, "Stator") },
-                { "vr", new BlockRequirements(BlockType.VtolRoll, false, false, "Stator") },
+
+                { "vt", new BlockRequirements(BlockType.VtolTurn, false, false, "Stator") }, // keyboard
+                { "vf", new BlockRequirements(BlockType.VtolForward, false, false, "Stator") },
+                { "vs", new BlockRequirements(BlockType.VtolStrafe, false, false, "Stator") },
+                { "vv", new BlockRequirements(BlockType.VtolVertical, false, false, "Stator") },
 
                 // stabilization
                 { "gy", new BlockRequirements(BlockType.GyroscopeAzimuth, false, false, "Stator", "Gyro") },
@@ -171,14 +195,33 @@ namespace IngameScript
                 { "m" , new BlockRequirements(BlockType.Magnet, true, true, "Magnet") }
             };
 
-            public void Invalidate() // you got this garbage collection!
+            public IEnumerator Invalidate()
             {
-                CachedBlocks = finder.GetBlocksOfType<IMyTerminalBlock>().SelectMany(ParseBlock).ToList();
+                // is this better than just re-allocating the list and .ToList()? no idea!
+                CachedBlocks.Clear();
+                //CachedBlocks.AddRange(finder.GetBlocksOfType<IMyTerminalBlock>().SelectMany(ParseBlock));
+                int maxInstructions = Singleton.Runtime.MaxInstructionCount - 1000;
+                Singleton.GridTerminalSystem.GetBlocksOfType(allBlocks);
+                TotalBlocks = allBlocks.Count;
+                for (int i = 0; i < allBlocks.Count; i++)
+                {
+                    CurrentBlock = i;
+                    var block = allBlocks[i];
+
+                    ParseBlock(block);
+                    CachedBlocks.AddRange(blocks);
+
+                    if (Singleton.Runtime.CurrentInstructionCount > maxInstructions)
+                        yield return null;
+                }
+
+                allBlocks.Clear();
+                yield return null;
             }
 
-            public IEnumerable<FetchedBlock> GetBlocks(BlockType type)
+            public IEnumerable<FetchedBlock> GetBlocks(params BlockType[] type)
             {
-                return CachedBlocks.Where(fb => fb.Type.Equals(type));
+                return CachedBlocks.Where(fb => type.Contains(fb.Type));
             }
 
             public IEnumerable<FetchedBlock> GetBlocks(IMyTerminalBlock block)
@@ -186,9 +229,17 @@ namespace IngameScript
                 return CachedBlocks.Where(fb => fb.Block.Equals(block));
             }
 
+            List<FetchedBlock> blocks = new List<FetchedBlock>();
+
             public List<FetchedBlock> ParseBlock(IMyTerminalBlock block)
             {
-                List<FetchedBlock> blocks = new List<FetchedBlock>();
+                //if (!anyBlockRequirement.IsValidType(block))
+                //    return blocks;
+                blocks.Clear();
+                if (!(block is IMyMotorStator) && !(block is IMyGyro) && !(block is IMyThrust) && !(block is IMyCameraBlock) && !(block is IMyPistonBase) && !(block is IMyLandingGear))
+                {
+                    return blocks;
+                }
 
                 foreach (var tagged in block.CustomName.ToLower().Split(' '))
                 {
@@ -244,172 +295,6 @@ namespace IngameScript
                 return blocks;
             }
 
-            public static FetchedBlock? ParseBlockOne(IMyTerminalBlock block)
-            {
-                // Check each segment of the name: "Left Leg - HL" is ["Left", "Leg", "-", "HL"]
-                foreach (var segment in block.CustomName.ToLower().Split(' '))
-                {
-                    var match = OldNamePattern.Match(segment);
-                    if (!match.Success)
-                        continue; // invalid segment
-
-                    // Parse the type
-                    BlockType? blockType = null;
-                    switch (match.Groups[1].Value.Replace("+", "").Replace("-", "")) // the replace is beacuse i cannot regex for some reason D:
-                    {
-                        /* Leg */
-                        case "h":
-                            //case "hip":
-                            if (!(block is IMyMotorStator) && !(block is IMyPistonBase))
-                                break; // Liars!
-                            blockType = BlockType.Hip;
-                            break;
-                        case "k":
-                            //case "knee":
-                            if (!(block is IMyMotorStator) && !(block is IMyPistonBase))
-                                break; // Liars!
-                            blockType = BlockType.Knee;
-                            break;
-                        case "f":
-                            //case "fp":
-                            //case "foot":
-                            //case "feet":
-                            if (!(block is IMyMotorStator) && !(block is IMyPistonBase))
-                                break; // Liars!
-                            blockType = BlockType.Foot;
-                            break;
-                        case "q":
-                            if (!(block is IMyMotorStator))
-                                break; // Liars!
-                            blockType = BlockType.Quad;
-                            break;
-                        case "s":
-                            if (!(block is IMyMotorStator))
-                                break;
-                            blockType = BlockType.Strafe;
-                            break;
-                        /* Arm */
-                        case "ap":
-                            if (!(block is IMyMotorStator))
-                                break; // Liars!
-                            blockType = BlockType.ArmPitch;
-                            break;
-                        case "ay":
-                            if (!(block is IMyMotorStator))
-                                break; // Liars!
-                            blockType = BlockType.ArmYaw;
-                            break;
-                        case "ar":
-                            if (!(block is IMyMotorStator))
-                                break; // Liars!
-                            blockType = BlockType.ArmRoll;
-                            break;
-                        case "alg":
-                        case "amg":
-                            if (!(block is IMyLandingGear))
-                                break; // Liars!
-                            blockType = BlockType.Magnet;
-                            break;
-                        /* Other */
-                        case "tt":
-                            if (!(block is IMyMotorStator))
-                                break; // Liars!
-                            blockType = BlockType.TorsoTwist;
-                            break;
-                        case "gy": // y for yaw
-                            //case "ga":
-                            if (!(block is IMyMotorStator) && !(block is IMyGyro))
-                                break; // Liars!
-                            blockType = BlockType.GyroscopeAzimuth;
-                            break;
-                        case "gp": // p for pitch
-                            //case "ge":
-                            if (!(block is IMyMotorStator) && !(block is IMyGyro))
-                                break; // Liars!
-                            blockType = BlockType.GyroscopeElevation;
-                            break;
-                        case "g": // we are technically looking for "GR" but we have to check for the r (becomes BlockSide) later (in Program) because the R will get eaten by the regex
-                            if (!(block is IMyMotorStator) && !(block is IMyGyro))
-                                break; // Liars!
-                            blockType = BlockType.GyroscopeRoll;
-                            break;
-                        case "gg": // g for gyro
-                            if (!(block is IMyGyro))
-                                break; // Liars!
-                            blockType = BlockType.GyroscopeStabilization;
-                            break;
-                        case "gs": // gs fro gyro stop
-                            if (!(block is IMyGyro))
-                                break;
-                            blockType = BlockType.GyroscopeStop;
-                            break;
-                        case "mg":
-                        case "lg":
-                            if (!(block is IMyLandingGear))
-                                break; // Liars!
-                            blockType = BlockType.LandingGear;
-                            break;
-                        case "th":
-                            if (!(block is IMyThrust))
-                                break;
-                            blockType = BlockType.Thruster;
-                            break;
-                        case "c":
-                            blockType = BlockType.Camera;
-                            break;
-                    }
-                    if (!blockType.HasValue)
-                        continue; // invalid
-                    //Log($"{block.CustomName} Got block type!", blockType.Value);
-
-                    // Parse the side
-                    BlockSide? side = null;
-                    switch (match.Groups[2].Value)
-                    {
-                        case "l":
-                        case "left":
-                            side = BlockSide.Left;
-                            break;
-                        case "r":
-                        case "right":
-                            side = BlockSide.Right;
-                            break;
-                    }
-                    if (!side.HasValue && !DoesntRequireSide.Contains(blockType.Value))
-                        continue; // invalid side
-                    //Log("Past side");
-
-                    // Parse the group it's in
-                    bool parsed = int.TryParse(match.Groups[3].Value, out parsedId);
-                    if (!parsed) // if it fails it might output zero anyway, i'm not sure
-                        parsedId = 1;
-
-                    // Parse the ini
-                    MyIni ini = new MyIni();
-                    if (!ini.TryParse(block.CustomData))
-                        ini = null;
-
-                    // require a + or -, guh
-                    if (!(match.Groups[4].Value.Equals("-") || match.Groups[1].Value.EndsWith("-")) && !(match.Groups[4].Value.Equals("+") || match.Groups[1].Value.EndsWith("+")))
-                        continue;
-
-                    return new FetchedBlock()
-                    {
-                        Block = block,
-                        Type = blockType.Value,
-                        Side = side ?? BlockSide.Left,
-                        Group = parsedId,
-                        Inverted = match.Groups[4].Value.Equals("-") || match.Groups[1].Value.EndsWith("-"),
-                        Ini = ini,
-
-                        Name = match.Groups[0].Value
-
-                        //AttachToLeg = blockType.Value != BlockType.TorsoTwist
-                    };
-                }
-                return null;
-            }
-
             public static bool IsLegJoint(FetchedBlock block) // pretty sure this is duplicate of IsForLeg, but is used in AutoNaming instead of fetching blocks...?
             {
                 switch (block.Type)
@@ -425,36 +310,7 @@ namespace IngameScript
                 }
             }
 
-            public static bool IsForLeg(FetchedBlock block)
-            {
-                switch (block.Type)
-                {
-                    case BlockType.Hip:
-                    case BlockType.Knee:
-                    case BlockType.Foot:
-                    case BlockType.Quad:
-                    case BlockType.Strafe:
-                    case BlockType.Camera:
-                    case BlockType.LandingGear:
-                        return true;
-                    default:
-                        return false;
-                }
-            }
-
-            public static bool IsForArm(FetchedBlock block)
-            {
-                switch (block.Type)
-                {
-                    case BlockType.ArmYaw:
-                    case BlockType.ArmPitch:
-                        return true;
-                    default:
-                        return false;
-                }
-            }
-
-            public void FetchGroups<T, T2>(ref Dictionary<int, T> groups, Dictionary<int, T2> previousConfigs, Func<FetchedBlock, bool> valid, Func<int, T> create, Func<MyIni, T2> parseConfig, Action<FetchedBlock, T> add) where T : JointGroup where T2 : JointConfiguration
+            public void FetchGroups<T, T2>(ref Dictionary<int, T> groups, Dictionary<int, T2> previousConfigs, Func<int, T> create, Func<MyIni, T2> parseConfig) where T : JointGroup where T2 : JointConfiguration
             {
                 Log("FetchGroups", typeof(T2).Name);
                 groups.Clear();
@@ -501,7 +357,7 @@ namespace IngameScript
                     }
 
                     // check configs
-                    JointConfiguration previousConfiguration = previousConfigs.GetValueOrDefault(block.Group, default(T2));
+                    JointConfiguration previousConfiguration = previousConfigs.GetValueOrDefault(block.Group, null);
                     JointConfiguration currentConfiguration = parseConfig(block.Ini);
                     if (previousConfiguration == null || previousConfiguration.Equals(currentConfiguration)) // the configs are the same, so check later
                     {
@@ -559,99 +415,6 @@ namespace IngameScript
 
                 foreach (var group in groups.Values)
                     group.ApplyConfiguration();
-            }
-
-            public static void AddToLeg(FetchedBlock block, LegGroup leg) // adds a fetched block to the leg
-            {
-                Log($"AddToLeg Block {block.Block.CustomName} as {block.Type}");
-                leg.AddBlock(block);
-                /*switch (block.Type)
-                {
-                    case BlockType.Hip:
-                    case BlockType.Knee:
-                    case BlockType.Foot: // if its a joint, create it and add it appropriately
-                    case BlockType.Quad:
-                    case BlockType.Strafe:
-                        if (block.Block is IMyPistonBase)
-                        {
-                            if (block.Side == BlockSide.Left)
-                                leg.LeftPistons.Add(block);
-                            else
-                                leg.RightPistons.Add(block);
-                            break;
-                        }
-
-                        LegJoint joint = new LegJoint(block);
-                        switch (block.Type)
-                        {
-                            case BlockType.Hip:
-                                if (block.Side == BlockSide.Left)
-                                    leg.AALeftHipStators.Add(joint);
-                                else
-                                    leg.AARightHipStators.Add(joint);
-                                break;
-                            case BlockType.Knee:
-                                if (block.Side == BlockSide.Left)
-                                    leg.AALeftKneeStators.Add(joint);
-                                else
-                                    leg.AARightKneeStators.Add(joint);
-                                break;
-                            case BlockType.Foot:
-                                if (block.Side == BlockSide.Left)
-                                    leg.AALeftFootStators.Add(joint);
-                                else
-                                    leg.AARightFootStators.Add(joint);
-                                break;
-                            case BlockType.Quad:
-                                if (block.Side == BlockSide.Left)
-                                    leg.AALeftQuadStators.Add(joint);
-                                else
-                                    leg.AARightQuadStators.Add(joint);
-                                break;
-                            case BlockType.Strafe:
-                                if (block.Side == BlockSide.Left)
-                                    leg.AALeftStrafeStators.Add(joint);
-                                else
-                                    leg.AARightStrafeStators.Add(joint);
-                                break;
-                        }
-                        break;
-                    case BlockType.LandingGear: // otherwise just add it normally
-                        if (block.Side == BlockSide.Left)
-                            leg.LeftGears.Add(block.Block as IMyLandingGear);
-                        else
-                            leg.RightGears.Add(block.Block as IMyLandingGear);
-                        break;
-                    default:
-                        return;
-                }*/
-                //block.Block.CustomData = leg.Configuration.ToCustomDataString(); // set new configuration
-            }
-
-            public static void AddToArm(FetchedBlock block, ArmGroup arm)
-            {
-                ArmJointConfiguration jointConfig = ArmJointConfiguration.Parse(block);
-                Log($"AddToArm block: {block.Block.CustomData}");
-                Log($"offset: {jointConfig.Offset}");
-
-                switch (block.Type)
-                {
-                    case BlockType.ArmPitch:
-                        arm.PitchJoints.Add(new ArmJoint(block, jointConfig));
-                        break;
-                    case BlockType.ArmYaw:
-                        arm.YawJoints.Add(new ArmJoint(block, jointConfig));
-                        break;
-                    /*case BlockType.Roll:
-                        arm.RollJoints.Add(new ArmJoint(block, jointConfig));
-                        break;*/
-                    /*case BlockType.Magnet:
-                        arm.Magnets.Add(block.Block as IMyLandingGear);
-                        break;*/
-                    default:
-                        return;
-                }
-                block.Block.CustomData = arm.Configuration.ToCustomDataString() + "" + jointConfig.ToCustomDataString();
             }
         }
     }

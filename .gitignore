@@ -5,6 +5,7 @@
 
 # SE
 *.local.*
+*.bat
 
 # User-specific files
 *.rsuser

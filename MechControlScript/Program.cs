@@ -27,9 +27,9 @@ namespace IngameScript
         // Script //
 
         public static Program Singleton { get; private set; }
-        public const string Version = "2.2.2-beta"; // major.minor.patch
+        public const string Version = "2.3.0-beta"; // major.minor.patch
 
-        public static readonly double TicksPerSecond = 1d / 60d;
+        public static readonly double TicksPerSecond = 10d / 60d;
 
         public BlockFetcher blockFetcher;
         public BlockFinder blockFinder;
@@ -58,11 +58,8 @@ namespace IngameScript
         {
             if (!debugMode)
                 return;
-            string message = string.Join(" ", messages);
             if (debugPanel != null)
-                debugPanel.WriteText(message + "\n", true);
-            else
-                Singleton.Echo(message);
+                debugPanel.WriteText(string.Join(" ", messages) + "\n", true);
         }
 
         void Warn(string title, string info)
@@ -207,6 +204,9 @@ namespace IngameScript
         double delta = 0;
         double deltaOffset = 0;
 
+        // TODO: expand into "task scheduler"?
+        IEnumerator fetchTask;
+
         // Program //
 
         /*static IMyCameraBlock baseCamera;
@@ -237,16 +237,14 @@ namespace IngameScript
             Reload(); // reload to handle customdata stuffs
 
             // set runtime update freq.
-            Runtime.UpdateFrequency = UpdateFrequency.Update1;
+            Runtime.UpdateFrequency = UpdateFrequency.Update10;
         }
 
-        public void Fetch()
+        IEnumerator FetchCoroutine()
         {
-            // diag
-            //if (debugMode)
-                debugPanel = Singleton.GridTerminalSystem.GetBlockWithName(DebugLCD) as IMyTextPanel;
-
-            blockFetcher.Invalidate(); // "reset cache"
+            var task = blockFetcher.Invalidate(); // "reset cache"
+            while (task.MoveNext())
+                yield return null;
 
             // blocks
             FetchInputs(); // cockpits
@@ -259,6 +257,19 @@ namespace IngameScript
             FetchLegs();
 
             FetchTimerBlocks();
+            IterateHydraulics();
+        }
+
+        public void Fetch()
+        {
+            // diag
+            //if (debugMode)
+            debugPanel = Singleton.GridTerminalSystem.GetBlockWithName(DebugLCD) as IMyTextPanel;
+            if (fetchTask != null)
+                return;
+            fetchTask = FetchCoroutine();
+            if (!fetchTask.MoveNext())
+                fetchTask = null;
         }
 
         // State Management //
@@ -283,7 +294,6 @@ namespace IngameScript
             Cameras.Reset();
             Load();
             Fetch();
-            IterateHydraulics();
             buildTools.RemoveAll();
         }
 
@@ -293,7 +303,7 @@ namespace IngameScript
         {
             Log($"Main({updateSource.ToString()})");
             // calculate delta
-            double fakeDelta = /*Runtime.TimeSinceLastRun.TotalMilliseconds / 1000d*/ (1/60d) + deltaOffset;
+            double fakeDelta = Runtime.TimeSinceLastRun.TotalSeconds /*(1/60d)*/ + deltaOffset;
 
             // run diagnostics
             double lastRuntime = Runtime.LastRunTimeMs;
@@ -304,10 +314,11 @@ namespace IngameScript
             maxInstructions = Math.Max(maxInstructions, lastInstructions);
 
             // echo
+            // TODO: StringBuilder?
             statusTick = (statusTick + 1) % statuses.Length;
             Echo($"[Color=#13ebca00]Mech Control Script[/Color] [Color=#00aaaaaa]>[/Color] [Color=#0034eb95]{Version}[/Color]");
             Echo($"{legs.Count} leg group{(legs.Count != 1 ? "s" : "")} | {arms.Count} arm{(arms.Count != 1 ? "s" : "")}{(!ShowStats ? $" | {statuses[statusTick]}" : "")}");
-            Echo($"");
+            Echo("");
             if (ShowStats)
             {
                 Echo($"Last       Tick: {lastRuntime:f3}ms");
@@ -322,19 +333,20 @@ namespace IngameScript
 
             // warnings
             if (setupMode)
-                Warn("Setup Mode Active", "Any changes will be detected, beware that the script uses a lot more resources");
+                Warn("Setup Mode Active", "Any changes will be detected, beware that the script uses a lot more resources and features may have unexpected behavior.");
 
             if (debugMode)
             {
                 Warn("Debug Mode Active", "Debug mode is active");
                 if (debugPanel == null)
                 {
-                    Warn("No Debug Panel", $"No debug panel was found named \"{DebugLCD}\", using Echo instead");
+                    Warn("No Debug Panel", $"No debug panel was found named \"{DebugLCD}\"");
                 }
             }
 
             if (cockpits.Count <= 0)
             {
+                // this is *really* bad, *but* it should be a temporary *bad*
                 List<IMyShipController> controllers = new List<IMyShipController>();
                 GridTerminalSystem.GetBlocksOfType(controllers, c => c.IsSameConstructAs(Me));
                 if (controllers.Count > 0) // if there is any actual controllers, add it to the warning message
@@ -355,11 +367,24 @@ namespace IngameScript
                     HandleCommand(cmd.Trim());
 
             // delta management
-            if (!updateSource.HasFlag(UpdateType.Update1))
+            if (!updateSource.HasFlag(UpdateType.Update1) && !updateSource.HasFlag(UpdateType.Update10))
             {
                 deltaOffset = fakeDelta; // add "fake" offset so it's accurate for real steps--just set since deltaOffset is already added
                 lastInstructions = Runtime.CurrentInstructionCount;
                 maxInstructions = Math.Max(lastInstructions, maxInstructions);
+                return;
+            }
+
+            if (fetchTask != null)
+            {
+                if (fetchTask.MoveNext())
+                {
+                    setupMode = false; // prevent perpetual nothingness
+                }
+                else
+                    fetchTask = null;
+                Echo($"Fetching blocks, please wait... {blockFetcher.CurrentBlock / (float)blockFetcher.TotalBlocks * 100:f1}%");
+                Runtime.UpdateFrequency = UpdateFrequency.Update1;
                 return;
             }
 
@@ -370,7 +395,7 @@ namespace IngameScript
                 baseCameraSpot = a.HitPosition.Value;
                 baseGravity = cockpits[0].GetTotalGravity();
             }*/
-            
+
             // get delta
             delta = fakeDelta;
             deltaOffset = 0;
@@ -378,13 +403,15 @@ namespace IngameScript
             // perform routines
             Log("---- MAIN LOOP ----");
             //#if DEBUG
-            //Singleton.buildTools.RemoveAll();
+            Singleton.buildTools.RemoveAll();
             //#endif
             if (debugModeClearOnLoop && debugPanel != null)
                 debugPanel.WriteText("", false);
 
             HandleSetup(); // setup mode
             UpdateInputs(); // cockpits
+
+            Runtime.UpdateFrequency = controller != null || thrustersEnabled ? UpdateFrequency.Update1 : UpdateFrequency.Update10;
 
             UpdateStabilization();
             UpdateTorsoTwist();

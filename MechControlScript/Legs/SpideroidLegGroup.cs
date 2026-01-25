@@ -45,6 +45,8 @@ namespace IngameScript
             //protected void LegAngles LegAnglesOffset => new LegAngles(0, 90, 0, 0);
             protected virtual LegAngles LocalLegAnglesOffset => new LegAngles(0, 90, 0, 0);
 
+            public override bool IndependentInversed => false;
+
             protected float StandingHeight;
             protected float StandingDistance;
             protected float StrafeDistance;
@@ -135,17 +137,17 @@ namespace IngameScript
 
                 // left
                 x = XOffset * AnimationDirectionMultiplier
-                    + AnimationDirectionMultiplier * Math.Sin(2 * AnimationStep * Math.PI) * MathHelper.Lerp(StepLength, TurnLength, info.Turn.Absolute()) * AbsMax(-info.Walk, info.Turn) * (AbsMax(info.Walk, info.Turn) == info.Turn ? -1 : 1);
+                    + AnimationDirectionMultiplier * Math.Sin(2 * AnimationStepOffset * Math.PI) * MathHelper.Lerp(StepLength, TurnLength, info.Turn.Absolute()) * AbsMax(-info.Walk, info.Turn) * (AbsMax(info.Walk, info.Turn) == info.Turn ? -1 : 1);
 
                 y = YOffset
                     - MathHelper.Clamp(cameraOffsets.Item1, -StandingHeight, StandingHeight)
                     + StandingHeight
                     - CrouchHeight * CrouchWaitTime
-                    - Math.Max(-Math.Sin(2 * AnimationStep * Math.PI + Math.PI / 2d), 0) * StepHeight * Math.Abs(AbsMax(info.Walk, AbsMax(info.Strafe, info.Turn)));
+                    - Math.Max(-Math.Sin(2 * AnimationStepOffset * Math.PI + Math.PI / 2d), 0) * StepHeight * Math.Abs(AbsMax(info.Walk, AbsMax(info.Strafe, info.Turn)));
 
                 z = ZOffset
                     + StandingDistance
-                    + (Math.Sign(info.Strafe) * Math.Sin(2 * AnimationStep * Math.PI)) * StrafeDistance * Math.Abs(info.Strafe);
+                    + (Math.Sign(info.Strafe) * Math.Sin(2 * AnimationStepOffset * Math.PI)) * StrafeDistance * Math.Abs(info.Strafe);
                     //+ StrafeDistance * Math.Abs(info.Strafe);
 
                 if (customTarget != Vector3D.Zero)
@@ -170,17 +172,17 @@ namespace IngameScript
 
                 // right
                 x = XOffset * AnimationDirectionMultiplier
-                    + AnimationDirectionMultiplier * Math.Sin(2 * AnimationStepOffset * Math.PI) * MathHelper.Lerp(StepLength, TurnLength, info.Turn.Absolute()) * AbsMax(info.Walk, info.Turn) * (AbsMax(info.Walk, info.Turn) == info.Turn ? 1 : -1);
+                    + AnimationDirectionMultiplier * Math.Sin(2 * AnimationStep * Math.PI) * MathHelper.Lerp(StepLength, TurnLength, info.Turn.Absolute()) * AbsMax(info.Walk, info.Turn) * (AbsMax(info.Walk, info.Turn) == info.Turn ? 1 : -1);
 
                 y = YOffset
                     - MathHelper.Clamp(cameraOffsets.Item2, -StandingHeight, StandingHeight)
                     + StandingHeight
                     - CrouchHeight * CrouchWaitTime
-                    - Math.Max(-Math.Sin(2 * AnimationStepOffset * Math.PI + Math.PI / 2d), 0) * StepHeight * Math.Abs(AbsMax(info.Walk, AbsMax(info.Strafe, info.Turn)));
+                    - Math.Max(-Math.Sin(2 * AnimationStep * Math.PI + Math.PI / 2d), 0) * StepHeight * Math.Abs(AbsMax(info.Walk, AbsMax(info.Strafe, info.Turn)));
 
                 z = ZOffset
                     + StandingDistance
-                    + (-Math.Sign(info.Strafe) * Math.Sin(2 * AnimationStepOffset * Math.PI)) * StrafeDistance / 2f * Math.Abs(info.Strafe)
+                    + (-Math.Sign(info.Strafe) * Math.Sin(2 * AnimationStep * Math.PI)) * StrafeDistance / 2f * Math.Abs(info.Strafe)
                     + StrafeDistance * Math.Abs(info.Strafe);
 
                 if (customTarget != Vector3D.Zero)

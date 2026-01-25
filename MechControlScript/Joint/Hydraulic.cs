@@ -84,9 +84,9 @@ namespace IngameScript
                 // find stators
                 IMyPistonBase first = Pistons.First();
                 IMyPistonBase last = Pistons.Last();
-                Singleton.Echo($"pistons: {Pistons.Count}");
-                Singleton.Echo($"first: {first}");
-                Singleton.Echo($"last: {last}");
+                Log($"pistons: {Pistons.Count}");
+                Log($"first: {first}");
+                Log($"last: {last}");
                 List<IMyMotorStator> connectedStators = new List<IMyMotorStator>(); // "yucky, singleton!" - wa wa wa
                 Singleton.GridTerminalSystem.GetBlocksOfType(connectedStators, (b) => b.IsSameConstructAs(Singleton.Me) && b.Top != null && (b.CubeGrid.Equals(first.CubeGrid) || b.TopGrid.Equals(first.CubeGrid)));
                 List<IMyMotorStator> connectedStators2 = new List<IMyMotorStator>(); // WHY IS THIS LIKE THE ONLY FUNCTION THAT CLEARS THE LIST? AAAAAAAAAAAA

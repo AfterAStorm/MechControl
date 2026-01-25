@@ -76,6 +76,12 @@ namespace IngameScript
                     Getter = (p) => p.stabilizationEnabled,
                     Setter = (p, v) => p.stabilizationEnabled = v.ToBoolean(p.stabilizationEnabled)
                 },
+                new StateCheckpoint()
+                {
+                    Name = "magnetsEnabled",
+                    Getter = (p) => magnetsEnabled,
+                    Setter = (p, v) => magnetsEnabled = v.ToBoolean(magnetsEnabled)
+                },
             };
 
             private readonly Program program;

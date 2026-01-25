@@ -47,8 +47,8 @@ namespace IngameScript
             };
 
             protected virtual LegAngles LegAnglesMultiplier => LegAngles.One;
-            protected virtual LegAngles LeftAnglesMultiplier => new LegAngles(-1, 1, 1, 1, 1);
-            protected virtual LegAngles RightAnglesMultiplier => new LegAngles(1, 1, 1, 1, -1);
+            protected virtual LegAngles LeftAnglesMultiplier => new LegAngles(-1, 1, 1, 1, 1, 1);
+            protected virtual LegAngles RightAnglesMultiplier => new LegAngles(1, 1, 1, 1, -1, 1);
 
             float Radius, RadiusAnkle;
 
@@ -91,7 +91,7 @@ namespace IngameScript
                 float maxStepLength = (float)Math.Sqrt(Math.Pow(radiusAnkle, 2) - Math.Pow(StandingHeight, 2)); // sqrt(r^2 - y^2) = x
 
                 StepLength = Configuration.VariableStepLength.GetMetersOf(GridSize, 0, maxStepLength);
-                StrafeDistance = Configuration.VariableStepLength.GetMetersOf(GridSize, 0, maxStepLength);
+                StrafeDistance = Configuration.VariableStrafeDistance.GetMetersOf(GridSize, 0, maxStepLength);
                 StepHeight = Configuration.VariableStepHeight.GetMetersOf(GridSize, 0, StandingHeight);
                 CrouchHeight = Configuration.VariableCrouchHeight.GetMetersOf(GridSize, 0, StandingHeight);
                 
