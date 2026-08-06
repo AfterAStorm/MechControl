@@ -43,6 +43,7 @@ namespace IngameScript
         //static double jumpTime = 0;
         static bool crouched = false;
         bool crouchOverride = false;
+        public static bool syncStep = false;
 
         //bool isTurning, isWalking;
 
@@ -89,7 +90,10 @@ namespace IngameScript
             {
                 leg.Initialize();
                 if (!useLegDefaults || !configs.ContainsKey(leg.Configuration.Id))
+                {
+                    leg.ApplyConfiguration();
                     continue;
+                }
                 var last = (LegConfiguration)configs[leg.Configuration.Id];
                 if (leg.Configuration.LegType != last.LegType) // should set defaults?
                 {
@@ -100,9 +104,11 @@ namespace IngameScript
                     }
                     leg.DefaultConfiguration.LegType = leg.Configuration.LegType;
                     leg.Configuration = leg.DefaultConfiguration;
-                    leg.ApplyConfiguration();
                     leg.Initialize();
+                    leg.ApplyConfiguration();
                 }
+                else
+                    leg.ApplyConfiguration();
             }
 
             // fix jump after reload
@@ -139,9 +145,24 @@ namespace IngameScript
             return ClampAnyway(current + Math.Sign(direction) * AccelerationMultiplier * delta, current, target);
         }
 
+        static bool magnetJumping = false;
+        static double magnetJumpProgress = 0d;
+        double magnetJumpTime = 0;
+
         public void UpdateLegs()
         {
             Log("-- Legs --");
+            // must be done BEFORE for timerblocks
+            lastMoveInfo.Walk = moveInfo.Walk;
+            lastMoveInfo.Turn = moveInfo.Turn;
+            lastMoveInfo.Strafe = moveInfo.Strafe;
+            lastMoveInfo.Crouched = moveInfo.Crouched;
+            lastMoveInfo.Jumping = moveInfo.Jumping;
+            lastMoveInfo.Jumped = moveInfo.Jumped;
+            lastMoveInfo.Flying = moveInfo.Flying;
+            lastMoveInfo.Delta = moveInfo.Delta;
+            lastMoveInfo.Stopping = moveInfo.Stopping;
+
             crouched = crouchOverride || parsedVerticalInput < 0;
 
             // delta calculations
@@ -165,16 +186,7 @@ namespace IngameScript
                 /*movement.Z = MathHelper.Clamp(
                     movement.Z + GetDirectionMultiplier(moveDirection.Z, movement.Z, AccelerationMultiplier, DecelerationMultiplier) * .5f * (float)delta, -1f, 1f);*/
             }
-            Log($"movement: {movement}");
-
-            lastMoveInfo.Walk     = moveInfo.Walk;
-            lastMoveInfo.Turn     = moveInfo.Turn;
-            lastMoveInfo.Strafe   = moveInfo.Strafe;
-            lastMoveInfo.Crouched = moveInfo.Crouched;
-            lastMoveInfo.Jumping  = moveInfo.Jumping;
-            lastMoveInfo.Jumped   = moveInfo.Jumped;
-            lastMoveInfo.Flying   = moveInfo.Flying;
-            lastMoveInfo.Delta    = moveInfo.Delta;
+            Log($"movement:", movement);
 
             float flyingMultiplier = thrustersEnabled ? 0f : 1f;
             moveInfo.Walk         = flyingMultiplier * movement.Z; // since -1 is forward, negate it so 1 is forward -- already inverted in parsedMoveInput
@@ -186,14 +198,32 @@ namespace IngameScript
             moveInfo.Jumped       = (moveInfo.Jumped || parsedVerticalInput > 0) && !(parsedVerticalInput < 0); // if jumping or jumped, keep state--if crouched, reset state
             moveInfo.Flying       = thrustersEnabled; // parsedVerticalInput > 0 && !moveInfo.Jumping;
             moveInfo.Delta        = delta;
-            Log($"move info: WALK:{moveInfo.Walk}; TURN:{moveInfo.Turn}; STRAFE:{moveInfo.Strafe}; CROUCHED:{moveInfo.Crouched}");
-            Log($"move cont: JUMP:{moveInfo.Jumping},{moveInfo.Jumped}; FLY:{moveInfo.Flying}");
+            Log($"move info : WALK:{moveInfo.Walk}; TURN:{moveInfo.Turn}; STRAFE:{moveInfo.Strafe}; CROUCHED:{moveInfo.Crouched}");
+            Log($"move cont : JUMP:{moveInfo.Jumping},{moveInfo.Jumped}; FLY:{moveInfo.Flying}");
+            Log($"move delta:", moveInfo.Delta);
+
+            if (magnetJumping)
+            {
+                magnetJumpTime += moveInfo.Delta;
+                magnetJumpProgress = magnetJumpTime / 0.5d;
+                if (magnetJumpTime > 0.5d)
+                {
+                    magnetJumping = false;
+                    ToggleMagnetsEnabled(true);
+                }
+            }
+            if (!moveInfo.Jumping && lastMoveInfo.Jumping && magnetsEnabled)
+            {
+                ToggleMagnetsEnabled(false);
+                magnetJumping = true;
+                magnetJumpTime = 0;
+            }
 
             if (customAnimationStep != -1d)
             {
                 moveInfo.Walk = 1f;
             }
-            
+
             /// X: Strafe
             /// Y: Turn
             /// Z: Forward
@@ -201,18 +231,29 @@ namespace IngameScript
             /*float maxComponent = MaxComponentOf(movement);
 
             animationStepCounter += maxComponent * delta;*/
+            moveInfo.Stopping = false;
             if (movement.LengthSquared() != 0)
                 animationStepCounter = (animationStepCounter + moveInfo.Delta * WalkCycleSpeed * .5f);
             else
             {
+                if (anyController != null)
+                    Singleton.buildTools.DrawPoint(anyController.GetPosition() + Vector3.One, Color.Blue, 0.25f);
                 if (animationStepCounter > 1)
                     animationStepCounter -= (animationStepCounter - 1); // return to terms of 0 to 1
                 if (animationStepCounter > .25 && animationStepCounter < .75)
-                    animationStepCounter = .5;
+                    animationStepCounter = MathHelper.Lerp(animationStepCounter, 0.5d, 0.5d);
+                else if (animationStepCounter >= 0.75)
+                    animationStepCounter = MathHelper.Lerp(animationStepCounter, 1d, 0.5d);
                 else
-                    animationStepCounter = 0;
+                    animationStepCounter = MathHelper.Lerp(animationStepCounter, 0d, 0.5d);
+                if (!(Math.Abs(animationStepCounter) < 0.02d || Math.Abs(animationStepCounter - 1d) < 0.02d || Math.Abs(animationStepCounter - 0.5d) < 0.02d))
+                    moveInfo.Stopping = true; // prevent magnets from being angy
             }
             Log($"animationStepCounter: {animationStepCounter}");
+            Log($"stopping?: {moveInfo.Stopping}");
+            // TODO: REMOVE
+            if (moveInfo.Stopping && anyController != null)
+                Singleton.buildTools.DrawPoint(anyController.GetPosition(), Color.Red, 0.3f);
 
             // crazy logic for neat boolean tricks!
             if (legsEnabled)// && !legsThrustersDisabled)

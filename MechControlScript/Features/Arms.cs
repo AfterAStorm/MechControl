@@ -22,41 +22,65 @@ namespace IngameScript
 {
     partial class Program
     {
-        public static Dictionary<int, ArmGroup> arms = new Dictionary<int, ArmGroup>();
-
-        bool armsEnabled = true;
-        static double armPitch = 0;
-        static double armYaw = 0;
-
-        public void FetchArms()
+        public class ArmController
         {
-            var configs = arms.Select((kv) => new KeyValuePair<int, JointConfiguration>(kv.Key, kv.Value.Configuration)).ToDictionary(pair => pair.Key, pair => pair.Value);
-            blockFetcher.FetchGroups(ref arms, configs, BlockFetcher.CreateArmFromType, ArmConfiguration.Parse);
-        }
+            public int ArmCount => _arms.Count;
+            public Dictionary<int, ArmGroup> Arms => _arms;
+            private Dictionary<int, ArmGroup> _arms = new Dictionary<int, ArmGroup>();
 
-        void ToggleArmsEnabled(bool enabled)
-        {
-            if (armsEnabled && !enabled)
-                foreach (var group in arms.Values)
-                {
-                    foreach (var joint in group.PitchJoints.Concat(group.YawJoints))
+            private Program _program;
+
+            public bool Enabled => _enabled;
+            private bool _enabled = true;
+
+            private double _armPitch, _armYaw;
+
+            internal ArmController(Program program)
+            {
+                _program = program;
+            }
+
+            public void Update(double delta)
+            {
+                Log("-- Arms --");
+                //_enabled = true;
+                _armPitch = _enabled ? -_program.rotationInput.X : 0;
+                _armYaw = _enabled ? _program.rotationInput.Y : 0;
+
+                if (_enabled)
+                    foreach (var arm in _arms.Values)
+                        if (arm.Enabled)
+                            arm.Update(_armPitch, _armYaw);
+            }
+            public void ResetToZero()
+            {
+                foreach (var arm in _arms.Values)
+                    arm.ToZero(); // TODO: select legs with 1 / 2 / all
+            }
+
+            public void ToggleEnabled(bool enabled)
+            {
+                if (_enabled && !enabled)
+                    foreach (var group in _arms.Values)
                     {
-                        joint.SetRPM(0);
+                        foreach (var joint in group.PitchJoints.Concat(group.YawJoints))
+                        {
+                            joint.SetRPM(0);
+                        }
                     }
-                }
-            armsEnabled = enabled;
+                _enabled = enabled;
+            }
+
+            public void Fetch()
+            {
+                var configs = _arms.Select((kv) => new KeyValuePair<int, JointConfiguration>(kv.Key, kv.Value.Configuration)).ToDictionary(pair => pair.Key, pair => pair.Value);
+                _program.blockFetcher.FetchGroups(ref _arms, configs, BlockFetcher.CreateArmFromType, ArmConfiguration.Parse);
+
+                foreach (var arm in Arms.Values)
+                    arm.ApplyConfiguration();
+            }
+
         }
 
-        public void UpdateArms()
-        {
-            Log("-- Arms --");
-            armPitch = armsEnabled ? - rotationInput.X : 0;
-            armYaw = armsEnabled ? rotationInput.Y : 0;
-
-            if (armsEnabled)
-                foreach (var arm in arms.Values)
-                    if (arm.Enabled)
-                        arm.Update();
-        }
     }
 }

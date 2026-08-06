@@ -26,7 +26,7 @@ namespace IngameScript
         /// Holds configuration information
         /// Each configuration has a numerical id starting at one (default)
         /// </summary>
-        public class ArmConfiguration : JointConfiguration
+        public class PoseConfiguration : JointConfiguration
         {
             /*
              * 
@@ -41,7 +41,7 @@ namespace IngameScript
 
             #region # - Properties
 
-            public static readonly ArmConfiguration DEFAULT = Create();
+            public static readonly PoseConfiguration DEFAULT = Create();
 
             private static MyIni ini;
 
@@ -59,11 +59,11 @@ namespace IngameScript
 
             public override string ToCustomDataString()
             {
-                ini.Clear();
-                ini.Set("Arm", "na", false);
-                ini.SetComment("Arm", "na", "tbd");
+                ini.DeleteSection("Pose");
+                //ini.Set("Arm", "na", false);
+                //ini.SetComment("Arm", "na", "tbd");
 
-                ini.SetSectionComment("Arm", $"Arm (group {Id}) settings. These change all of the joints in the same arm.");
+                //ini.SetSectionComment("Arm", $"Arm (group {Id}) settings. These change all of the joints in the same arm.");
                 return "";//ini.ToString();
             }
 
@@ -72,9 +72,9 @@ namespace IngameScript
                 return Id.GetHashCode();
             }
 
-            public static ArmConfiguration Parse(MyIni ini)
+            public static PoseConfiguration Parse(MyIni ini)
             {
-                ArmConfiguration config = new ArmConfiguration
+                PoseConfiguration config = new PoseConfiguration
                 {
 
 
@@ -83,7 +83,7 @@ namespace IngameScript
                 return config;
             }
 
-            public static ArmConfiguration Parse(string iniData)
+            public static PoseConfiguration Parse(string iniData)
             {
                 ini = ini ?? new MyIni();
                 ini.Clear();
@@ -93,7 +93,7 @@ namespace IngameScript
                 return Parse(ini);
             }
 
-            public static ArmConfiguration Create()
+            public static PoseConfiguration Create()
             {
                 return Parse("");
             }

@@ -29,6 +29,7 @@ namespace IngameScript
         class MultiJoint
         {
             public Joint Joint;
+            public VtolJointConfiguration Configuration;
             public List<BlockType> Types;
             public List<float> Inverted;
 
@@ -40,18 +41,23 @@ namespace IngameScript
             public MultiJoint(Joint joint)
             {
                 Joint = joint;
+                Configuration = VtolJointConfiguration.Parse(Joint.Source);
                 Types = new List<BlockType>() { joint.Source.Type };
                 Inverted = new List<float>() { joint.InvertedMultiplier };
+                MyIni jointIni = Program.Singleton.configManager.GetConfiguration(Joint.Stator);
+                Configuration.Save(jointIni);
+                Joint.Stator.CustomData = jointIni.ToString(); //block.Block.CustomData = data;
+                //Joint.Stator.CustomData = Configuration.ToCustomDataString();
             }
 
-            public void Reset()
+            /*public void Reset()
             {
                 TargetAngle = 0;
-            }
+            }*/
 
             public void Apply()
             {
-                Joint.SetAngle(TargetAngle.ToDegrees());
+                Joint.SetAngle(TargetAngle.ToDegrees(), Configuration.Multiplier);
             }
         }
 
@@ -145,7 +151,7 @@ namespace IngameScript
                 return;
             }
 
-            Vector3 moveDirection = thrustersEnabled && thrustersVtol ? parsedMoveInput : Vector3.Zero;
+            Vector3 moveDirection = thrustersEnabled ? parsedMoveInput : Vector3.Zero;
 
             /*
             VT+ / VT- for turning Q/E (based on ReverseTurnControls)
@@ -181,7 +187,7 @@ namespace IngameScript
             Log($"elevationVtolStators:", elevationVtolStators.Count);
             Log($"rollVtolStators:", rollVtolStators.Count);
             Log($"vectorMovement:", vectorMovement);
-            flyingOffset = new Vector3(vectorMovement.Z, vectorMovement.Y, vectorMovement.X);
+            flyingOffset = thrustersVtol ? new Vector3(vectorMovement.Z, vectorMovement.Y, vectorMovement.X) : Vector3.Lerp(flyingOffset, Vector3D.Zero, 0.75f);
             /*if (thrustersEnabled && thrustersVtol)
             {
                 // manage vtol mode
@@ -212,7 +218,7 @@ namespace IngameScript
             {
                 foreach (var joint in stators)
                 {
-                    joint.Reset();
+                    //joint.Reset();
                     float totalMultiplier = 0;
                     for (int i = 0; i < joint.Types.Count; i++)
                     {
@@ -243,7 +249,24 @@ namespace IngameScript
                         totalMultiplier += multiplier;
                         //joint.TargetAngle += multiplier == 0f ? 0f : multiplier * Math.Abs(multiplier > 0f ? joint.Joint.MaximumRad : joint.Joint.MinimumRad);
                     }
-                    joint.TargetAngle += totalMultiplier == 0f ? 0f : MathHelper.Clamp(Math.Abs(totalMultiplier), 0, 1) * (totalMultiplier > 0f ? joint.Joint.MaximumRad : joint.Joint.MinimumRad);
+                    //joint.TargetAngle += totalMultiplier == 0f ? 0f : MathHelper.Clamp(Math.Abs(totalMultiplier), 0, 1) * (totalMultiplier > 0f ? joint.Joint.MaximumRad : joint.Joint.MinimumRad);
+                    /*joint.TargetAngle =
+                        totalMultiplier == 0f ? (float)joint.Configuration.Offset :
+                        MathHelper.Clamp(Math.Abs(totalMultiplier), 0, 1) *
+                            (totalMultiplier > 0f ? joint.Joint.MaximumRad - (float)joint.Configuration.Offset : joint.Joint.MinimumRad - (float)joint.Configuration.Offset);*/
+                    float offset = (float)joint.Configuration.Offset.ToRadians();
+                    if (totalMultiplier > 0f && joint.Joint.Maximum < 360.5f)
+                    {
+                        joint.TargetAngle = MathHelper.Lerp(offset, joint.Joint.MaximumRad, totalMultiplier);
+                    }
+                    else if (totalMultiplier < 0f && joint.Joint.Minimum > -360.5f)
+                    {
+                        joint.TargetAngle = MathHelper.Lerp(offset, joint.Joint.MinimumRad, -totalMultiplier);
+                    }
+                    else //if (totalMultiplier == 0f)
+                    {
+                        joint.TargetAngle = offset;
+                    }
                     joint.Apply();
                 }
             }

@@ -95,6 +95,11 @@ namespace IngameScript
         {
             if (string.IsNullOrEmpty(arg) || arg.Length <= 1)
                 return current;
+            if (arg[0] != '=' && arg[0] != '=' && arg[0] != '-')
+            {
+                commandResponse = "You must specify a = (set), - (subtract), or + (add) before your number, e.g: steplength =50% or steplength +10%";
+                return current;
+            }
             JointVariable replace = new JointVariable(arg.Substring(1));//arg.Trim('=', '+', '-'));
             if (replace.Type != current.Type) // if not same type, just do a =
             {
@@ -158,21 +163,41 @@ namespace IngameScript
                 leg.Initialize();
         }
 
+        Dictionary<string, MyIniValue> ParseKeyValuePairs(string[] kv)
+        {
+            Dictionary<string, MyIniValue> result = new Dictionary<string, MyIniValue>(); // bad allocation
+            MyIniKey iniKey = new MyIniKey("a", "a");
+            foreach (var subkv in kv)
+            {
+                if (!subkv.Contains("="))
+                    continue;
+                int sep = subkv.IndexOf("=");
+                string key = subkv.Substring(0, sep);
+                string value = subkv.Substring(sep + 1);
+                result.Add(key, new MyIniValue(iniKey, value));
+            }
+            return result;
+        }
+
         void HandleCommand(string command)
         {
+            commandResponse = "";
             string[] arguments = command.Split(' ');
             string arg = arguments.Length > 1 ? string.Join(" ", arguments.Skip(1)) : null;
             switch (arguments[0].ToLower())
             {
                 // Core -- integral even //
                 default:
+                    commandResponse = "Invalid command, did you mean \"reload\"?";
+                    Reload();
+                    break;
                 case "reload":
                     Reload();
                     break;
 
                 // Debug //
                 case "debug":
-                    debugMode = !debugMode;
+                    debugMode = HandleBoolArgument(debugMode, arg);
                     break;
 
                 case "debugstep":
@@ -203,11 +228,100 @@ namespace IngameScript
                     break;
 
                 case "autotag":
-                    TryAutoTag();
+                    TryAutoTag(arg);
                     break;
 
                 case "autotype":
                     AutoRetype(HandleIntArgument(1, arg));
+                    break;
+
+                // Posing //
+                case "pose":
+                    switch (arguments.Length > 1 ? arguments[1]?.ToLower().Trim() : "")
+                    {
+                        default:
+                            commandResponse = "Invalid pose command";
+                            break;
+                        case "create": // pose create name group (min 3, max 4)
+                            int animationGroup = 1;
+                            if (arguments.Length < 3)
+                            {
+                                commandResponse = "Missing group name";
+                                break;
+                            }
+                            if (arguments.Length > 3)
+                                animationGroup = TryParseInt(arguments[3]);
+                            string name = arguments[2];
+                            CreateAnimation(animationGroup, name);
+                            break;
+                        case "delete":
+                            if (arguments.Length < 3)
+                            {
+                                commandResponse = "Missing group name";
+                                break;
+                            }
+                            string delName = arguments[2];
+                            DeleteAnimation(delName);
+                            break;
+                        case "record":
+                            if (arguments.Length < 3)
+                            {
+                                commandResponse = "Missing group name";
+                                break;
+                            }
+                            string recName = arguments[2];
+                            CreateFrame(recName);
+                            break;
+                        case "play":
+                            if (arguments.Length < 3)
+                            {
+                                commandResponse = "Missing group name";
+                                break;
+                            }
+                            string playName = arguments[2];
+                            bool looped = arguments.Contains("looped", StringComparer.OrdinalIgnoreCase);
+                            PlayAnimation(playName, looped);
+                            posesNeedsStoppedTB.Add(playName.ToLowerInvariant());
+                            RunPoseTimerblocks(TimerBlockEvent.POSE_START, playName);
+                            break;
+                        case "stop":
+                            if (arguments.Length < 3)
+                            {
+                                commandResponse = "Missing group name";
+                                break;
+                            }
+                            string stopName = arguments[2];
+                            if (posesNeedsStoppedTB.Contains(stopName.ToLowerInvariant()))
+                            {
+                                RunPoseTimerblocks(TimerBlockEvent.POSE_STOP, stopName);
+                                posesNeedsStoppedTB.Remove(stopName.ToLowerInvariant());
+                            }
+                            StopAnimation(stopName);
+                            break;
+                        case "set":
+                            if (arguments.Length < 3)
+                            {
+                                commandResponse = "Missing group name";
+                                break;
+                            }
+                            if (arguments.Length < 4)
+                            {
+                                commandResponse = "Missing frame number";
+                                break;
+                            }
+                            var values = ParseKeyValuePairs(arguments);
+                            string setName = arguments[2];
+                            int setFrame = -1;
+                            if (!int.TryParse(arguments[3], out setFrame))
+                            {
+                                commandResponse = "Invalid frame number";
+                                break;
+                            }
+                            float time = values.ContainsKey("time") ? values["time"].ToSingle(0) : -1f;
+                            string easing = values.ContainsKey("easing") ? values["easing"].ToString("linear") : null;
+                            SetFrame(setName, setFrame, time, easing);
+                            break;
+                    }
                     break;
 
                 // Movement //
@@ -321,19 +435,30 @@ namespace IngameScript
                     thrusterBehavior = HandleBoolArgument(thrusterBehavior == ThrusterMode.Hover, arg) ? ThrusterMode.Hover : ThrusterMode.Override;
                     break;
 
+                case "independentstep":
+                    IndependentStepEnabled = HandleBoolArgument(IndependentStepEnabled, arg);
+                    break;
+
+                case "syncstep":
+                    syncStep = HandleBoolArgument(syncStep, arg);
+                    break;
+
                 // Settings
                 case "apply":
                     foreach (var group in legs.Values)
                         group.ApplyConfiguration();
+                    SaveConfig(); // save local pb
                     break;
 
                 case "stepspeed":
                     foreach (var group in legs.Values)
-                        group.Configuration.AnimationSpeed = HandleDoubleArgument(group.Configuration.AnimationSpeed, arg);
+                        group.Configuration.VariableAnimationSpeed = HandleVariable(group.Configuration.VariableAnimationSpeed, arg);
+                        //group.Configuration.AnimationSpeed = HandleDoubleArgument(group.Configuration.AnimationSpeed, arg);
                     break;
                 case "crouchspeed":
                     foreach (var group in legs.Values)
-                        group.Configuration.CrouchSpeed = HandleDoubleArgument(group.Configuration.CrouchSpeed, arg);
+                        group.Configuration.VariableCrouchSpeed = HandleVariable(group.Configuration.VariableCrouchSpeed, arg);
+                        //group.Configuration.CrouchSpeed = HandleDoubleArgument(group.Configuration.CrouchSpeed, arg);
                     break;
 
                 /*case "lean":
@@ -404,8 +529,7 @@ namespace IngameScript
                     break;
 
                 case "armsreset":
-                    foreach (var arm in arms.Values)
-                        arm.ToZero(); // TODO: select legs with 1 / 2 / all
+                    armController.ResetToZero();
                     break;
 
                 case "legs"://control":
@@ -414,7 +538,7 @@ namespace IngameScript
                     break;
 
                 case "arms"://control":
-                    HandleJointGroupToggle(arguments, arms);
+                    HandleJointGroupToggle(arguments, armController.Arms);
                     //ToggleArmsEnabled(HandleBoolArgument(armsEnabled, arg));
                     break;
 
@@ -429,6 +553,41 @@ namespace IngameScript
                 // Fun //
                 case "limp":
                     ToggleLimp(HandleBoolArgument(isLimp, arg));
+                    break;
+
+                case "selfdestruct":
+                    foreach (var leg in legs.Values)
+                    {
+                        foreach (var joint in leg.AllJoints)
+                        {
+                            if (arg.Equals("bug"))
+                            {
+                                joint.Stator.Torque = float.NaN;
+                                joint.Stator.TargetVelocityRPM = float.NaN;
+                            }
+                            else
+                            {
+                                if (joint.Stator.IsAttached)
+                                    joint.Stator.Detach();
+                            }
+                        }
+                    }
+                    foreach (var arm in armController.Arms.Values)
+                    {
+                        foreach (var joint in arm.AllJoints)
+                        {
+                            if (arg.Equals("bug"))
+                            {
+                                joint.Stator.Torque = float.NaN;
+                                joint.Stator.TargetVelocityRPM = float.NaN;
+                            }
+                            else
+                            {
+                                if (joint.Stator.IsAttached)
+                                    joint.Stator.Detach();
+                            }
+                        }
+                    }
                     break;
             }
         }

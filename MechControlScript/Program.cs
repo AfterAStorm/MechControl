@@ -27,16 +27,22 @@ namespace IngameScript
         // Script //
 
         public static Program Singleton { get; private set; }
-        public const string Version = "2.3.1-beta"; // major.minor.patch
+        public const string Version = "2.4.0-beta"; // major.minor.patch
 
         public static readonly double TicksPerSecond = 10d / 60d;
 
         public BlockFetcher blockFetcher;
         public BlockFinder blockFinder;
+        public ArmController armController;
+        public ConfigManager configManager;
+
+        ScriptState state;
 
         //#if DEBUG
         public BuildTools buildTools;
         //#endif
+
+        public static string commandResponse = "";
 
         // Diagnostics //
 
@@ -87,8 +93,6 @@ namespace IngameScript
         }
 
         // Variables //
-
-        ScriptState state;
 
         int statusTick = 0;
         string[] statuses = new string[]
@@ -203,6 +207,7 @@ namespace IngameScript
 
         double delta = 0;
         double deltaOffset = 0;
+        double idleCounter = 0;
 
         // TODO: expand into "task scheduler"?
         IEnumerator fetchTask;
@@ -229,7 +234,9 @@ namespace IngameScript
             buildTools = new BuildTools(this);
             //#endif
             blockFinder = new BlockFinder(GridTerminalSystem);
-            blockFetcher = new BlockFetcher(blockFinder);
+            configManager = new ConfigManager();
+            blockFetcher = new BlockFetcher(blockFinder, configManager);
+            armController = new ArmController(this);
 
             // load script state
             state = new ScriptState(this);
@@ -237,7 +244,7 @@ namespace IngameScript
             Reload(); // reload to handle customdata stuffs
 
             // set runtime update freq.
-            Runtime.UpdateFrequency = UpdateFrequency.Update10;
+            Runtime.UpdateFrequency = UpdateFrequency.Update1;
         }
 
         IEnumerator FetchCoroutine()
@@ -253,11 +260,13 @@ namespace IngameScript
             FetchTorsoTwisters();
             FetchThrusters();
 
-            FetchArms();
+            armController.Fetch(); //FetchArms();
             FetchLegs();
 
             FetchTimerBlocks();
             IterateHydraulics();
+
+            FetchPoses();
         }
 
         public void Fetch()
@@ -317,7 +326,7 @@ namespace IngameScript
             // TODO: StringBuilder?
             statusTick = (statusTick + 1) % statuses.Length;
             Echo($"[Color=#13ebca00]Mech Control Script[/Color] [Color=#00aaaaaa]>[/Color] [Color=#0034eb95]{Version}[/Color]");
-            Echo($"{legs.Count} leg group{(legs.Count != 1 ? "s" : "")} | {arms.Count} arm{(arms.Count != 1 ? "s" : "")}{(!ShowStats ? $" | {statuses[statusTick]}" : "")}");
+            Echo($"{legs.Count} leg group{(legs.Count != 1 ? "s" : "")} | {armController.ArmCount} arm{(armController.ArmCount != 1 ? "s" : "")}{(!ShowStats ? $" | {statuses[statusTick]}" : "")}");
             Echo("");
             if (ShowStats)
             {
@@ -328,6 +337,12 @@ namespace IngameScript
                 Echo($"Last Complexity: {lastInstructions / Runtime.MaxInstructionCount * 100:f1}%");
                 Echo($"Max Instructions: {maxInstructions}");
                 Echo($"Updates/s: {1 / fakeDelta:f1} up/s");
+                Echo("");
+            }
+
+            if (commandResponse.Length > 0)
+            {
+                Echo(commandResponse);
                 Echo("");
             }
 
@@ -397,7 +412,7 @@ namespace IngameScript
             }*/
 
             // get delta
-            delta = fakeDelta;
+            delta = Runtime.UpdateFrequency == UpdateFrequency.Update1 ? 1 / 60f : 1 / 6f; //fakeDelta;
             deltaOffset = 0;
 
             // perform routines
@@ -411,14 +426,19 @@ namespace IngameScript
             HandleSetup(); // setup mode
             UpdateInputs(); // cockpits
 
-            Runtime.UpdateFrequency = controller != null || thrustersEnabled ? UpdateFrequency.Update1 : UpdateFrequency.Update10;
+            if (controller != null || thrustersEnabled || movementOverride.LengthSquared() != 0 || turnOverride != 0 || posesPlaying > 0)
+                idleCounter = 2d;
+            else
+                idleCounter = Math.Max(0d, idleCounter - delta);
+            Runtime.UpdateFrequency = idleCounter > 0d ? UpdateFrequency.Update1 : UpdateFrequency.Update10;
 
             UpdateStabilization();
             UpdateTorsoTwist();
             UpdateThrusters();
 
-            UpdateArms();
+            armController.Update(delta); //UpdateArms();
             UpdateLegs();
+            UpdatePoses();
 
             UpdateTimerBlocks();
 

@@ -71,15 +71,25 @@ namespace IngameScript
 
             public override void ApplyConfiguration()
             {
-                string data = Configuration.ToCustomDataString();
                 foreach (var block in AllBlocks)
-                    block.Block.CustomData = data;
+                {
+                    MyIni jointIni = Program.Singleton.configManager.GetConfiguration(block.Block);
+                    Configuration.Save(jointIni);
+                    block.Block.CustomData = jointIni.ToString();
+                }
+                foreach (var block in AllJoints)
+                {
+                    MyIni jointIni = Program.Singleton.configManager.GetConfiguration(block.Stator);
+                    Configuration.Save(jointIni);
+                    (block as LegJoint)?.Configuration.Save(jointIni);
+                    block.Stator.CustomData = jointIni.ToString(); //block.Block.CustomData = data;
+                }
             }
 
             protected virtual void SetAnglesOf(List<LegJoint> stators, double angle, double offset=0, bool rotorInvert = false)
             {
                 foreach (var motor in stators)
-                    motor.SetAngle((angle + /*(motor.IsRotor ?*/ offset * (rotorInvert && motor.IsRotor ? -1 : 1)/*: -offset)*/ + motor.Configuration.Offset) * motor.Configuration.InversedMultiplier);
+                    motor.SetAngle((angle * motor.Configuration.Influence + /*(motor.IsRotor ?*/ offset * (rotorInvert && motor.IsRotor ? -1 : 1)/*: -offset)*/ + motor.Configuration.Offset) * motor.Configuration.InversedMultiplier);
             }
 
             /*protected virtual void SetAngles(double leftHipDegrees, double leftKneeDegrees, double leftFeetDegrees, double leftQuadDegrees, double rightHipDegrees, double rightKneeDegrees, double rightFeetDegrees, double rightQuadDegrees)
@@ -118,16 +128,123 @@ namespace IngameScript
                 if (customAnimationStep != -1d) // allow testing!
                 {
                     AnimationStep = customAnimationStep;
-                    AnimationStepOffset = OffsetLegs ? (AnimationStep + .5).Modulo(1) : AnimationStep;
+                    AnimationStepOffset = (OffsetLegs && !syncStep) ? (AnimationStep + .5).Modulo(1) : AnimationStep;
                     return;
                 }
-                if (!Configuration.IndependantStep)
+                if (!Configuration.IndependentStep)
                 {
                     AnimationStep = (animationStepCounter * Configuration.AnimationSpeed * WalkCycleSpeed + (animationStepCounter > 0 ? IdOffset : 0)).Modulo(1);
-                    AnimationStepOffset = OffsetLegs ? (AnimationStep + .5).Modulo(1) : AnimationStep;
+                    AnimationStepOffset = (OffsetLegs && !syncStep) ? (AnimationStep + .5).Modulo(1) : AnimationStep;
                     return;
                 }
-                
+
+                double totalGroups = legs.Count;
+                if (totalGroups == 2)
+                {
+                    Log("ATAT style independent step");
+                    double totalLegs = totalGroups * 2;
+                    double myGroup = Configuration.Id;
+                    double segmentSize = 1 / (totalLegs);
+                    double segmentOffset = (myGroup - 1) / (totalLegs); // offset of left legs, it goes in the order of L1 -> L2 -> L3
+                    double segmentOffsetOffset = segmentSize * totalGroups + segmentOffset; // offset of right legs, after the left legs all go, R1 -> R2 -> R3 
+                                                                                            // final order: L1 -> L2 -> L3 -> R1 -> R2 -> R3
+
+                    // get step like normal, but exclude id offset since it will screw everything up... it doesn't matter here since we already account for it
+                    double currentStep = (animationStepCounter * (Configuration.AnimationSpeed / totalGroups) * WalkCycleSpeed).Modulo(1);
+
+                    // 0.5 is rest, so default to it
+                    //AnimationStep = 0.5f;
+                    //AnimationStepOffset = 0.5f;
+                    double startOffset = IndependentInversed ? 0.25f : 0.75f;
+                    double slideOffset = IndependentInversed ? 0.75f : 0.25f;
+                    if (currentStep >= segmentOffset && currentStep <= segmentOffset + segmentSize) // left leg's turn
+                    {
+                        // we take a step from 0.75 to 0.25
+                        if (myGroup % 2 == 0)
+                            AnimationStep = (startOffset + MapRange(currentStep, segmentOffset, segmentOffset + segmentSize, 0, 0.5f)).Modulo(1);
+                        else
+                            AnimationStepOffset = (startOffset + MapRange(currentStep, segmentOffset, segmentOffset + segmentSize, 0, 0.5f)).Modulo(1);
+                    }
+                    else
+                    {
+                        // we slowly move backwards from 0.25 to 0.75
+                        double forward = (currentStep - (segmentOffset + segmentSize) + 1f).Modulo(1);
+                        double total = (segmentOffset - (segmentOffset + segmentSize) + 1f).Modulo(1);
+                        if (myGroup % 2 == 0)
+                            AnimationStep = (slideOffset + .5f * Math.Min(forward / total, 1f)).Modulo(1);
+                        else
+                            AnimationStepOffset = (slideOffset + .5f * Math.Min(forward / total, 1f)).Modulo(1);
+                    }
+                    // do the same for the right leg
+                    if (currentStep >= segmentOffsetOffset && currentStep <= segmentOffsetOffset + segmentSize) // right leg's turn
+                    {
+                        if (myGroup % 2 == 0)
+                            AnimationStepOffset = (startOffset + MapRange(currentStep, segmentOffsetOffset, segmentOffsetOffset + segmentSize, 0, 0.5f)).Modulo(1);
+                        else
+                            AnimationStep = (startOffset + MapRange(currentStep, segmentOffsetOffset, segmentOffsetOffset + segmentSize, 0, 0.5f)).Modulo(1);
+                    }
+                    else
+                    {
+                        double forward = (currentStep - (segmentOffsetOffset + segmentSize) + 1f).Modulo(1);
+                        double total = (segmentOffsetOffset - (segmentOffsetOffset + segmentSize) + 1f).Modulo(1);
+                        if (myGroup % 2 == 0)
+                            AnimationStepOffset = (slideOffset + .5f * Math.Min(forward / total, 1f)).Modulo(1);
+                        else
+                            AnimationStep = (slideOffset + .5f * Math.Min(forward / total, 1f)).Modulo(1);
+                    }
+                }
+                else
+                {
+                    Log("Alternating style independent step");
+                    double totalLegs = totalGroups * 2;
+                    double myGroup = Configuration.Id - 1;
+                    double segmentSize = 1 / totalLegs;
+
+                    double parity = myGroup % 2;
+
+                    double pLeft = myGroup + parity * totalGroups;
+                    double pRight = myGroup + (1 - parity) * totalGroups;
+
+                    double tLeftStart = pLeft / totalLegs;
+                    //tLeftStart = myGroup / totalLegs;
+                    double tRightStart = pRight / totalLegs;
+                    //tRightStart = segmentSize * totalGroups + tLeftStart;
+                    double tLeftEnd = tLeftStart + segmentSize;
+                    double tRightEnd = tRightStart + segmentSize;
+
+                    Log("Independent Step:");
+                    Log($" Left {myGroup} {tLeftStart} -> {tLeftEnd}");
+                    Log($"Right {myGroup} {tRightStart} -> {tRightEnd}");
+
+                    // mesa doesn't think this is the right way to account for more legs, but it works well enough
+                    double currentStep = (animationStepCounter * (Configuration.AnimationSpeed / totalGroups) * WalkCycleSpeed).Modulo(1);
+
+                    double startOffset = IndependentInversed ? 0.25f : 0.75f;
+                    double slideOffset = IndependentInversed ? 0.75f : 0.25f;
+                    if (currentStep >= tLeftStart && currentStep <= tLeftEnd)
+                    {
+                        AnimationStep = (startOffset + MapRange(currentStep, tLeftStart, tLeftEnd, 0, 0.5f)).Modulo(1);
+                    }
+                    else
+                    {
+                        double forward = (currentStep - (tLeftEnd) + 1f).Modulo(1);
+                        double total = (tLeftStart - (tLeftEnd) + 1f).Modulo(1);
+                        AnimationStep = (slideOffset + .5f * Math.Min(forward / total, 1f)).Modulo(1);
+                    }
+
+                    if (currentStep >= tRightStart && currentStep <= tRightEnd)
+                    {
+                        AnimationStepOffset = (startOffset + MapRange(currentStep, tRightStart, tRightEnd, 0, 0.5f)).Modulo(1);
+                    }
+                    else
+                    {
+                        double forward = (currentStep - (tRightEnd) + 1f).Modulo(1);
+                        double total = (tRightStart - (tRightEnd) + 1f).Modulo(1);
+                        AnimationStepOffset = (slideOffset + .5f * Math.Min(forward / total, 1f)).Modulo(1);
+                    }
+                }
+
+                /*
                 // handle independant step, where each leg moves 1 cycle over the whole "step"
                 double totalGroups = legs.Count;
                 double totalLegs = totalGroups * 2;
@@ -148,26 +265,38 @@ namespace IngameScript
                 if (currentStep >= segmentOffset && currentStep <= segmentOffset + segmentSize) // left leg's turn
                 {
                     // we take a step from 0.75 to 0.25
-                    AnimationStep = (startOffset + MapRange(currentStep, segmentOffset, segmentOffset + segmentSize, 0, 0.5f)).Modulo(1);
+                    if (myGroup % 2 == 0)
+                        AnimationStep = (startOffset + MapRange(currentStep, segmentOffset, segmentOffset + segmentSize, 0, 0.5f)).Modulo(1);
+                    else
+                        AnimationStepOffset = (startOffset + MapRange(currentStep, segmentOffset, segmentOffset + segmentSize, 0, 0.5f)).Modulo(1);
                 }
                 else
                 {
                     // we slowly move backwards from 0.25 to 0.75
                     double forward = (currentStep - (segmentOffset + segmentSize) + 1f).Modulo(1);
                     double total = (segmentOffset - (segmentOffset + segmentSize) + 1f).Modulo(1);
-                    AnimationStep = (slideOffset + .5f * Math.Min(forward / total, 1f)).Modulo(1);
+                    if (myGroup % 2 == 0)
+                        AnimationStep = (slideOffset + .5f * Math.Min(forward / total, 1f)).Modulo(1);
+                    else
+                        AnimationStepOffset = (slideOffset + .5f * Math.Min(forward / total, 1f)).Modulo(1);
                 }
                 // do the same for the right leg
                 if (currentStep >= segmentOffsetOffset && currentStep <= segmentOffsetOffset + segmentSize) // right leg's turn
                 {
-                    AnimationStepOffset = (startOffset + MapRange(currentStep, segmentOffsetOffset, segmentOffsetOffset + segmentSize, 0, 0.5f)).Modulo(1);
+                    if (myGroup % 2 == 0)
+                        AnimationStepOffset = (startOffset + MapRange(currentStep, segmentOffsetOffset, segmentOffsetOffset + segmentSize, 0, 0.5f)).Modulo(1);
+                    else
+                        AnimationStep = (startOffset + MapRange(currentStep, segmentOffsetOffset, segmentOffsetOffset + segmentSize, 0, 0.5f)).Modulo(1);
                 }
                 else
                 {
                     double forward = (currentStep - (segmentOffsetOffset + segmentSize) + 1f).Modulo(1);
                     double total = (segmentOffsetOffset - (segmentOffsetOffset + segmentSize) + 1f).Modulo(1);
-                    AnimationStepOffset = (slideOffset + .5f * Math.Min(forward / total, 1f)).Modulo(1);
-                }
+                    if (myGroup % 2 == 0)
+                        AnimationStepOffset = (slideOffset + .5f * Math.Min(forward / total, 1f)).Modulo(1);
+                    else
+                        AnimationStep = (slideOffset + .5f * Math.Min(forward / total, 1f)).Modulo(1);
+                }*/
             }
 
             #endregion

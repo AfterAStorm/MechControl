@@ -32,10 +32,11 @@ namespace IngameScript
                 VariableZOffset = new JointVariable(JointVariableType.Percentage, 0),
                 VariableStepLength = new JointVariable(JointVariableType.Percentage, 30f),
                 VariableStepHeight = new JointVariable(JointVariableType.Percentage, 10f),
+                VariableTurnLength = new JointVariable(JointVariableType.Percentage, 15f),
                 VariableStrafeDistance = new JointVariable(JointVariableType.Percentage, 25f),
                 VariableCrouchHeight = new JointVariable(JointVariableType.Percentage, 10f),
-                AnimationSpeed = 1f,
-                CrouchSpeed = 1f,
+                VariableAnimationSpeed = new JointVariable(JointVariableType.Percentage, 100f),
+                VariableCrouchSpeed = new JointVariable(JointVariableType.Percentage, 100f),
 
                 HipOffsets = 0,
                 KneeOffsets = 0,
@@ -47,7 +48,7 @@ namespace IngameScript
 
             public override double AnimationDirectionMultiplier => -1;
 
-            protected override LegAngles LegAnglesMultiplier => LegAngles.MinusOne;
+            protected override LegAngles LegAnglesMultiplier => LegAngles.MinusOne * new LegAngles(1d, 1d, 1d, 1d, -1d, -1d); // fix the inverted strafe, since the axis is the same
         }
     }
 }

@@ -44,8 +44,8 @@ namespace IngameScript
         float turnValue = 0f;
         float strafeValue = 0f;
 
-        IMyShipController controller;
-        IMyShipController anyController;
+        static IMyShipController controller;
+        static IMyShipController anyController;
 
         void FetchInputs()
         {
@@ -87,6 +87,17 @@ namespace IngameScript
             Log($"turnValue: {turnValue}");
             Log($"strafeValue: {strafeValue}");
             Log($"parsedMoveInput: {parsedMoveInput}");
+
+            if (TorsoLegAlignment && torsoTwistStators.Count > 0)
+            {
+                double angle = torsoTwistStators[0].Stator.Angle * -torsoTwistStators[0].InvertedMultiplier;
+                parsedMoveInput = new Vector3(
+                    parsedMoveInput.X * Math.Cos(angle) - parsedMoveInput.Z * Math.Sin(angle),
+                    parsedMoveInput.Y,
+                    parsedMoveInput.X * Math.Sin(angle) + parsedMoveInput.Z * Math.Cos(angle)
+                );
+                Log("torso twist rotated parsedMoveInput", parsedMoveInput);
+            }
         }
     }
 }

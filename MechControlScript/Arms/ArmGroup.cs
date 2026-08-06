@@ -36,8 +36,9 @@ namespace IngameScript
             //public List<IMyLandingGear> Magnets = new List<IMyLandingGear>();
 
             public bool IsZeroing = false;
-            public double Pitch => armPitch;
-            public double Yaw => armYaw;
+            public double Pitch => _armPitch;
+            public double Yaw => _armYaw;
+            private double _armPitch, _armYaw;
             //public double Roll => armRoll;
 
             #endregion
@@ -52,9 +53,13 @@ namespace IngameScript
             public override void ApplyConfiguration()
             {
                 //string data = Configuration.ToCustomDataString();
-                foreach (var joint in PitchJoints.Concat(YawJoints))
+                foreach (var joint in AllJoints)
                 {
-                    joint.Stator.CustomData = /*data + "\n" +*/ joint.Configuration.ToCustomDataString();
+                    MyIni jointIni = Program.Singleton.configManager.GetConfiguration(joint.Stator);
+                    Configuration.Save(jointIni);
+                    (joint as ArmJoint)?.Configuration.Save(jointIni);
+                    joint.Stator.CustomData = jointIni.ToString();
+                    //joint.Stator.CustomData = /*data + "\n" +*/ joint.Configuration.ToCustomDataString();
                 }
             }
 
@@ -63,13 +68,13 @@ namespace IngameScript
                 switch (block.Type)
                 {
                     case BlockType.ArmPitch:
-                        var joint = new ArmJoint(block, ArmJointConfiguration.Parse(block));
+                        var joint = new ArmJoint(block);
                         PitchJoints.Add(joint);
                         AllJoints.Add(joint);
                         AddAllBlock(block);
                         return true;
                     case BlockType.ArmYaw:
-                        var yjoint = new ArmJoint(block, ArmJointConfiguration.Parse(block));
+                        var yjoint = new ArmJoint(block);
                         YawJoints.Add(yjoint);
                         AllJoints.Add(yjoint);
                         AddAllBlock(block);
@@ -90,8 +95,46 @@ namespace IngameScript
                 IsZeroing = true;
             }
 
-            public void Update()
+            void MoveToZero(ArmJoint joint)
             {
+                //float lerped = LerpAngleDelta(joint.IsHinge ? joint.Stator.Angle.ToDegrees() : joint.Stator.Angle.ToDegrees().Modulo(360f), (float)joint.Configuration.Offset, /*0.5*/1f, joint.Minimum, joint.Maximum, joint.IsHinge);
+                //joint.SetAnglePID(lerped);
+                joint.SetAnglePID((float)joint.Configuration.Offset);
+            }
+
+            private float LerpAngleDelta(float a, float b, float t, float min, float max, bool hinge)
+            {
+                if ((min < -360.5d && max > 360.5d) || hinge)
+                {
+                    float delta = (b - a) % 360;
+                    if (delta > 180f)
+                        delta -= 360f;
+                    if (delta < -180f)
+                        delta += 360f;
+                    return a + delta * t;
+                }
+
+                double delta_cw, delta_ccw;
+                double dir = DetermineDirectionLimits(a, b, min, max, out delta_cw, out delta_ccw);
+                if (dir == 0d)
+                    return a;
+                double chosen_delta = dir > 0d ? delta_cw : delta_ccw;
+                double final_pos = a + chosen_delta * t;
+
+                if (final_pos > max && (final_pos - 360d) >= min) final_pos -= 360d;
+                if (final_pos < min && (final_pos + 360d) <= max) final_pos += 360d;
+
+                if (final_pos < min)
+                    return min;
+                else if (final_pos > max)
+                    return max;
+                return (float)final_pos;
+            }
+
+            public void Update(double armPitch, double armYaw)
+            {
+                this._armPitch = armPitch;
+                this._armYaw = armYaw;
                 Log("is zeroing:", IsZeroing);
                 if (Pitch.Absolute() > 0.5 || Yaw.Absolute() > 0.5)
                     IsZeroing = false;
@@ -100,7 +143,8 @@ namespace IngameScript
                     if (joint.Stator.RotorLock || !Enabled)
                         continue;
                     if (IsZeroing)
-                        joint.SetAngle(joint.Configuration.Offset);
+                        MoveToZero(joint);
+                        //joint.SetAngle(joint.IsHinge ? joint.Configuration.Offset : joint.Configuration.Offset.Modulo(360f), .25f);
                     else
                         joint.Stator.TargetVelocityRPM = (float)(Pitch * joint.Configuration.InversedMultiplier * joint.Configuration.Multiplier);
                     //joint.SetAngle((Pitch + joint.Configuration.Offset) * joint.Configuration.InversedMultiplier * joint.Configuration.Multiplier);
@@ -110,7 +154,8 @@ namespace IngameScript
                     if (joint.Stator.RotorLock || !Enabled)
                         continue;
                     if (IsZeroing)
-                        joint.SetAngle(joint.Configuration.Offset);
+                        MoveToZero(joint);
+                        //joint.SetAngle(joint.IsHinge ? joint.Configuration.Offset : joint.Configuration.Offset.Modulo(360f), .25f);
                     else
                         joint.Stator.TargetVelocityRPM = (float)(Yaw * joint.Configuration.InversedMultiplier * joint.Configuration.Multiplier);
                     //joint.SetAngle((Yaw + joint.Configuration.Offset) * joint.Configuration.InversedMultiplier * joint.Configuration.Multiplier);
@@ -122,7 +167,7 @@ namespace IngameScript
                     {
                         if (joint.Stator.RotorLock || !Enabled)
                             continue;
-                        if ((joint.Stator.Angle - joint.Configuration.Offset).Absolute() > .1)
+                        if ((joint.Stator.Angle.ToDegrees().Modulo(360f) - joint.Configuration.Offset.Modulo(360f)).Absolute() > .02)
                         {
                             done = false;
                             break;

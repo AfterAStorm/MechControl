@@ -75,6 +75,7 @@ namespace IngameScript
 
             public static LegAngles operator +(LegAngles left, LegAngles right) => new LegAngles(left.HipDegrees + right.HipDegrees, left.KneeDegrees + right.KneeDegrees, left.FeetDegrees + right.FeetDegrees, left.QuadDegrees + right.QuadDegrees, left.StrafeDegrees + right.StrafeDegrees, left.TurnDegrees + right.TurnDegrees);
             public static LegAngles operator *(LegAngles left, LegAngles right) => new LegAngles(left.HipDegrees * right.HipDegrees, left.KneeDegrees * right.KneeDegrees, left.FeetDegrees * right.FeetDegrees, left.QuadDegrees * right.QuadDegrees, left.StrafeDegrees * right.StrafeDegrees, left.TurnDegrees * right.TurnDegrees);
+            public static LegAngles operator *(LegAngles left, double right) => new LegAngles(left.HipDegrees * right, left.KneeDegrees * right, left.FeetDegrees * right, left.QuadDegrees * right, left.StrafeDegrees * right, left.TurnDegrees * right);
         }
     }
 }

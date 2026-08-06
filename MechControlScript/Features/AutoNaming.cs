@@ -29,6 +29,17 @@ namespace IngameScript
             { BlockType.Foot, BlockType.Quad },
         };
 
+
+        Dictionary<char, BlockType> charToBlockType = new Dictionary<char, BlockType>()
+        {
+            { 'h', BlockType.Hip },
+            { 'k', BlockType.Knee },
+            { 'f', BlockType.Foot },
+            { 'q', BlockType.Quad },
+            { 't', BlockType.Turn },
+            { 's', BlockType.Strafe },
+        };
+
         void IterateThroughJoint(List<IMyMotorStator> stators, BlockType type, IMyMotorStator block, string suffix)
         {
             // HR1+
@@ -42,17 +53,106 @@ namespace IngameScript
                 //if (stator.CustomName.Contains("+") || stator.CustomName.Contains("-"))
                 //    return;
                 //stator.CustomName += $" {ToInitial(next)}{suffix}";
-                stator.CustomName = $"Joint {ToInitial(next)}{suffix}";
+                stator.CustomName = $"{(AutoTagIsHinge(stator) ? "Hinge" : "Rotor")} {ToInitial(next)}{suffix}";
                 IterateThroughJoint(stators, next, stator, suffix);
             });
         }
 
-        public void TryAutoTag()
+        private void RecursiveAutoTag(Dictionary<IMyCubeGrid, HashSet<IMyMotorStator>> gridMap, IMyCubeGrid grid, BlockSide side, int group, BlockType[] orders, int orderIndex)
         {
-            Reload(); // catchup on all configs
+            if (orderIndex > orders.Length - 1)
+                return;
+            BlockType order = orders[orderIndex];
+
+            if (!gridMap.ContainsKey(grid))
+                return;
+            HashSet<IMyMotorStator> stators = gridMap[grid];
+            gridMap.Remove(grid);
+
+            HashSet<IMyCubeGrid> nextGrids = new HashSet<IMyCubeGrid>();
+            foreach (var stator in stators)
+            {
+                stator.CustomName = $"{(AutoTagIsHinge(stator) ? "Hinge" : "Rotor")} {ToInitial(order)}{ToInitial(side)}{group}+";
+                nextGrids.Add(stator.CubeGrid);
+                nextGrids.Add(stator.TopGrid);
+            }
+
+            foreach (var next in nextGrids)
+                RecursiveAutoTag(gridMap, next, side, group, orders, orderIndex + 1);
+        }
+
+        private bool AutoTagIsHinge(IMyMotorStator stator)
+        {
+            return stator.BlockDefinition.SubtypeName.Contains("Hinge");
+        }
+
+        public void TryAutoTagNew(string orders)
+        {
             IMyShipController reference = cockpits.Count > 0 ? cockpits.First() : null;
             if (reference == null)
             {
+                Reload(); // catchup on all configs
+                Log("No reference for autotag");
+                return;
+            }
+
+            BlockType[] blockTypes = new BlockType[orders.Length];
+            for (int i = 0; i < orders.Length; i++)
+            {
+                char c = orders[i];
+                if (charToBlockType.ContainsKey(c))
+                    blockTypes[i] = charToBlockType[c];
+                else
+                    blockTypes[i] = BlockType.Quad;
+            }
+
+            Dictionary<IMyCubeGrid, HashSet<IMyMotorStator>> gridMap = new Dictionary<IMyCubeGrid, HashSet<IMyMotorStator>>();
+            GridTerminalSystem.GetBlocksOfType<IMyMotorStator>(null, (s) =>
+            {
+                if (!reference.IsSameConstructAs(s))
+                    return false;
+                if (!gridMap.ContainsKey(s.CubeGrid))
+                    gridMap.Add(s.CubeGrid, new HashSet<IMyMotorStator>());
+                gridMap[s.CubeGrid].Add(s);
+                if (s.TopGrid != null)
+                {
+                    if (!gridMap.ContainsKey(s.TopGrid))
+                        gridMap.Add(s.TopGrid, new HashSet<IMyMotorStator>());
+                    gridMap[s.TopGrid].Add(s);
+                }
+                return false;
+            });
+            if (!gridMap.ContainsKey(reference.CubeGrid))
+                return; // only possible with no joints
+            Dictionary<IMyCubeGrid, float> leftMap = new Dictionary<IMyCubeGrid, float>();
+            Dictionary<IMyCubeGrid, float> rightMap = new Dictionary<IMyCubeGrid, float>();
+            foreach (var stator in gridMap[reference.CubeGrid])
+            {
+                IMyCubeGrid remoteGrid = stator.CubeGrid == reference.CubeGrid ? stator.TopGrid : stator.CubeGrid;
+                if (remoteGrid == null)
+                    continue;
+
+                float dot = Vector3.Dot(stator.GetPosition() - reference.GetPosition(), reference.WorldMatrix.Left);
+                bool left = dot > 0;
+                var map = left ? leftMap : rightMap;
+
+                if (map.ContainsKey(remoteGrid))
+                    continue;
+
+                float distance = Vector3.Dot(reference.WorldMatrix.Forward, reference.GetPosition()) - Vector3.Dot(reference.WorldMatrix.Forward, stator.GetPosition());
+                map.Add(remoteGrid, distance);
+            }
+
+            //RecursiveAutoTag(gridMap, reference.CubeGrid, blockTypes, 0);
+        }
+
+        public void TryAutoTag(string _)
+        {
+            //Reload(); // catchup on all configs
+            IMyShipController reference = cockpits.Count > 0 ? cockpits.First() : null;
+            if (reference == null)
+            {
+                Reload(); // catchup on all configs
                 Log("No reference for autotag");
                 return;
             }
@@ -107,14 +207,14 @@ namespace IngameScript
                 string suffix = $"{ToInitial(BlockSide.Left)}{num}+";
                 foreach (var left in leftRight.Item1)
                 {
-                    left.CustomName = $"{ToInitial(BlockType.Hip)}{suffix}";
+                    left.CustomName = $"{(AutoTagIsHinge(left) ? "Hinge" : "Rotor")} {ToInitial(BlockType.Hip)}{suffix}";
                     IterateThroughJoint(allStators, BlockType.Hip, left, suffix);
                 }
 
                 suffix = $"{ToInitial(BlockSide.Right)}{num}+";
                 foreach (var right in leftRight.Item2)
                 {
-                    right.CustomName = $"{ToInitial(BlockType.Hip)}{suffix}";
+                    right.CustomName = $"{(AutoTagIsHinge(right) ? "Hinge" : "Rotor")} {ToInitial(BlockType.Hip)}{suffix}";
                     IterateThroughJoint(allStators, BlockType.Hip, right, suffix);
                 }
 
@@ -144,11 +244,16 @@ namespace IngameScript
             //Reload(); // catchup on all configs
             if (!format.Contains("{tag}"))
                 format += " {tag}";
-            List<FetchedBlock> stators = blockFinder.GetBlocksOfType<IMyMotorStator>().SelectMany(blockFetcher.ParseBlock).ToList();
+            List<FetchedBlock> stators = blockFetcher.CachedBlocks; //blockFinder.GetBlocksOfType<IMyMotorStator>().SelectMany(blockFetcher.ParseBlock).ToList();
             stators.ForEach(b =>
             {
-                if (!BlockFetcher.IsLegJoint(b))
-                    return; // HR1+
+                //if (!BlockFetcher.IsLegJoint(b))
+                //    return; // HR1+
+                if (!legs.ContainsKey(b.Group))
+                    return;
+                var leg = legs[b.Group];
+                if (!leg.AllBlocks.Contains(b))
+                    return;
                 b.Block.CustomName = format
                     .Replace("{type}", ToName(b.Type))
                     .Replace("{side}", ToName(b.Side))

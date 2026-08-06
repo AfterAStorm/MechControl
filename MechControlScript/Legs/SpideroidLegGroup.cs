@@ -37,15 +37,15 @@ namespace IngameScript
                 VariableStandingDistance = new JointVariable(JointVariableType.Percentage, 75f),
                 VariableStrafeDistance = new JointVariable(JointVariableType.Percentage, 25f),
                 VariableCrouchHeight = new JointVariable(JointVariableType.Percentage, 20f),
-                AnimationSpeed = 1f,
-                CrouchSpeed = 1f
+                VariableAnimationSpeed = new JointVariable(JointVariableType.Percentage, 100f),
+                VariableCrouchSpeed = new JointVariable(JointVariableType.Percentage, 100f),
             };
 
             //public override double AnimationSpeedMultiplier => -1;
             //protected void LegAngles LegAnglesOffset => new LegAngles(0, 90, 0, 0);
             protected virtual LegAngles LocalLegAnglesOffset => new LegAngles(0, 90, 0, 0);
 
-            public override bool IndependentInversed => false;
+            public override bool IndependentInversed => true;
 
             protected float StandingHeight;
             protected float StandingDistance;
@@ -207,7 +207,7 @@ namespace IngameScript
                     LegAnglesOffset + LocalLegAnglesOffset + leftAngles,
                     LegAnglesOffset * new LegAngles(-1, 1, 1, 1, 1) + LocalLegAnglesOffset + rightAngles
                 );
-                UpdateMagnets(info, true);
+                UpdateMagnets(info, false);
                 UpdateHydraulics();
             }
         }

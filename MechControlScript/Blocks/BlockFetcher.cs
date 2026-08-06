@@ -24,10 +24,11 @@ namespace IngameScript
     {
         public class BlockFetcher
         {
-            private static readonly System.Text.RegularExpressions.Regex OldNamePattern = new System.Text.RegularExpressions.Regex(@"^([^lr]*)([lr]{1})?([0-9]+)?([-+]{1})?$");
+            //private static readonly System.Text.RegularExpressions.Regex OldNamePattern = new System.Text.RegularExpressions.Regex(@"^([^lr]*)([lr]{1})?([0-9]+)?([-+]{1})?$");
             private static readonly System.Text.RegularExpressions.Regex NamePattern = new System.Text.RegularExpressions.Regex(@"^([^0-9-+]*)([0-9]+)?([-+]{1})$");
 
             public List<FetchedBlock> CachedBlocks = new List<FetchedBlock>();
+            public Dictionary<BlockType, HashSet<FetchedBlock>> CachedBlocksByType = new Dictionary<BlockType, HashSet<FetchedBlock>>();
             private List<IMyTerminalBlock> allBlocks = new List<IMyTerminalBlock>();
 
             static int parsedId;
@@ -43,10 +44,12 @@ namespace IngameScript
             public int TotalBlocks { get; private set; }
 
             private BlockFinder finder;
+            private ConfigManager configManager;
 
-            public BlockFetcher(BlockFinder finder)
+            public BlockFetcher(BlockFinder finder, ConfigManager configManager)
             {
                 this.finder = finder;
+                this.configManager = configManager;
             }
 
             public static LegGroup CreateLegFromType(int type)
@@ -79,23 +82,6 @@ namespace IngameScript
             {
                 return new ArmGroup();
             }
-
-            private static readonly List<BlockType> DoesntRequireSide = new List<BlockType>()
-            {
-                BlockType.ArmPitch,
-                BlockType.ArmYaw,
-                BlockType.ArmRoll,
-                BlockType.Magnet, // arm landing gear
-
-                BlockType.TorsoTwist,
-
-                BlockType.GyroscopeAzimuth,
-                BlockType.GyroscopeElevation,
-                BlockType.GyroscopeRoll,
-                BlockType.GyroscopeStabilization,
-                BlockType.GyroscopeStop,
-                BlockType.Thruster
-            };
 
             private struct BlockRequirements
             {
@@ -143,16 +129,20 @@ namespace IngameScript
                                 if (type as IMyLandingGear != null)
                                     return true;
                                 break;
+                            case "AIFlight":
+                                if (type as IMyFlightMovementBlock != null)
+                                    return true;
+                                break;
                         }
                     }
                     return false;
                 }
             }
 
-            private static readonly string[] blockTypes = new string[]
+            /*private static readonly string[] blockTypes = new string[]
             {
                 "Stator", "Piston", "Thrust", "Gyro", "Camera", "Piston", "Magnet"
-            };
+            };*/
 
             //BlockRequirements anyBlockRequirement = new BlockRequirements(BlockType.Hip, false, false, blockTypes);
 
@@ -187,21 +177,25 @@ namespace IngameScript
                 { "gr", new BlockRequirements(BlockType.GyroscopeRoll, false, false, "Stator", "Gyro") },
                 { "gs", new BlockRequirements(BlockType.GyroscopeStop, false, false, "Stator", "Gyro") },
                 { "gg", new BlockRequirements(BlockType.GyroscopeStabilization, false, false, "Gyro") },
+                { "ai", new BlockRequirements(BlockType.AI, false, false, "AIFlight") },
 
                 // misc
                 { "tt", new BlockRequirements(BlockType.TorsoTwist, false, false, "Stator") },
                 { "c" , new BlockRequirements(BlockType.Camera, true, true, "Camera") },
                 { "hy", new BlockRequirements(BlockType.Hydraulic, false, true, "Piston") },
-                { "m" , new BlockRequirements(BlockType.Magnet, true, true, "Magnet") }
+                { "m" , new BlockRequirements(BlockType.Magnet, true, true, "Magnet") },
+                { "am", new BlockRequirements(BlockType.Animatable, false, true, "Stator", "Piston") }
             };
 
             public IEnumerator Invalidate()
             {
-                // is this better than just re-allocating the list and .ToList()? no idea!
+                configManager.Clear();
                 CachedBlocks.Clear();
+                CachedBlocksByType.Clear();
+                // is this better than just re-allocating the list and .ToList()? no idea!
                 //CachedBlocks.AddRange(finder.GetBlocksOfType<IMyTerminalBlock>().SelectMany(ParseBlock));
                 int maxInstructions = Singleton.Runtime.MaxInstructionCount - 1000;
-                Singleton.GridTerminalSystem.GetBlocksOfType(allBlocks);
+                Singleton.GridTerminalSystem.GetBlocksOfType(allBlocks, Singleton.Me.IsSameConstructAs);//(t) => t.IsSameConstructAs(Singleton.Me));
                 TotalBlocks = allBlocks.Count;
                 for (int i = 0; i < allBlocks.Count; i++)
                 {
@@ -210,6 +204,12 @@ namespace IngameScript
 
                     ParseBlock(block);
                     CachedBlocks.AddRange(blocks);
+                    foreach (var subblock in blocks)
+                    {
+                        if (!CachedBlocksByType.ContainsKey(subblock.Type))
+                            CachedBlocksByType.Add(subblock.Type, new HashSet<FetchedBlock>());
+                        CachedBlocksByType[subblock.Type].Add(subblock);
+                    }
 
                     if (Singleton.Runtime.CurrentInstructionCount > maxInstructions)
                         yield return null;
@@ -221,7 +221,14 @@ namespace IngameScript
 
             public IEnumerable<FetchedBlock> GetBlocks(params BlockType[] type)
             {
-                return CachedBlocks.Where(fb => type.Contains(fb.Type));
+                //return CachedBlocks.Where(fb => type.Contains(fb.Type));
+                foreach (var atype in type)
+                {
+                    if (!CachedBlocksByType.ContainsKey(atype))
+                        continue;
+                    foreach (var block in CachedBlocksByType[atype])
+                        yield return block;
+                }
             }
 
             public IEnumerable<FetchedBlock> GetBlocks(IMyTerminalBlock block)
@@ -229,14 +236,14 @@ namespace IngameScript
                 return CachedBlocks.Where(fb => fb.Block.Equals(block));
             }
 
-            List<FetchedBlock> blocks = new List<FetchedBlock>();
+            readonly List<FetchedBlock> blocks = new List<FetchedBlock>();
 
             public List<FetchedBlock> ParseBlock(IMyTerminalBlock block)
             {
                 //if (!anyBlockRequirement.IsValidType(block))
                 //    return blocks;
                 blocks.Clear();
-                if (!(block is IMyMotorStator) && !(block is IMyGyro) && !(block is IMyThrust) && !(block is IMyCameraBlock) && !(block is IMyPistonBase) && !(block is IMyLandingGear))
+                if (!(block is IMyMotorStator) && !(block is IMyGyro) && !(block is IMyThrust) && !(block is IMyCameraBlock) && !(block is IMyPistonBase) && !(block is IMyLandingGear) && !(block is IMyFlightMovementBlock))
                 {
                     return blocks;
                 }
@@ -273,12 +280,10 @@ namespace IngameScript
                     if (!parsed || !requirements.RequiresId) // if it fails it might output zero anyway, i'm not sure
                         parsedId = 1;
 
-                    MyIni ini = new MyIni();
-                    if (!ini.TryParse(block.CustomData))
-                        ini = null;
-
                     if (!match.Groups[3].Value.Equals("+") && !match.Groups[3].Value.Equals("-"))
                         continue; // must include + or -!
+
+                    MyIni ini = configManager.GetConfiguration(block);
 
                     blocks.Add(new FetchedBlock()
                     {
@@ -413,8 +418,8 @@ namespace IngameScript
                 foreach (var invalid in invalidGroups)
                     groups.Remove(invalid);
 
-                foreach (var group in groups.Values)
-                    group.ApplyConfiguration();
+                //foreach (var group in groups.Values)
+                //    group.ApplyConfiguration();
             }
         }
     }

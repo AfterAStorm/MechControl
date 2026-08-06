@@ -22,40 +22,36 @@ namespace IngameScript
 {
     partial class Program
     {
-        public struct ArmJointConfiguration
+        public struct VtolJointConfiguration
         {
-            public static readonly ArmJointConfiguration DEFAULT = new ArmJointConfiguration()
+            public static readonly VtolJointConfiguration DEFAULT = new VtolJointConfiguration()
             {
-                Inversed = false,
                 Offset = 0,
                 Multiplier = 1
             };
 
-            public bool Inversed;
             public double Offset;
             public double Multiplier;
-            public double InversedMultiplier => Inversed ? -1 : 1;
             private string Name;
 
-            public static ArmJointConfiguration Parse(FetchedBlock block)
+            public static VtolJointConfiguration Parse(FetchedBlock block)
             {
                 MyIni ini = new MyIni();
                 ini.TryParse(block.Block.CustomData, "Joint");
-                return new ArmJointConfiguration()
+                return new VtolJointConfiguration()
                 {
                     Name = block.Block.CustomName,
-                    Inversed = block.Inverted,
-                    Offset = ini.Get("Joint", "Offset").ToDouble(0),
+                    Offset = ini.Get("Joint", "VtolOffset").ToDouble(0),
                     Multiplier = ini.Get("Joint", "Multiplier").ToDouble(1)
                 };
             }
 
             public void Save(MyIni ini)
             {
-                ini.Set("Joint", "Offset", Offset);
-                ini.SetComment("Joint", "Offset", "Specifies where the joint's \"zero\" is");
+                ini.Set("Joint", "VtolOffset", Offset);
+                ini.SetComment("Joint", "VtolOffset", "Specifies where the joint's \"zero\" is (for vtol)");
                 ini.Set("Joint", "Multiplier", Multiplier);
-                ini.SetComment("Joint", "Multiplier", "How much movement affects this stator");
+                ini.SetComment("Joint", "Multiplier", "Specifies a speed multiplier for this stator");
 
                 ini.SetSectionComment("Joint", $"Joint ({Name}) settings. Only this block will be affected.");
             }

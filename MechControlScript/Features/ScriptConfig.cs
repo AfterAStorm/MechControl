@@ -61,6 +61,8 @@ namespace IngameScript
         static float CrouchSpeed = 1f; // a global crouch speed multiplier
         static bool AutoHalt = true; // if it should stop walking when there is no one in the cockpit holding a direction
 
+        bool TorsoLegAlignment = false;
+
         // - Joints
 
         static float AccelerationMultiplier = 1f;   // how fast the mech accelerates, 1f is normal, .5f is half speed, 2f is double speed
@@ -77,9 +79,13 @@ namespace IngameScript
 
         static double SteeringSensitivity = 5; // x / 60th speed, specifies rotor/gyro RPM divided by 60, so 30 is half max power/rpm
         static bool SteeringTakesPriority = true; // should turning take priority over walking (animation wise)
-        static double YawThreshold = 0;
+        static bool CamerasDetermineGravity = true;
+        static bool HipTiltCorrection = true;
+        static bool LegHeightCorrection = true;
+        static bool PrecisionLocking = false;
+        /*static double YawThreshold = 0;
         static double PitchThreshold = 0;
-        static double RollThreshold = 0;
+        static double RollThreshold = 0;*/
 
         // - Blocks
 
@@ -130,6 +136,7 @@ namespace IngameScript
             SetSection("Controls");
             ReverseTurnControls = GetConfig("ReverseTurnControls").ToBoolean();
             AutoHalt = GetConfig("AutoHalt").ToBoolean(true);
+            TorsoLegAlignment = GetConfig("TorsoLegAlignment").ToBoolean(false);
 
             SetSection("Mech");
             StandingHeight = GetConfig("StandingHeight").ToSingle(.95f);
@@ -151,6 +158,7 @@ namespace IngameScript
             AccelerationMultiplier = GetConfig("AccelerationMultiplier").ToSingle(1f);
             DecelerationMultiplier = GetConfig("DecelerationMultiplier").ToSingle(1.5f);
             IndependentStepEnabled = GetConfig("IndependentStep").ToBoolean();
+            syncStep = GetConfig("SyncStep").ToBoolean(false);
 
             //MaxRPM = GetConfig("MaxRPM").ToSingle(3600f);
 
@@ -162,9 +170,13 @@ namespace IngameScript
             SetSection("Stabilization");
             SteeringSensitivity = GetConfig("TurnSpeed"/*"SteeringSensitivity"*/).ToDouble(5);
             SteeringTakesPriority = GetConfig("SteeringTakesPriority").ToBoolean(false);
-            YawThreshold = GetConfig("YawThreshold").ToDouble();
-            PitchThreshold = GetConfig("PitchThreshold").ToDouble(5);
-            RollThreshold = GetConfig("RollThreshold").ToDouble(5);
+            CamerasDetermineGravity = GetConfig("CameraGravity").ToBoolean(true);
+            HipTiltCorrection = GetConfig("HipBalancing").ToBoolean(true);
+            LegHeightCorrection = GetConfig("HeightBalancing").ToBoolean(true);
+            PrecisionLocking = GetConfig("PrecisionLocking").ToBoolean(false);
+            //YawThreshold = GetConfig("YawThreshold").ToDouble();
+            //PitchThreshold = GetConfig("PitchThreshold").ToDouble(5);
+            //RollThreshold = GetConfig("RollThreshold").ToDouble(5);
 
             // - Blocks
 
@@ -184,6 +196,7 @@ namespace IngameScript
             SetSection("Controls");
             SetConfig("ReverseTurnControls", ReverseTurnControls);
             SetConfig("AutoHalt", AutoHalt);
+            SetConfig("TorsoLegAlignment", TorsoLegAlignment);
 
             //SetSection("Mech");
             //SetConfig("StandingHeight", StandingHeight);
@@ -205,10 +218,11 @@ namespace IngameScript
             SetConfig("AccelerationMultiplier", AccelerationMultiplier);
             SetConfig("DecelerationMultiplier", DecelerationMultiplier);
             SetConfig("IndependentStep", IndependentStepEnabled);
+            SetConfig("SyncStep", syncStep);
 
             //SetConfig("MaxRPM", MaxRPM); // OBSOLETE
 
-            SetConfig("TorsoTwistSensitivity", TorsoTwistSensitivity);
+            //SetConfig("TorsoTwistSensitivity", TorsoTwistSensitivity);
             //SetConfig("TorsoTwistMaxSpeed", TorsoTwistMaxSpeed); // OBSOLETE
 
             // - Stablization / Steering
@@ -216,7 +230,11 @@ namespace IngameScript
             SetSection("Stabilization");
             SetConfig("TurnSpeed"/*"SteeringSensitivity"*/, SteeringSensitivity);
             SetConfig("SteeringTakesPriority", SteeringTakesPriority);
-
+            SetConfig("CameraGravity", CamerasDetermineGravity);
+            SetConfig("HipBalancing", HipTiltCorrection);
+            SetConfig("HeightBalancing", LegHeightCorrection);
+            SetConfig("PrecisionLocking", PrecisionLocking);
+            
             // - Blocks
 
             SetSection("Blocks");

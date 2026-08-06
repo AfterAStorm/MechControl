@@ -67,8 +67,8 @@ namespace IngameScript
                 new StateCheckpoint()
                 {
                     Name = "armsEnabled",
-                    Getter = (p) => p.armsEnabled,
-                    Setter = (p, v) => p.armsEnabled = v.ToBoolean(p.armsEnabled)
+                    Getter = (p) => p.armController.Enabled,
+                    Setter = (p, v) => p.armController.ToggleEnabled(v.ToBoolean(p.armController.Enabled))
                 },
                 new StateCheckpoint()
                 {
@@ -81,6 +81,12 @@ namespace IngameScript
                     Name = "magnetsEnabled",
                     Getter = (p) => magnetsEnabled,
                     Setter = (p, v) => magnetsEnabled = v.ToBoolean(magnetsEnabled)
+                },
+                new StateCheckpoint()
+                {
+                    Name = "syncStep",
+                    Getter = (p) => syncStep,
+                    Setter = (p, v) => syncStep = v.ToBoolean(syncStep)
                 },
             };
 
@@ -103,6 +109,8 @@ namespace IngameScript
                         serializer.Set("State", c.Name, (bool)value);
                     else if (value is int)
                         serializer.Set("State", c.Name, (int)value);
+                    else if (value is string)
+                        serializer.Set("State", c.Name, (string)value);
                     else
                         Log("unsupported state type");
                 }

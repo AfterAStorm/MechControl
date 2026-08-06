@@ -48,6 +48,8 @@ namespace IngameScript
             GyroscopeRoll, // rotor or gyroscope, roll
             GyroscopeStabilization,
             GyroscopeStop, // turn off when gyros in use
+            Animatable,
+            AI, // ai flight
 
             // Thruster
             Thruster,

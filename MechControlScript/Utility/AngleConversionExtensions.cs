@@ -65,6 +65,19 @@ namespace IngameScript
         }
 
         /// <summary>
+        /// Clamps a value, shorthand for AngleConversions.Modulo(x, divisor)
+        /// C#'s % operator is remainder, so this supports negative numbers
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="divisor"></param>
+        /// <returns></returns>
+        public static float Modulo(this float x, float divisor)
+        {
+            float r = x % divisor;
+            return (r < 0 ? r + divisor : r);//(x % divisor + divisor) % divisor;
+        }
+
+        /// <summary>
         /// Clamps a value, shorthand for MathHelper.Clamp(x, min, max)
         /// </summary>
         /// <param name="x"></param>

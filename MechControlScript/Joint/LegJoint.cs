@@ -28,11 +28,11 @@ namespace IngameScript
 
             public LegJoint(FetchedBlock block) : base(block)
             {
-                Configuration = new LegJointConfiguration()
+                Configuration = LegJointConfiguration.Parse(block); /*new LegJointConfiguration()
                 {
                     Inversed = block.Inverted,
                     Offset = 0
-                };
+                };*/
             }
         }
     }

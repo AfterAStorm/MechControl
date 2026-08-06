@@ -24,6 +24,8 @@ namespace IngameScript
     {
         public enum TimerBlockEvent
         {
+            NONE,
+
             WALK_FORWARDS,
             WALK_BACKWARDS,
             WALK,
@@ -40,17 +42,25 @@ namespace IngameScript
             STRAFE_HALT,
 
             CROUCH,
-            STAND
+            STAND,
+
+            POSE_START,
+            POSE_LOOP,
+            POSE_STOP
         }
 
         public struct TimerBlock
         {
             public IMyTimerBlock Block;
             public TimerBlockEvent Event;
+            public string Subaction;
+            public string Subsubaction;
         }
 
         List<TimerBlock> timerBlocks = new List<TimerBlock>();
         string lastRun = "n/a";
+
+        HashSet<string> posesNeedsStoppedTB = new HashSet<string>();
 
         void UpdateTimerBlocks()
         {
@@ -119,6 +129,17 @@ namespace IngameScript
                 tb.Block.Trigger();
         }
 
+        void RunPoseTimerblocks(TimerBlockEvent e, string anim)
+        {
+            if (string.IsNullOrEmpty(anim))
+                return;
+            lastRun = $"pose {anim}/{e}";
+            foreach (var tb in timerBlocks.Where(tb => tb.Event == e && tb.Subaction.Equals(anim, StringComparison.InvariantCultureIgnoreCase)))
+            {
+                tb.Block.Trigger();
+            }
+        }
+
         void FetchTimerBlocks()
         {
             List<IMyTimerBlock> tbs = new List<IMyTimerBlock>(); // allocation, i hardly know 'er!
@@ -126,7 +147,7 @@ namespace IngameScript
             GridTerminalSystem.GetBlocksOfType(tbs, (tb) => tb.IsSameConstructAs(Me)); // is same construct, rotor+hinge+piston, exclude connectors
             timerBlocks.Clear();
 
-            var regex = new System.Text.RegularExpressions.Regex("TB:(\\w+)(?::(\\w+))?", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            var regex = new System.Text.RegularExpressions.Regex(@"TB:(\w+)(?::(\w+))?(?::(\w+))?", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
             foreach (var tb in tbs)
             {
@@ -136,23 +157,25 @@ namespace IngameScript
 
                 string action = match.Groups[1].Value.ToLower();
                 string subaction = match.Groups[2].Value.ToLower();
+                string subsubaction = match.Groups[3].Value.ToLower();
 
+                TimerBlockEvent evnt = TimerBlockEvent.NONE;
                 switch (action)
                 {
                     case "walk":
                         switch (subaction)
                         {
                             case "forwards":
-                                timerBlocks.Add(new TimerBlock() { Block = tb, Event = TimerBlockEvent.WALK_FORWARDS });
+                                evnt = TimerBlockEvent.WALK_FORWARDS;
                                 break;
                             case "backwards":
-                                timerBlocks.Add(new TimerBlock() { Block = tb, Event = TimerBlockEvent.WALK_BACKWARDS });
+                                evnt = TimerBlockEvent.WALK_BACKWARDS;
                                 break;
                             case "halt":
-                                timerBlocks.Add(new TimerBlock() { Block = tb, Event = TimerBlockEvent.WALK_HALT });
+                                evnt = TimerBlockEvent.WALK_HALT;
                                 break;
                             default:
-                                timerBlocks.Add(new TimerBlock() { Block = tb, Event = TimerBlockEvent.WALK });
+                                evnt = TimerBlockEvent.WALK;
                                 break;
                         }
                         break;
@@ -160,16 +183,16 @@ namespace IngameScript
                         switch (subaction)
                         {
                             case "left":
-                                timerBlocks.Add(new TimerBlock() { Block = tb, Event = TimerBlockEvent.TURN_LEFT });
+                                evnt = TimerBlockEvent.TURN_LEFT;
                                 break;
                             case "right":
-                                timerBlocks.Add(new TimerBlock() { Block = tb, Event = TimerBlockEvent.TURN_RIGHT });
+                                evnt = TimerBlockEvent.TURN_RIGHT;
                                 break;
                             case "halt":
-                                timerBlocks.Add(new TimerBlock() { Block = tb, Event = TimerBlockEvent.TURN_HALT });
+                                evnt = TimerBlockEvent.TURN_HALT;
                                 break;
                             default:
-                                timerBlocks.Add(new TimerBlock() { Block = tb, Event = TimerBlockEvent.TURN });
+                                evnt = TimerBlockEvent.TURN;
                                 break;
                         }
                         break;
@@ -177,28 +200,47 @@ namespace IngameScript
                         switch (subaction)
                         {
                             case "left":
-                                timerBlocks.Add(new TimerBlock() { Block = tb, Event = TimerBlockEvent.STRAFE_LEFT });
+                                evnt = TimerBlockEvent.STRAFE_LEFT;
                                 break;
                             case "right":
-                                timerBlocks.Add(new TimerBlock() { Block = tb, Event = TimerBlockEvent.STRAFE_RIGHT });
+                                evnt = TimerBlockEvent.STRAFE_RIGHT;
                                 break;
                             case "halt":
-                                timerBlocks.Add(new TimerBlock() { Block = tb, Event = TimerBlockEvent.STRAFE_HALT });
+                                evnt = TimerBlockEvent.STRAFE_HALT;
                                 break;
                             default:
-                                timerBlocks.Add(new TimerBlock() { Block = tb, Event = TimerBlockEvent.STRAFE });
+                                evnt = TimerBlockEvent.STRAFE;
                                 break;
                         }
                         break;
                     case "crouch":
-                        timerBlocks.Add(new TimerBlock() { Block = tb, Event = TimerBlockEvent.CROUCH });
+                        evnt = TimerBlockEvent.CROUCH;
                         break;
                     case "stand":
-                        timerBlocks.Add(new TimerBlock() { Block = tb, Event = TimerBlockEvent.STAND });
+                        evnt = TimerBlockEvent.STAND;
+                        break;
+                    case "pose":
+                        switch (subsubaction)
+                        {
+                            case "start":
+                                evnt = TimerBlockEvent.POSE_START;
+                                break;
+                            case "loop":
+                                evnt = TimerBlockEvent.POSE_LOOP;
+                                break;
+                            default:
+                            case "stop":
+                                evnt = TimerBlockEvent.POSE_STOP;
+                                break;
+                        }
                         break;
                     default:
                         StaticWarn("Invalid timerblock type", $"Unknown type \"{action}\" for timer {tb.CustomName}");
                         break;
+                }
+                if (evnt != TimerBlockEvent.NONE)
+                {
+                    timerBlocks.Add(new TimerBlock() { Block = tb, Event = evnt, Subaction = subaction, Subsubaction = subsubaction });
                 }
             }
         }

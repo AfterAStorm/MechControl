@@ -40,6 +40,9 @@ namespace IngameScript
         List<RotorGyroscope> elevationStators = new List<RotorGyroscope>();
         List<RotorGyroscope> rollStators = new List<RotorGyroscope>();
 
+        IMyFlightMovementBlock aiFlight;
+        double aiFlightTimer = 0;
+
         void FetchStabilizers()
         {
             azimuthStators.Clear();
@@ -50,7 +53,18 @@ namespace IngameScript
             rollStators.AddRange(blockFetcher.GetBlocks(BlockType.GyroscopeRoll).Where(fb => fb.Block is IMyMotorStator).Select(fb => new RotorGyroscope(fb, blockFinder)));
             stabilizationGyros.Clear();
             stabilizationGyros.AddRange(blockFetcher.CachedBlocks.Where(fb => fb.Block is IMyGyro).Select(fb => new Gyroscope(fb)));
-            stabilizationEnabled = azimuthStators.Count > 0 || elevationStators.Count > 0 || rollStators.Count > 0 || stabilizationGyros.Count > 0;
+            var aiBlocks = blockFetcher.GetBlocks(BlockType.AI);
+            aiFlight = null;
+            foreach (var aiBlock in aiBlocks)
+            {
+                if (aiFlight != null)
+                {
+                    // static warn prevents duplicates
+                    StaticWarn("Multiple AI Blocks", "Multiple AI flight blocks found, picking last one.");
+                }
+                aiFlight = aiBlock.Block as IMyFlightMovementBlock;
+            }
+            stabilizationEnabled = azimuthStators.Count > 0 || elevationStators.Count > 0 || rollStators.Count > 0 || stabilizationGyros.Count > 0 || aiFlight != null;
         }
 
         void SetAngles(Gyroscope gyroBlock, float yaw, float pitch, float roll)
@@ -86,6 +100,10 @@ namespace IngameScript
                 foreach (var stator in azimuthStators.Concat(elevationStators).Concat(rollStators))
                 {
                     stator.SetRPM(0);
+                    foreach (var subgyro in stator.SubGyros)
+                    {
+                        subgyro.Enabled = false;
+                    }
                 }
                 foreach (var gyro in stabilizationGyros)
                 {
@@ -96,6 +114,9 @@ namespace IngameScript
         }
 
         public static Vector3D gravity = Vector3D.Zero;
+        public static Vector3D referenceForwards = Vector3D.Zero;
+
+        public static Vector3D currentUpNormal = Vector3D.PositiveInfinity;
 
         void UpdateStabilization()
         {
@@ -108,11 +129,12 @@ namespace IngameScript
                 return;
             }
             gravity = reference.GetTotalGravity();
+            bool currentUpNormalValid = !double.IsPositiveInfinity(currentUpNormal.X) && !double.IsNaN(currentUpNormal.X);
             Log("gravity:", gravity);
-            if (!stabilizationEnabled)
-                return;
-            if (double.IsNaN(gravity.X) || gravity.LengthSquared() == 0) // why can it be 0,0,0? AAAAAAAAAAAAAAAAAAAA
+            Log("currentUpNormal:", currentUpNormalValid, currentUpNormal);
+            if ((double.IsNaN(gravity.X) || gravity.LengthSquared() == 0) && !currentUpNormalValid) // why can it be 0,0,0? AAAAAAAAAAAAAAAAAAAA
             {
+                referenceForwards = reference.WorldMatrix.Forward;
                 Log("Not in gravity well or invalid world reference");
                 return;
             }
@@ -122,16 +144,55 @@ namespace IngameScript
             //Singleton.buildTools.DrawVector(reference.WorldMatrix.Translation, reference.WorldMatrix.Translation + reference.WorldMatrix.Forward * 2f, Color.Red, 0.02f);
             //Singleton.buildTools.DrawVector(reference.WorldMatrix.Translation, reference.WorldMatrix.Translation + reference.WorldMatrix.Up * 2f, Color.Green, 0.02f);
 
-            Vector3D gravityNormal = gravity.Normalized();
+            Vector3D gravityNormal = !currentUpNormalValid ? gravity.Normalized() : -currentUpNormal;
             Singleton.buildTools.DrawVector(reference.WorldMatrix.Translation, reference.WorldMatrix.Translation + gravityNormal * 2f, Color.White, 0.02f);
             QuaternionD currentRot = QuaternionD.CreateFromRotationMatrix(reference.WorldMatrix);
 
             // make the forward vector flat with the gravity
-            Vector3D forwardProjection = Vector3D.Reject(reference.WorldMatrix.Forward, gravityNormal);
+            Vector3D forwardProjection = Vector3D.Reject(reference.WorldMatrix.Forward, -gravityNormal);
             Singleton.buildTools.DrawVector(reference.WorldMatrix.Translation, reference.WorldMatrix.Translation + forwardProjection * 2f, Color.Blue, 0.02f);
 
             // normalize it for reasons
             Vector3D forwardProjectionNormal = forwardProjection.Normalized();
+            referenceForwards = forwardProjectionNormal;
+            if (aiFlight != null)
+            {
+                if (aiFlight.Enabled != stabilizationEnabled)
+                    aiFlight.Enabled = stabilizationEnabled;
+            }
+            if (!stabilizationEnabled)
+            {
+                Log("stabilization disabled");
+                return;
+            }
+
+            if (aiFlight != null)
+            {
+                var rightNormal = Vector3D.Cross(forwardProjectionNormal, -gravityNormal);
+                var targetPos = aiFlight.GetPosition() + reference.WorldMatrix.Forward * 1000f + rightNormal * moveInfo.Turn * (100f) * SteeringSensitivity;
+                if (aiFlight.FlightMode != FlightMode.OneWay)
+                    aiFlight.FlightMode = FlightMode.OneWay;
+                aiFlight.LookAtPosition = targetPos;
+                /*if (aiFlightTimer > 0)
+                {
+                    aiFlightTimer -= moveInfo.Delta;
+                }
+                else
+                {
+                    //aiFlightTimer += .1f;
+                    aiFlightTimer = 0f;
+                    var rightNormal = Vector3D.Cross(forwardProjectionNormal, -gravityNormal);
+                    var targetPos = aiFlight.GetPosition() + reference.WorldMatrix.Forward * 1000f + rightNormal * moveInfo.Turn * (100f) * SteeringSensitivity;
+                    if (aiFlight.FlightMode != FlightMode.OneWay)
+                        aiFlight.FlightMode = FlightMode.OneWay;
+                    aiFlight.LookAtPosition = targetPos;
+                }
+                Log($"aiFlightTimer: {aiFlightTimer}");*/
+            }
+            /*else
+            {
+                Log("no aiFlight block");
+            }*/
 
             // get the difference between the target rotation and the current rotation, yaw isn't accounted for since it's only forward and up, not right
             QuaternionD targetRotation = QuaternionD.CreateFromForwardUp(forwardProjectionNormal, -gravityNormal);
@@ -286,12 +347,12 @@ namespace IngameScript
                     gyro.SetOverrides(reference, 0, -azimuthValue * (float)gyro.Configuration.InversedMultiplier, 0); //SetAngles(gyro, -azimuthValue * (float)gyro.Configuration.InversedMultiplier, 0, 0);
                 //gyro.Gyro.Yaw = -azimuthValue * (float)gyro.Configuration.InversedMultiplier;
                 else if (gyro.GyroType == BlockType.GyroscopeElevation)
-                    gyro.SetOverrides(reference, -elevationValue * (float)gyro.Configuration.InversedMultiplier, 0, 0); //SetAngles(gyro, 0, elevationValue * (float)gyro.Configuration.InversedMultiplier, 0);
+                    gyro.SetOverrides(reference, elevationValue * (float)gyro.Configuration.InversedMultiplier, 0, 0); //SetAngles(gyro, 0, elevationValue * (float)gyro.Configuration.InversedMultiplier, 0);
                 //gyro.Gyro.Pitch = elevationValue * (float)gyro.Configuration.InversedMultiplier;
 
 
                 else if (gyro.GyroType == BlockType.GyroscopeStabilization)
-                    gyro.SetOverrides(reference, -elevationValue * (float)gyro.Configuration.InversedMultiplier, -azimuthValue * (float)gyro.Configuration.InversedMultiplier, rollValue * (float)gyro.Configuration.InversedMultiplier);
+                    gyro.SetOverrides(reference, elevationValue * (float)gyro.Configuration.InversedMultiplier, -azimuthValue * (float)gyro.Configuration.InversedMultiplier, rollValue * (float)gyro.Configuration.InversedMultiplier);
                     /*SetAngles(gyro,
                         -azimuthValue * (float)gyro.Configuration.InversedMultiplier,
                         elevationValue * (float)gyro.Configuration.InversedMultiplier,

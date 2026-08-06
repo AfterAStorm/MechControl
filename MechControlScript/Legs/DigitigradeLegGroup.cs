@@ -35,8 +35,8 @@ namespace IngameScript
                 VariableTurnLength = new JointVariable(JointVariableType.Percentage, 15f),
                 VariableStrafeDistance = new JointVariable(JointVariableType.Percentage, 25f),
                 VariableCrouchHeight = new JointVariable(JointVariableType.Percentage, 10f),
-                AnimationSpeed = 1f,
-                CrouchSpeed = 1f,
+                VariableAnimationSpeed = new JointVariable(JointVariableType.Percentage, 100f),
+                VariableCrouchSpeed = new JointVariable(JointVariableType.Percentage, 100f),
 
                 HipOffsets = 0,
                 KneeOffsets = 0,
@@ -248,9 +248,12 @@ namespace IngameScript
                 Log("Strafe:", rightAngles.StrafeDegrees);
                 Log("Turn  :", rightAngles.TurnDegrees);
 
+                LegAngles leftAnglesFinal = flyingAngles * LeftAnglesMultiplier * new LegAngles(1, 1, 1, 1, -1, 1) + LegAnglesOffset * LeftAnglesMultiplier * new LegAngles(1, 1, 1, 1, -1, -1) + LegAnglesMultiplier * LeftAnglesMultiplier * leftAngles;
+                LegAngles rightAnglesFinal = flyingAngles * RightAnglesMultiplier + LegAnglesOffset * RightAnglesMultiplier + LegAnglesMultiplier * RightAnglesMultiplier * rightAngles;
+
                 SetAngles(
-                    flyingAngles * LeftAnglesMultiplier  + LegAnglesOffset * LeftAnglesMultiplier  + LegAnglesMultiplier * LeftAnglesMultiplier  * leftAngles,
-                    flyingAngles * RightAnglesMultiplier + LegAnglesOffset * RightAnglesMultiplier + LegAnglesMultiplier * RightAnglesMultiplier * rightAngles
+                    leftAnglesFinal,//flyingAngles * LeftAnglesMultiplier  + LegAnglesOffset * LeftAnglesMultiplier  + LegAnglesMultiplier * LeftAnglesMultiplier  * leftAngles,
+                    rightAnglesFinal//flyingAngles * RightAnglesMultiplier + LegAnglesOffset * RightAnglesMultiplier + LegAnglesMultiplier * RightAnglesMultiplier * rightAngles
                 );
                 UpdateMagnets(info);
                 UpdateHydraulics();

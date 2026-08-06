@@ -5,7 +5,6 @@ using System.Text;
 using System.Threading.Tasks;
 using VRage;
 using VRageMath;
-using static IngameScript.Program;
 
 namespace IngameScript
 {

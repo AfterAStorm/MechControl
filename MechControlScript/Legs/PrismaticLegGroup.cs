@@ -26,7 +26,7 @@ namespace IngameScript
         {
             public override LegConfiguration DefaultConfiguration { get; set; } = new LegConfiguration()
             {
-                VariableStandingHeight = new JointVariable(JointVariableType.Percentage, 90f),
+                VariableStandingHeight = new JointVariable(JointVariableType.Percentage, 70f),
                 VariableXOffset = new JointVariable(JointVariableType.Percentage, 0),
                 VariableZOffset = new JointVariable(JointVariableType.Percentage, 0),
                 VariableStepLength = new JointVariable(JointVariableType.Percentage, 30f),
@@ -34,8 +34,8 @@ namespace IngameScript
                 VariableTurnLength = new JointVariable(JointVariableType.Percentage, 15f),
                 VariableStrafeDistance = new JointVariable(JointVariableType.Percentage, 25f),
                 VariableCrouchHeight = new JointVariable(JointVariableType.Percentage, 10f),
-                AnimationSpeed = 1f,
-                CrouchSpeed = 1f,
+                VariableAnimationSpeed = new JointVariable(JointVariableType.Percentage, 100f),
+                VariableCrouchSpeed = new JointVariable(JointVariableType.Percentage, 100f),
 
                 HipOffsets = 0,
                 KneeOffsets = 0,
@@ -64,6 +64,7 @@ namespace IngameScript
                         if (!(block.Block is IMyPistonBase))
                             return false;
                         AddLeftRightBlock(LeftKneePistons, RightKneePistons, block.Block as IMyPistonBase, block.Side);
+                        AddAllBlock(block);
                         return true;
                 }
                 return base.AddBlock(block);
@@ -218,6 +219,7 @@ namespace IngameScript
                 LegAngles leftAnglesFinal  = flyingAngles * LeftAnglesMultiplier  * new LegAngles(1, 1, 1, 1, -1) + LegAnglesOffset * LeftAnglesMultiplier  + LegAnglesMultiplier * LeftAnglesMultiplier  * leftAngles;
                 LegAngles rightAnglesFinal = flyingAngles * RightAnglesMultiplier                                 + LegAnglesOffset * RightAnglesMultiplier + LegAnglesMultiplier * RightAnglesMultiplier * rightAngles;
                 SetAngles(leftAnglesFinal, rightAnglesFinal);
+                UpdateMagnets(info);
                 UpdateHydraulics();
             }
         }

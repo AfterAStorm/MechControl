@@ -79,6 +79,8 @@ namespace IngameScript
             /// Is the mech "flying"?
             /// </summary>
             public bool Flying { get; set; }
+
+            public bool Stopping { get; set; }
         }
     }
 }

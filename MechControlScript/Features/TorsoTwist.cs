@@ -22,14 +22,23 @@ namespace IngameScript
 {
     partial class Program
     {
-        List<LegJoint> torsoTwistStators = new List<LegJoint>();
+        List<ArmJoint> torsoTwistStators = new List<ArmJoint>();
 
         double targetTorsoTwistAngle = -1;
 
         void FetchTorsoTwisters()
         {
             torsoTwistStators.Clear();
-            torsoTwistStators.AddRange(blockFetcher.GetBlocks(BlockType.TorsoTwist).Select(fb => new LegJoint(fb)));
+            torsoTwistStators.AddRange(blockFetcher.GetBlocks(BlockType.TorsoTwist).Select(fb =>
+            {
+                ArmJoint lj = new ArmJoint(fb)
+                {
+                    Configuration = ArmJointConfiguration.Parse(fb)
+                };
+                lj.Configuration.Save(Singleton.configManager.GetConfiguration(fb.Block));
+                fb.Block.CustomData = fb.Ini.ToString();
+                return lj;
+            }));
             /*foreach (FetchedBlock block in blockFinder.GetBlocksOfType<IMyMotorStator>(motor => BlockFetcher.ParseBlockOne(motor).HasValue).Select(motor => BlockFetcher.ParseBlockOne(motor)))
             {
                 switch (block.Type)
@@ -41,6 +50,11 @@ namespace IngameScript
             }*/
         }
 
+        float CalculateTorsoTwistVelocity(ArmJoint lj, float rotationInputTT)
+        {
+            return rotationInputTT * (float)lj.Configuration.Multiplier;
+        }
+
         /// <summary>
         /// Torso twist handling
         /// </summary>
@@ -48,15 +62,16 @@ namespace IngameScript
         void UpdateTorsoTwist()
         {
             float rotationInputTT = rotationInput.Y;
-            float torsoTwist = MathHelper.Clamp(rotationInputTT * TorsoTwistSensitivity, -TorsoTwistMaxSpeed, TorsoTwistMaxSpeed);
+            //float torsoTwist = MathHelper.Clamp(rotationInputTT * TorsoTwistSensitivity, -TorsoTwistMaxSpeed, TorsoTwistMaxSpeed);
             // Handle torso twist set angle
-            if (torsoTwist == 0 && targetTorsoTwistAngle > -1) // if we aren't trying to move and a set torso twist angle command requested a certain angle, go to it
+            if (rotationInputTT == 0 && targetTorsoTwistAngle > -1) // if we aren't trying to move and a set torso twist angle command requested a certain angle, go to it
             {
                 bool done = true;
                 foreach (var joint in torsoTwistStators)
                 {
-                    joint.SetAngle(targetTorsoTwistAngle * joint.Configuration.InversedMultiplier);
-                    if ((joint.Stator.Angle - targetTorsoTwistAngle * joint.Configuration.InversedMultiplier).Absolute() > 0.05d)
+                    var target = targetTorsoTwistAngle + joint.Configuration.Offset;
+                    joint.SetAngle(target * joint.Configuration.InversedMultiplier);
+                    if ((joint.Stator.Angle.ToDegrees() - target * joint.Configuration.InversedMultiplier).Absolute() > 0.02d)
                         done = false;
                 }
                 if (done)
@@ -66,7 +81,7 @@ namespace IngameScript
             {
                 targetTorsoTwistAngle = -1;
                 foreach (var joint in torsoTwistStators)
-                    joint.Stator.TargetVelocityRPM = torsoTwist * (float)joint.Configuration.InversedMultiplier;
+                    joint.Stator.TargetVelocityRPM = CalculateTorsoTwistVelocity(joint, rotationInputTT) * (float)joint.Configuration.InversedMultiplier;
             }
         }
     }

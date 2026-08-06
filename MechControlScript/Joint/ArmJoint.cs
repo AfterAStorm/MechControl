@@ -26,9 +26,9 @@ namespace IngameScript
         {
             public ArmJointConfiguration Configuration;
 
-            public ArmJoint(FetchedBlock block, ArmJointConfiguration config) : base(block)
+            public ArmJoint(FetchedBlock block) : base(block)
             {
-                Configuration = config;
+                Configuration = ArmJointConfiguration.Parse(block);
             }
         }
     }

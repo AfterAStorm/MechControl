@@ -2,9 +2,10 @@
 || ^ Mech Control Script ^ ||
 
 > Created by AfterAStorm
+> QA, ideation, and additional support provided by Eternal Colossus
 > Source and wiki can be found at https://github.com/AfterAStorm/MechControl
 
-> Join our Mech Engineers community at discord.gg/BwFmKnqhXw
+> Join our Mech Engineers community at discord.gg/c2cBnMfJTX
 
 Quickstart:
     https://github.com/AfterAStorm/MechControl/wiki/Quickstart
@@ -15,6 +16,28 @@ Configuring:
 || ^ Changelog ^ ||
 
 Most recent release:
+
+2.4.0-beta
+    * Added TurnOffsets
+    * Added vtol offset and speed configurations
+    * Added TorsoLegAlignment
+    * Added independentstep command
+    * Added per-joint configurations
+    * Added per-joint influence for leg joints
+    * Added poses (animations)
+    * Added PrecisionLocking
+    * Added hip tilt & HipBalancing option
+    * Added HeightBalancing option
+    * Added CameraGravity option
+    * Added HipBalancing option
+    * Added HeightBalancing option
+    * Added SyncStep
+    * Added AI+ ai flight movement block as stabilization support
+    * Moved TorsoTwistSensitivity to per-joint configuration
+    * Changed that thrusters now act the same as in VTOL mode
+    * Changed Prismatic default StandingHeight 90% -> 70%
+    * Fixed Prismatic pistons not getting configuration
+    * Fixed turn/strafe joint inconsistencies across leg group types
 
 2.3.1-beta
     * Fix digitigrade joints (line up w/ humanoid)
@@ -32,73 +55,7 @@ Most recent release:
 2.2.2-beta
     * Fix camera gravity requirements
 
-2.2.1-beta
-    * Fix experimental leg length finding
-    * Fix stabilization gyros constantly changing angle and not gyro-ing
-
-2.2.0-beta
-    * Add Turn joints (TR & TL)
-    * Add magnet support (ML & MR)
-      * Prepare for clang, and use a bind to unlock all to jump/be smoother!
-    * TurnSpeed is now in RPM (rotors & gyroscopes)
-    * Stabilization is now "more correct" in calculation and execution
-    * Cameras should be more "correct"-- still a work in progress, stay tuned!
-    * Added per-leg type defaults whenever leg type changes
-
-2.1.3-beta
-    * Fix crash when gravity vector is 0, 0, 0
-
-2.1.2-beta
-    * Fix digitigrade angles calculations
-
-2.1.1-beta
-    * Ignore non-connected lengths
-
-2.1.0-beta
-    * WalkSpeed -> StepSpeed (not backwards compatible, sorry!)
-    * Fix prismatic legs REQUIRING a right knee piston to work (fix crash)
-    * Add prismatic leg warnings for pistons
-
-2.0.0-beta
-    * Percentage and meter based inverse kinematics
-    * General improvements
-    * Strafing is real-- it's real!
-    * Add "vtol" for thrusters/leg groups
-    * Add prismatic leg group
-    * Add "hydraulics"-- piston support
-    * Add "cameras"-- variable heights for level legs
-    * Add (and praise) more clang
-    * It's not compatible with 1.1 or below, switch at your own risk
-
-1.1.0-beta
-    * Change how legs calculate angles
-    * Thrusters are enabled on switch to hover mode
-    * Experimental strafe joints
-    * Tons of general changes
-      * Standing height basis now 1
-      * Thigh/calf length basis now 1:1 instead of 2.5:2.5
-      * Modulate and construct additional pylons
-      * Take over the world
-
-1.0.3-beta
-    * Re-add jumping
-    * Minor tweaks
-
-1.0.2-beta
-    * Fix humanoid/chicken-walker step-height incorrectly also affecting "standing-height"
-    * Rename WalkCycleSpeed to WalkSpeed in global configuration
-    * Remove max RPM options
-    * Add legcontrol option (experimental)
-
-1.0.1-beta
-    * Fix crash on invalid argument in "walk"
-    * Possible fix for timerblock events
-    * Add ShowStats option for global
-
-1.0.0-beta
-    * Migrated from MDK1 to MDK2
-    * Settings are now in PB Custom Data
-    * The initial beta testing phase has begun!
+...
 
 || ^ Source ^ ||
 
