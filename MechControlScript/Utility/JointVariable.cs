@@ -34,9 +34,11 @@ namespace IngameScript
         {
             public JointVariableType Type;
             public float Value;
+            public bool UndefinedType;
 
             public JointVariable(string value, bool fromMultiplier=false)
             {
+                UndefinedType = false;
                 string suffix = value.Substring(value.Length - 1, 1);
                 switch (suffix.ToLower())
                 {
@@ -50,6 +52,7 @@ namespace IngameScript
                         Type = JointVariableType.Meters;
                         break;
                     default:
+                        UndefinedType = true;
                         value += ' '; // add suffix so remaining parses correctly
                         if (fromMultiplier)
                         {
@@ -76,6 +79,7 @@ namespace IngameScript
             {
                 Type = type;
                 Value = value;
+                UndefinedType = false;
             }
 
             public override string ToString()

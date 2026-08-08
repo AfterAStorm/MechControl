@@ -95,14 +95,15 @@ namespace IngameScript
         {
             if (string.IsNullOrEmpty(arg) || arg.Length <= 1)
                 return current;
-            if (arg[0] != '=' && arg[0] != '=' && arg[0] != '-')
+            if (arg[0] != '=' && arg[0] != '+' && arg[0] != '-')
             {
                 commandResponse = "You must specify a = (set), - (subtract), or + (add) before your number, e.g: steplength =50% or steplength +10%";
                 return current;
             }
             JointVariable replace = new JointVariable(arg.Substring(1));//arg.Trim('=', '+', '-'));
-            if (replace.Type != current.Type) // if not same type, just do a =
+            if (replace.Type != current.Type && !replace.UndefinedType) // if not same type, just do a =
             {
+                commandResponse = "A different type was specified, e.g. meters for a % value; this might have unintended consequences.";
                 arg = "="; // force replacement
             }
             switch (arg.Substring(0, 1))

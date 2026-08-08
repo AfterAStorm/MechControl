@@ -17,6 +17,13 @@ Configuring:
 
 Most recent release:
 
+2.4.2-beta
+    * Fixed commands not accepting +
+    * Changed StepSpeed and CrouchSpeed to %
+
+2.4.1-beta
+    * Fixed Standing Width invertion errors
+
 2.4.0-beta
     * Added TurnOffsets
     * Added vtol offset and speed configurations

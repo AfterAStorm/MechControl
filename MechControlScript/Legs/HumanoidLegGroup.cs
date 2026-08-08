@@ -194,7 +194,7 @@ namespace IngameScript
                     - Math.Max(Math.Sin(2 * AnimationStepOffset * Math.PI + Math.PI / 2d), 0) * (StepHeight - MathHelper.Clamp(cameraOffsets.Item2, -StepHeight, StepHeight)) * Math.Abs(AbsMax(info.Walk, AbsMax(info.Strafe, info.Turn)))
                     //+ MathHelper.Min(Math.Abs(righttilt) * 0.025f, 0.3f);
                     + MathHelper.Min(0.3f, radius * Math.Cos(righttilt.ToRadians()) - radius);
-                z = -ZOffset
+                z = ZOffset
                     + (-Math.Sign(info.Strafe) * Math.Sin(2 * AnimationStep * Math.PI)) * StrafeDistance * Math.Abs(info.Strafe)
                     + StrafeDistance * Math.Abs(info.Strafe);
 

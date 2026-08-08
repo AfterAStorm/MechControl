@@ -141,8 +141,8 @@ namespace IngameScript
                 ini.Set("Leg", "CrouchHeight", VariableCrouchHeight.ToString());
                 //ini.SetComment("Leg", "StepLength", "How far forwards/backwards and up/down legs step\n0.5 is half, 1 is default, 2 is double");
 
-                ini.Set("Leg", "StepSpeed", AnimationSpeed);
-                ini.Set("Leg", "CrouchSpeed", CrouchSpeed);
+                ini.Set("Leg", "StepSpeed", VariableAnimationSpeed.ToString());
+                ini.Set("Leg", "CrouchSpeed", VariableCrouchSpeed.ToString());
                 //ini.Set("Leg", "IndependantStep", IndependantStep);
                 //ini.SetComment("Leg", "WalkSpeed", "How fast legs walk and crouch");
 
