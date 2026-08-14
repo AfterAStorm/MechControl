@@ -27,7 +27,7 @@ namespace IngameScript
 
             #region # - Properties
 
-            public new ArmConfiguration Configuration;
+            //public new ArmConfiguration Configuration;
 
             public List<ArmJoint> PitchJoints = new List<ArmJoint>();
             public List<ArmJoint> YawJoints = new List<ArmJoint>();
@@ -47,7 +47,7 @@ namespace IngameScript
 
             public override void SetConfiguration(object config)
             {
-                Configuration = (ArmConfiguration)config;
+                //Configuration = (ArmConfiguration)config;
             }
 
             public override void ApplyConfiguration()
@@ -56,7 +56,7 @@ namespace IngameScript
                 foreach (var joint in AllJoints)
                 {
                     MyIni jointIni = Program.Singleton.configManager.GetConfiguration(joint.Stator);
-                    Configuration.Save(jointIni);
+                    //Configuration.Save(jointIni);
                     (joint as ArmJoint)?.Configuration.Save(jointIni);
                     joint.Stator.CustomData = jointIni.ToString();
                     //joint.Stator.CustomData = /*data + "\n" +*/ joint.Configuration.ToCustomDataString();

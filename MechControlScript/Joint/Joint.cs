@@ -141,8 +141,8 @@ namespace IngameScript
                 Stator.TargetVelocityRPM = rotationsPerMinute;// * .9f;
             }
 
-            //const float Kp = 10f;
-            const float SMOOTHING_STEPS = 5f;
+            //const float Kp2 = 10f;
+            //const float SMOOTHING_STEPS = 5f;
 
             public void SetAngle(double angleDegrees, double speedMultiplier=1)
             {
@@ -152,8 +152,8 @@ namespace IngameScript
                     SetRPM(0);
                     return;
                 }
-                //SetRPM(delta * Kp * (float)speedMultiplier);
-                SetRPM(delta / ((float)moveInfo.Delta * 6f * SMOOTHING_STEPS) * (float)speedMultiplier);
+                SetRPM(delta * (float)speedMultiplier);
+                //SetRPM(delta / ((float)moveInfo.Delta * 6f * SMOOTHING_STEPS) * (float)speedMultiplier);
                 //Stator.RotateToAngle(MyRotationDirection.AUTO, (float)angle, float.MaxValue); // too snappy and doesn't allow for compensation for overshooting; limits are also wacky
                 //Stator.RotorLock = (Stator.Angle - ClampDegrees(angle)).Absolute() < 2d;
             }

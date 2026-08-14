@@ -56,8 +56,8 @@ namespace IngameScript
 
             public JointVariable VariableStandingHeight, VariableStandingDistance, VariableStrafeDistance, VariableTurnLength;
 
-            private int defaultValue;
-            public bool Default => defaultValue <= 0;
+            //private int defaultValue;
+            //public bool Default => defaultValue <= 0;
 
             #endregion
 
@@ -237,7 +237,7 @@ namespace IngameScript
                     VtolActive = ini.Get("Leg", "VtolActive").ToBoolean(def.VtolActive),
                     //PrecisionLocking = ini.Get("Leg", "PrecisionLocking").ToBoolean(def.PrecisionLocking),
 
-                    defaultValue = 1
+                    //defaultValue = 1
                 };
                 return config;
             }

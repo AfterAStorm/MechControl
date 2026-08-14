@@ -45,8 +45,8 @@ namespace IngameScript
 
             private static MyIni ini;
 
-            private int defaultValue;
-            public bool Default => defaultValue <= 0;
+            //private int defaultValue;
+            //public bool Default => defaultValue <= 0;
 
             #endregion
 
@@ -83,7 +83,7 @@ namespace IngameScript
                 {
 
 
-                    defaultValue = 1
+                    //defaultValue = 1
                 };
                 return config;
             }

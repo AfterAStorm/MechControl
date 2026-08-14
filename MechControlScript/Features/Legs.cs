@@ -233,7 +233,7 @@ namespace IngameScript
             animationStepCounter += maxComponent * delta;*/
             moveInfo.Stopping = false;
             if (movement.LengthSquared() != 0)
-                animationStepCounter = (animationStepCounter + moveInfo.Delta * WalkCycleSpeed * .5f);
+                animationStepCounter += moveInfo.Delta * WalkCycleSpeed * .5f;
             else
             {
                 if (anyController != null)

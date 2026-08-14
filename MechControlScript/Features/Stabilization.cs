@@ -41,7 +41,7 @@ namespace IngameScript
         List<RotorGyroscope> rollStators = new List<RotorGyroscope>();
 
         IMyFlightMovementBlock aiFlight;
-        double aiFlightTimer = 0;
+        //double aiFlightTimer = 0;
 
         void FetchStabilizers()
         {

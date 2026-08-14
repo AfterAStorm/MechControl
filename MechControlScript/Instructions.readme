@@ -17,6 +17,9 @@ Configuring:
 
 Most recent release:
 
+2.4.3-beta
+    * Revert joint speeds to reduce bounciness
+
 2.4.2-beta
     * Fixed commands not accepting +
     * Changed StepSpeed and CrouchSpeed to %
