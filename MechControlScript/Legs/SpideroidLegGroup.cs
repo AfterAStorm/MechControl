@@ -207,7 +207,7 @@ namespace IngameScript
                     LegAnglesOffset + LocalLegAnglesOffset + leftAngles,
                     LegAnglesOffset * new LegAngles(-1, 1, 1, 1, 1) + LocalLegAnglesOffset + rightAngles
                 );
-                UpdateMagnets(info, false);
+                UpdateMagnets(info, true);
                 UpdateHydraulics();
             }
         }

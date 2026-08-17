@@ -72,8 +72,8 @@ namespace IngameScript
                 RadiusAnkle = radiusAnkle;
 
                 XOffset = Configuration.VariableXOffset.GetMetersOf(GridSize, 0, radius);
-                YOffset = Configuration.VariableYOffset.GetMetersOf(GridSize, 0, 0);
-                ZOffset = Configuration.VariableZOffset.GetMetersOf(GridSize, 0, 0);
+                YOffset = Configuration.VariableYOffset.GetMetersOf(GridSize, 0, radius);
+                ZOffset = Configuration.VariableZOffset.GetMetersOf(GridSize, 0, radius);
 
                 StandingHeight = Configuration.VariableStandingHeight.GetMetersOf(GridSize, 0, radiusAnkle);
                 float thighCalfStandingHeight = StandingHeight - AnkleLength;
@@ -248,8 +248,14 @@ namespace IngameScript
                 Log("Strafe:", rightAngles.StrafeDegrees);
                 Log("Turn  :", rightAngles.TurnDegrees);
 
-                LegAngles leftAnglesFinal = flyingAngles * LeftAnglesMultiplier * new LegAngles(1, 1, 1, 1, -1, 1) + LegAnglesOffset * LeftAnglesMultiplier * new LegAngles(1, 1, 1, 1, -1, -1) + LegAnglesMultiplier * LeftAnglesMultiplier * leftAngles;
-                LegAngles rightAnglesFinal = flyingAngles * RightAnglesMultiplier + LegAnglesOffset * RightAnglesMultiplier + LegAnglesMultiplier * RightAnglesMultiplier * rightAngles;
+                LegAngles leftAnglesFinal =
+                    flyingAngles * LeftAnglesMultiplier * new LegAngles(1, 1, 1, 1, -1, 1)
+                    + LegAnglesOffset * LeftAnglesMultiplier * new LegAngles(1, 1, 1, 1, -1, 1)
+                    + LegAnglesMultiplier * LeftAnglesMultiplier * leftAngles;
+                LegAngles rightAnglesFinal =
+                    flyingAngles * RightAnglesMultiplier
+                    + LegAnglesOffset * RightAnglesMultiplier * new LegAngles(1, 1, 1, 1, -1, -1)
+                    + LegAnglesMultiplier * RightAnglesMultiplier * rightAngles;
 
                 SetAngles(
                     leftAnglesFinal,//flyingAngles * LeftAnglesMultiplier  + LegAnglesOffset * LeftAnglesMultiplier  + LegAnglesMultiplier * LeftAnglesMultiplier  * leftAngles,

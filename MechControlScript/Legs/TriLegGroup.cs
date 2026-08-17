@@ -216,9 +216,13 @@ namespace IngameScript
                 // right leg lands at 0.25
                 if (!magnetsEnabled)
                     return;
-                bool leftDown = /*!info.Jumped &&*/ !moveInfo.Stopping ? ((info.Walk == 0 && info.Turn == 0 && info.Strafe == 0) || (AnimationStep > .25d && AnimationStep < .75d ? !inversed : inversed)) : AnimationStepOffset > .25d && AnimationStepOffset < .75d;
+                bool leftDownStep = inversed ? !(AnimationStepOffset > .25d && AnimationStepOffset < .75d) : (AnimationStep > .25d && AnimationStep < .75d);
+                bool rightDownStep = inversed ? !(AnimationStep > .25d && AnimationStep < .75d) : (AnimationStepOffset > .25d && AnimationStepOffset < .75d);
+
+                bool leftDown = /*!info.Jumped &&*/ !moveInfo.Stopping ? ((info.Walk == 0 && info.Turn == 0 && info.Strafe == 0) || leftDownStep) : rightDownStep;
                 bool isLeftDown = LeftMagnets.Any(m => m.IsLocked);
-                bool rightDown = /*!info.Jumped &&*/ !moveInfo.Stopping ? ((info.Walk == 0 && info.Turn == 0 && info.Strafe == 0) || (AnimationStepOffset > .25d && AnimationStepOffset < .75d ? !inversed : inversed)) : AnimationStep > .25d && AnimationStep < .75d;
+                
+                bool rightDown = /*!info.Jumped &&*/ !moveInfo.Stopping ? ((info.Walk == 0 && info.Turn == 0 && info.Strafe == 0) || rightDownStep) : leftDownStep;
                 bool isRightDown = RightMagnets.Any(m => m.IsLocked);
 
                 foreach (var mag in LeftMagnets)

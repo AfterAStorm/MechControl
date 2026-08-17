@@ -235,8 +235,14 @@ namespace IngameScript
                 //    rightAngles.HipDegrees = double.PositiveInfinity;
                     //rightAngles = new LegAngles(RightHipJoints.First().Stator.Angle.ToDegrees(), RightKneeJoints.First().Stator.Angle.ToDegrees(), RightFootJoints.First().Stator.Angle.ToDegrees(), 0, 0, RightTurnJoints.First().Stator.Angle.ToDegrees());
 
-                LegAngles leftAnglesFinal  = flyingAngles * LeftAnglesMultiplier  * new LegAngles(1, 1, 1, 1, -1, 1) + LegAnglesOffset * LeftAnglesMultiplier  * new LegAngles(1, 1, 1, 1, -1, -1) + LegAnglesMultiplier * LeftAnglesMultiplier  * leftAngles;
-                LegAngles rightAnglesFinal = flyingAngles * RightAnglesMultiplier                                    + LegAnglesOffset * RightAnglesMultiplier                                     + LegAnglesMultiplier * RightAnglesMultiplier * rightAngles;
+                LegAngles leftAnglesFinal  =
+                      flyingAngles * LeftAnglesMultiplier * new LegAngles(1, 1, 1, 1, -1, 1)
+                    + LegAnglesOffset * LeftAnglesMultiplier  * new LegAngles(1, 1, 1, 1, -1, 1)
+                    + LegAnglesMultiplier * LeftAnglesMultiplier  * leftAngles;
+                LegAngles rightAnglesFinal =
+                      flyingAngles * RightAnglesMultiplier
+                    + LegAnglesOffset * RightAnglesMultiplier * new LegAngles(1, 1, 1, 1, -1, -1)
+                    + LegAnglesMultiplier * RightAnglesMultiplier * rightAngles;
 
                 /*if (magnetJumping)
                 {
